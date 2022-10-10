@@ -7,14 +7,14 @@ services:
   php80-function:
     image: bref/${CPU}-php80-function
     build:
-      context: ../
+      context: .
       dockerfile: php80/cpu-${CPU}.Dockerfile
       target: function
 
   php80-zip-function:
     image: bref/${CPU}-php80-function-zip
     build:
-      context: ../
+      context: .
       dockerfile: php80/cpu-${CPU}.Dockerfile
       target: zip-function
     entrypoint: /bin/cp
@@ -26,14 +26,14 @@ services:
   php80-fpm:
     image: bref/${CPU}-php80-fpm
     build:
-      context: ../
+      context: .
       dockerfile: php80/cpu-${CPU}.Dockerfile
       target: fpm
 
   php80-zip-fpm:
     image: bref/${CPU}-php80-fpm-zip
     build:
-      context: ../
+      context: .
       dockerfile: php80/cpu-${CPU}.Dockerfile
       target: zip-fpm
     entrypoint: /bin/cp
@@ -46,14 +46,14 @@ services:
   php81-function:
     image: bref/${CPU}-php81-function
     build:
-      context: ../
+      context: .
       dockerfile: php81/cpu-${CPU}.Dockerfile
       target: function
 
   php81-zip-function:
     image: bref/${CPU}-php81-function-zip
     build:
-      context: ../
+      context: .
       dockerfile: php81/cpu-${CPU}.Dockerfile
       target: zip-function
     entrypoint: /bin/cp
@@ -65,14 +65,14 @@ services:
   php81-fpm:
     image: bref/${CPU}-php81-fpm
     build:
-      context: ../
+      context: .
       dockerfile: php81/cpu-${CPU}.Dockerfile
       target: fpm
 
   php81-zip-fpm:
     image: bref/${CPU}-php81-fpm-zip
     build:
-      context: ../
+      context: .
       dockerfile: php81/cpu-${CPU}.Dockerfile
       target: zip-fpm
     entrypoint: /bin/cp
