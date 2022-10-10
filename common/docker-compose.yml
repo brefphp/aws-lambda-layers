@@ -3,12 +3,8 @@ version: '3.8'
 services:
   function-pkg:
     image: bref/function-internal-src
-    build:
-      context: ${ROOT_DIR}
-      dockerfile: common/function/Dockerfile
+    build: ./function
 
   fpm-pkg:
     image: bref/fpm-internal-src
-    build:
-      context: ${ROOT_DIR}
-      dockerfile: common/fpm/Dockerfile
+    build: ./fpm
