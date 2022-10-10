@@ -1,5 +1,5 @@
 export CPU ?= arm
-export ROOT_DIR ?= $(shell pwd)/../
+export ROOT_DIR ?= $(shell pwd)/
 #export AWS_PROFILE ?= deleugpn_brefphp
 
 # This command is designed for bref internal use only and will publish every image

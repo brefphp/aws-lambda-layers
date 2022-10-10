@@ -1,5 +1,5 @@
 export CPU ?= x86
-export ROOT_DIR ?= $(shell pwd)/../
+export ROOT_DIR ?= $(shell pwd)/
 #export AWS_PROFILE ?= deleugpn_brefphp
 
 .SILENT: everything clean
