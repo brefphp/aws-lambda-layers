@@ -1,44 +1,6 @@
 version: '3.8'
 
 services:
-#### PHP 7.4
-
-  php74-function:
-    image: bref/${CPU}-php74-function
-    build:
-      context: ../
-      dockerfile: php74/cpu-${CPU}.Dockerfile
-      target: function
-
-  php74-zip-function:
-    image: bref/${CPU}-php74-function-zip
-    build:
-      context: ../
-      dockerfile: php74/cpu-${CPU}.Dockerfile
-      target: zip-function
-    entrypoint: /bin/cp
-    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php74-function.zip"]
-    volumes:
-      - /tmp/bref-zip/:/tmp/bref-zip/
-
-
-  php74-fpm:
-    image: bref/${CPU}-php74-fpm
-    build:
-      context: ../
-      dockerfile: php74/cpu-${CPU}.Dockerfile
-      target: fpm
-
-  php74-zip-fpm:
-    image: bref/${CPU}-php74-fpm-zip
-    build:
-      context: ../
-      dockerfile: php74/cpu-${CPU}.Dockerfile
-      target: zip-fpm
-    entrypoint: /bin/cp
-    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php74-fpm.zip"]
-    volumes:
-      - /tmp/bref-zip/:/tmp/bref-zip/
 
 #### PHP 8.0
 
