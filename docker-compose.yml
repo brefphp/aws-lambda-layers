@@ -7,14 +7,14 @@ services:
     image: bref/${CPU}-php74-function
     build:
       context: ../
-      dockerfile: runtime/php74/cpu-${CPU}.Dockerfile
+      dockerfile: php74/cpu-${CPU}.Dockerfile
       target: function
-      
+
   php74-zip-function:
     image: bref/${CPU}-php74-function-zip
     build:
       context: ../
-      dockerfile: runtime/php74/cpu-${CPU}.Dockerfile
+      dockerfile: php74/cpu-${CPU}.Dockerfile
       target: zip-function
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php74-function.zip"]
@@ -26,14 +26,14 @@ services:
     image: bref/${CPU}-php74-fpm
     build:
       context: ../
-      dockerfile: runtime/php74/cpu-${CPU}.Dockerfile
+      dockerfile: php74/cpu-${CPU}.Dockerfile
       target: fpm
 
   php74-zip-fpm:
     image: bref/${CPU}-php74-fpm-zip
     build:
       context: ../
-      dockerfile: runtime/php74/cpu-${CPU}.Dockerfile
+      dockerfile: php74/cpu-${CPU}.Dockerfile
       target: zip-fpm
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php74-fpm.zip"]
@@ -46,14 +46,14 @@ services:
     image: bref/${CPU}-php80-function
     build:
       context: ../
-      dockerfile: runtime/php80/cpu-${CPU}.Dockerfile
+      dockerfile: php80/cpu-${CPU}.Dockerfile
       target: function
 
   php80-zip-function:
     image: bref/${CPU}-php80-function-zip
     build:
       context: ../
-      dockerfile: runtime/php80/cpu-${CPU}.Dockerfile
+      dockerfile: php80/cpu-${CPU}.Dockerfile
       target: zip-function
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php80-function.zip"]
@@ -65,14 +65,14 @@ services:
     image: bref/${CPU}-php80-fpm
     build:
       context: ../
-      dockerfile: runtime/php80/cpu-${CPU}.Dockerfile
+      dockerfile: php80/cpu-${CPU}.Dockerfile
       target: fpm
 
   php80-zip-fpm:
     image: bref/${CPU}-php80-fpm-zip
     build:
       context: ../
-      dockerfile: runtime/php80/cpu-${CPU}.Dockerfile
+      dockerfile: php80/cpu-${CPU}.Dockerfile
       target: zip-fpm
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php80-fpm.zip"]
@@ -85,14 +85,14 @@ services:
     image: bref/${CPU}-php81-function
     build:
       context: ../
-      dockerfile: runtime/php81/cpu-${CPU}.Dockerfile
+      dockerfile: php81/cpu-${CPU}.Dockerfile
       target: function
 
   php81-zip-function:
     image: bref/${CPU}-php81-function-zip
     build:
       context: ../
-      dockerfile: runtime/php81/cpu-${CPU}.Dockerfile
+      dockerfile: php81/cpu-${CPU}.Dockerfile
       target: zip-function
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php81-function.zip"]
@@ -104,14 +104,14 @@ services:
     image: bref/${CPU}-php81-fpm
     build:
       context: ../
-      dockerfile: runtime/php81/cpu-${CPU}.Dockerfile
+      dockerfile: php81/cpu-${CPU}.Dockerfile
       target: fpm
 
   php81-zip-fpm:
     image: bref/${CPU}-php81-fpm-zip
     build:
       context: ../
-      dockerfile: runtime/php81/cpu-${CPU}.Dockerfile
+      dockerfile: php81/cpu-${CPU}.Dockerfile
       target: zip-fpm
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php81-fpm.zip"]

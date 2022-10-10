@@ -82,8 +82,8 @@ RUN cp /usr/lib64/php/modules/curl.so /bref/php-extensions/curl.so
 RUN cp /usr/lib64/php/modules/sodium.so /bref/php-extensions/sodium.so
 RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
 
-COPY runtime/tests/test_1_binary.php /bref/tests/
-COPY runtime/tests/test_2_default_extensions.php /bref/tests/
+COPY tests/test_1_binary.php /bref/tests/
+COPY tests/test_2_default_extensions.php /bref/tests/
 
 FROM binary as extensions
 
@@ -150,10 +150,10 @@ RUN cp /usr/lib64/php/modules/xml.so /bref/php-extensions/xml.so
 RUN cp /usr/lib64/php/modules/xmlreader.so /bref/php-extensions/xmlreader.so
 RUN cp /usr/lib64/php/modules/xmlwriter.so /bref/php-extensions/xmlwriter.so
 
-COPY runtime/tests/test_3_additional_extensions.php /bref/tests/
-COPY runtime/tests/test_6_disabled_extensions.php /bref/tests/
-COPY runtime/tests/test_6_manual_enabling_extensions.php /bref/tests/
-COPY runtime/tests/test_6_manual_extensions.ini /bref/tests/
+COPY tests/test_3_additional_extensions.php /bref/tests/
+COPY tests/test_6_disabled_extensions.php /bref/tests/
+COPY tests/test_6_manual_enabling_extensions.php /bref/tests/
+COPY tests/test_6_manual_extensions.ini /bref/tests/
 
 # This is a special FROM starting from "scratch" (AWS Provided Image).
 # Everything that was present on the previous stages up to here is thrown
@@ -164,22 +164,22 @@ FROM public.ecr.aws/lambda/provided:al2-arm64 as isolation
 
 COPY --from=extensions /bref /opt
 
-COPY runtime/php74/config/bref.ini /opt/php-ini/
-COPY runtime/php74/config/bref-extensions.ini /opt/php-ini/
-COPY runtime/php74/config/bref-opcache.ini /opt/php-ini/
+COPY php74/config/bref.ini /opt/php-ini/
+COPY php74/config/bref-extensions.ini /opt/php-ini/
+COPY php74/config/bref-opcache.ini /opt/php-ini/
 
 FROM isolation as function
 
-COPY runtime/common/function/bootstrap.sh /opt/bootstrap
-COPY runtime/common/function/bootstrap.sh /var/runtime/bootstrap
+COPY common/function/bootstrap.sh /opt/bootstrap
+COPY common/function/bootstrap.sh /var/runtime/bootstrap
 
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 COPY --from=bref/function-internal-src /opt/bref-internal-src /opt/bref-internal-src
 
-COPY runtime/tests/test_4_function_handler.php /opt/tests/test_4_function_handler.php
-COPY runtime/tests/test_4_function_invocation.php /opt/tests/test_4_function_invocation.php
-COPY runtime/tests/test_4_php.ini /var/task/php/conf.d/php.ini
+COPY tests/test_4_function_handler.php /opt/tests/test_4_function_handler.php
+COPY tests/test_4_function_invocation.php /opt/tests/test_4_function_invocation.php
+COPY tests/test_4_php.ini /var/task/php/conf.d/php.ini
 
 FROM alpine:3.14 as zip-function
 
@@ -217,15 +217,15 @@ COPY --from=fpm-extension /usr/lib64/libdw.so.1 /opt/lib/libdw.so.1
 #COPY --from=fpm-extension /usr/lib64/libelf.so.1 /opt/lib/libelf.so.1
 #COPY --from=fpm-extension /usr/lib64/libbz2.so.1 /opt/lib/libbz2.so.1
 
-COPY runtime/common/fpm/bootstrap.sh /opt/bootstrap
-COPY runtime/common/fpm/bootstrap.sh /var/runtime/bootstrap
+COPY common/fpm/bootstrap.sh /opt/bootstrap
+COPY common/fpm/bootstrap.sh /var/runtime/bootstrap
 
 COPY --from=bref/fpm-internal-src /opt/bref-internal-src /opt/bref-internal-src
 
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
-COPY runtime/tests/test_5_fpm_handler.php /var/task/test_5_fpm_handler.php
-COPY runtime/tests/test_5_fpm_invocation.php /opt/tests/test_5_fpm_invocation.php
+COPY tests/test_5_fpm_handler.php /var/task/test_5_fpm_handler.php
+COPY tests/test_5_fpm_invocation.php /opt/tests/test_5_fpm_invocation.php
 
 FROM alpine:3.14 as zip-fpm
 

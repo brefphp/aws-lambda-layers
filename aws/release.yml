@@ -24,7 +24,7 @@ Resources:
       Source:
         Location: https://github.com/deleugpn/bref.git
         Type: GITHUB
-        BuildSpec: runtime/aws/release.buildspec.yml
+        BuildSpec: aws/release.buildspec.yml
       Visibility: PUBLIC_READ
       Triggers:
         Webhook: true
@@ -34,7 +34,7 @@ Resources:
             - Type: BASE_REF
               Pattern: ^refs/heads/runtime$
             - Type: FILE_PATH
-              Pattern: runtime/*
+              Pattern: *
 
   ARMBrefLayersBuilder:
     Type: AWS::CodeBuild::Project
@@ -63,7 +63,7 @@ Resources:
       Source:
         Location: https://github.com/deleugpn/bref.git
         Type: GITHUB
-        BuildSpec: runtime/aws/release.buildspec.yml
+        BuildSpec: aws/release.buildspec.yml
       Visibility: PUBLIC_READ
       Triggers:
         Webhook: true
@@ -73,7 +73,7 @@ Resources:
             - Type: BASE_REF
               Pattern: ^refs/heads/runtime$
             - Type: FILE_PATH
-              Pattern: runtime/*
+              Pattern: *
 
   BrefLayersBuilderRole:
     Type: AWS::IAM::Role

@@ -5,10 +5,10 @@ services:
     image: bref/function-internal-src
     build:
       context: ${ROOT_DIR}
-      dockerfile: runtime/common/function/Dockerfile
+      dockerfile: common/function/Dockerfile
 
   fpm-pkg:
     image: bref/fpm-internal-src
     build:
       context: ${ROOT_DIR}
-      dockerfile: runtime/common/fpm/Dockerfile
+      dockerfile: common/fpm/Dockerfile

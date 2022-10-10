@@ -3,8 +3,8 @@
 Welcome to the internals of Bref! Here are some quick tips:
 
 - To make a new PHP Version, copy `php81` into `php82`, search/replace `php81` with `php82` and change PHP_VERSION on `Makefile`.
-- Check out `runtime/common/publish/generate-docker-compose.php` to add more regions.
-- `runtime/common/utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the Layer.
+- Check out `common/publish/generate-docker-compose.php` to add more regions.
+- `common/utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the Layer.
 - `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/php-extensions/curl.so`
 
 ### How Lambda Layers work?
@@ -30,14 +30,14 @@ steps:
 - Run `make fpm` if you want to deploy an FPM Layer on your own account
 - TODO: Console Layer.
 
-### runtime/common/function & runtime/common/fpm
+### common/function & common/fpm
 
 In order to make the Runtime self-sufficient, we need to include some basic functionality from Bref inside
-the layer itself. We do this by packaging the `src` folder as a composer installation inside the `runtime/common`
+the layer itself. We do this by packaging the `src` folder as a composer installation inside the `common`
 folders. Two Docker Images are generated with Bref and it's minimal dependencies. This is what allows users
 to create Lambda Functions using the AWS Console and run their function on-the-fly (no composer or serverless deploy necessary).
 
-### runtime/common/publish
+### common/publish
 
 In order to publish layers in parallel, we use a `docker-compose` file with one container per region. That means
 we can upload 21 layers in bulk. The containers expect a `TYPE` environment variable to locate and upload the zip
@@ -48,7 +48,7 @@ file. The zip files are generated and stored in `/tmp/bref-zip/` folder on the r
 This is the heart of Bref Runtime Layers. We configure php using the `config` folder to store `php.ini` files that
 will be copied into `/opt/php-ini`. Note that we configure `/opt/bootstrap` to execute PHP with `PHP_INI_SCAN_DIR=/opt/php-ini:/var/task/php/conf.d/`.
 We also have a `Makefile` to facilitate the development, testing and building of layers. The command `make test`
-will build Docker Images with everything necessary for Bref Runtime and then run containers with `runtime/tests` files
+will build Docker Images with everything necessary for Bref Runtime and then run containers with `tests` files
 that will validate:
 
 1- The PHP Binary and it's version
@@ -72,7 +72,7 @@ The 3rd layer is the `isolation` layer where we'll start from the standard AWS-p
 copied here as well.
 
 The 4th layer is the `function` layer where everything is packet together and the `bootstrap` file is loaded.
-The `bref-internal-src` images (see runtime/common/function & runtime/common/fpm) are used to load Bref
+The `bref-internal-src` images (see common/function & common/fpm) are used to load Bref
 classes into the layer.
 
 The 5th layer is `zip-function`, where we get a small and fast Linux (Alpine) just to install and zip the entire
@@ -150,11 +150,11 @@ AWS CodeBuild is preferred for publishing the layers because the account that ho
 access. It is dedicated exclusively for having the layers only and only Matthiew Napoli has access to it.
 GitHub Actions require exposing access to an external party. Using AWS CodeBuild allows us to use IAM Assume
 Role so that one "Builder Account" can build the layers and then cross-publish them onto the "Layer Account".
-The assume role limitations can be seen on runtime/aws/access.yml
+The assume role limitations can be seen on aws/access.yml
 
 ##### Automation tests
 
-the runtime/tests folder contains multiple PHP scripts that are executed inside a docker container that Bref builds.
+the tests folder contains multiple PHP scripts that are executed inside a docker container that Bref builds.
 These scripts are suppose to ensure that the PHP version is expected, PHP extensions are correctly installed and
 available and PHP is correctly configured. Some acceptance tests uses AWS Runtime Interface Emulator (RIE) to
 test whether a Lambda invocation is expected to work.

@@ -7,7 +7,7 @@ export PHP_VERSION = 8.0.15
 .SILENT: function fpm
 
 function:
-	docker build -f ${ROOT_DIR}runtime/common/function/Dockerfile ${ROOT_DIR} -t bref/function-internal-src
+	docker build -f ${ROOT_DIR}common/function/Dockerfile ${ROOT_DIR} -t bref/function-internal-src
 	docker-compose build isolation function zip-function
 	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_1_binary.php ${PHP_VERSION}
 	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_2_default_extensions.php
@@ -19,7 +19,7 @@ function:
 	LAYER_NAME=${CPU}-php80-function docker-compose -f ../common/publish/docker-compose.yml run publish
 
 fpm:
-	docker build -f ${ROOT_DIR}runtime/common/fpm/Dockerfile ${ROOT_DIR} -t bref/fpm-internal-src
+	docker build -f ${ROOT_DIR}common/fpm/Dockerfile ${ROOT_DIR} -t bref/fpm-internal-src
 	docker-compose build isolation fpm zip-fpm
 	docker-compose run --rm --entrypoint /opt/bin/php fpm /opt/tests/test_1_binary.php ${PHP_VERSION}
 	docker-compose run --rm --entrypoint /opt/bin/php fpm /opt/tests/test_2_default_extensions.php
@@ -59,14 +59,14 @@ test_bref_file_isolation:
 	docker-compose run --rm --entrypoint /opt/bin/php -e PHP_INI_SCAN_DIR="/opt/php-ini/:/opt/tests/" isolation /opt/tests/test_6_manual_enabling_extensions.php
 
 test_function_invocation:
-	docker build -f ${ROOT_DIR}runtime/common/function/Dockerfile ${ROOT_DIR} -t bref/function-internal-src
+	docker build -f ${ROOT_DIR}common/function/Dockerfile ${ROOT_DIR} -t bref/function-internal-src
 	docker-compose build function
 	docker-compose up -d function
 	docker-compose exec -T function /opt/bin/php /opt/tests/test_4_function_invocation.php
 	docker-compose down
 
 test_fpm_invocation:
-	docker build -f ${ROOT_DIR}runtime/common/fpm/Dockerfile ${ROOT_DIR} -t bref/fpm-internal-src
+	docker build -f ${ROOT_DIR}common/fpm/Dockerfile ${ROOT_DIR} -t bref/fpm-internal-src
 	docker-compose build fpm
 	docker-compose up -d fpm
 	docker-compose exec -T fpm /opt/bin/php /opt/tests/test_5_fpm_invocation.php
