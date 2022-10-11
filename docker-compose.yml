@@ -18,9 +18,9 @@ services:
       dockerfile: php80/cpu-${CPU}.Dockerfile
       target: zip-function
     entrypoint: /bin/cp
-    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php80-function.zip"]
+    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php80-function.zip"]
     volumes:
-      - /tmp/bref-zip/:/tmp/bref-zip/
+      - ./layers:/tmp/bref-zip
 
 
   php80-fpm:
@@ -37,9 +37,9 @@ services:
       dockerfile: php80/cpu-${CPU}.Dockerfile
       target: zip-fpm
     entrypoint: /bin/cp
-    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php80-fpm.zip"]
+    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php80-fpm.zip"]
     volumes:
-      - /tmp/bref-zip/:/tmp/bref-zip/
+      - ./layers:/tmp/bref-zip
 
 #### PHP 8.1
 
@@ -57,9 +57,9 @@ services:
       dockerfile: php81/cpu-${CPU}.Dockerfile
       target: zip-function
     entrypoint: /bin/cp
-    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php81-function.zip"]
+    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php81-function.zip"]
     volumes:
-      - /tmp/bref-zip/:/tmp/bref-zip/
+      - ./layers:/tmp/bref-zip
 
 
   php81-fpm:
@@ -76,6 +76,6 @@ services:
       dockerfile: php81/cpu-${CPU}.Dockerfile
       target: zip-fpm
     entrypoint: /bin/cp
-    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU}-php81-fpm.zip"]
+    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php81-fpm.zip"]
     volumes:
-      - /tmp/bref-zip/:/tmp/bref-zip/
+      - ./layers:/tmp/bref-zip

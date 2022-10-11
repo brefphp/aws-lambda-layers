@@ -1,4 +1,24 @@
-## Bref Runtime
+# PHP layers for AWS Lambda
+
+## Usage
+
+**Warning: you are probably in the wrong place.**
+
+Bref is a PHP runtime for AWS Lambda.
+
+This project is a low-level piece of the Bref project. It contains the scripts to build the AWS Lambda layers and Docker images.
+
+If you are new to PHP on Lambda or Bref, check out https://bref.sh instead.
+
+## Building
+
+To build Docker images, Lambda layers, publish layers to AWS and publish Docker images to Docker Hub, run: `make everything`.
+
+To build step by step:
+
+1. `make layers` will create the AWS Lambda layer zip files.
+2. `make upload-layers` will upload the AWS Lambda layers to all regions in your AWS account (using the current AWS profile).
+3. `make docker-hub` will publish the Docker images to Docker Hub.
 
 Welcome to the internals of Bref! Here are some quick tips:
 

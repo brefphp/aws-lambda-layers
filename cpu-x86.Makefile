@@ -1,18 +1,17 @@
 export CPU ?= x86
+export CPU_PREFIX ?=
 export ROOT_DIR ?= $(shell pwd)/
-#export AWS_PROFILE ?= deleugpn_brefphp
 
-.SILENT: everything clean
 
 # This command is designed for bref internal use only and will publish every image
 # using the configured AWS_PROFILE. Most users will not want to use this option
 # as this will distribute all layers to all regions.
-everything:
+everything: clean upload-layers docker-hub
+
+
+docker-images:
 	# Build (in parallel) the internal packages that will be copied into the layers
 	docker-compose -f ./common/docker-compose.yml build --parallel
-
-	# Clean up the folder before building all layers
-	rm /tmp/bref-zip/ -rf
 
 	# We build the layer first because we want the Docker Image to be properly tagged so that
 	# later on we can push to Docker Hub.
@@ -25,6 +24,8 @@ everything:
 	docker-compose build --parallel php80-fpm php81-fpm
 	docker-compose build --parallel php80-zip-fpm php81-zip-fpm
 
+
+layers: docker-images
 	# By running the zip containers, the layers will be copied over to /tmp/bref-zip/
 	docker-compose up php80-zip-function php81-zip-function \
 		php80-zip-fpm php81-zip-fpm
@@ -32,6 +33,8 @@ everything:
 	# This will clean up orphan containers
 	docker-compose down
 
+
+upload-layers: layers
 	# Upload the Function layers to AWS
 	TYPE=function PHP_VERSION=php80 $(MAKE) -C ./common/publish/ publish-by-type
 	TYPE=function PHP_VERSION=php81 $(MAKE) -C ./common/publish/ publish-by-type
@@ -40,6 +43,8 @@ everything:
 	TYPE=fpm PHP_VERSION=php80 $(MAKE) -C ./common/publish/ publish-by-type
 	TYPE=fpm PHP_VERSION=php81 $(MAKE) -C ./common/publish/ publish-by-type
 
+
+layers.json:
 	# Transform /tmp/bref-zip/output.ini into layers.json
 	docker-compose -f common/utils/docker-compose.yml run parse
 	cp /tmp/bref-zip/layers.${CPU}.json ./../
@@ -65,6 +70,10 @@ docker-hub:
 	docker tag bref/x86-php81-fpm breftest/php-81-fpm
 
 	$(MAKE) -f cpu-$(CPU).Makefile -j2 docker-hub-push-all
+
+
+clean:
+	rm layers/*.zip
 
 
 docker-hub-push-all: docker-hub-push-function docker-hub-push-fpm

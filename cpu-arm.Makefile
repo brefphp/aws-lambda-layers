@@ -1,4 +1,5 @@
 export CPU ?= arm
+export CPU-prefix ?= "arm-"
 export ROOT_DIR ?= $(shell pwd)/
 #export AWS_PROFILE ?= deleugpn_brefphp
 
