@@ -19,7 +19,7 @@ echo "[Publish] Publishing layer ${LAYER_NAME}..."
 
 VERSION=$(aws lambda publish-layer-version \
    --region ${REGION} \
-   --layer-name "prototype-${LAYER_NAME}" \
+   --layer-name "test-${LAYER_NAME}" \
    --description "Bref Runtime" \
    --license-info MIT \
    --zip-file fileb:///tmp/bref-zip/${LAYER_NAME}.zip \
@@ -31,7 +31,7 @@ echo "[Publish] Layer ${VERSION} published! Adding layer permission..."
 
 aws lambda add-layer-version-permission \
     --region ${REGION} \
-    --layer-name "prototype-${LAYER_NAME}" \
+    --layer-name "test-${LAYER_NAME}" \
     --version-number ${VERSION} \
     --statement-id public \
     --action lambda:GetLayerVersion \
@@ -45,4 +45,4 @@ echo "[Publish] Layer ${LAYER} added!"
 # Here we will keep a mapping in the format of LAYER[REGION]="LAYER:VERSION" so
 # that the Serverless Plugin can resolve the Lambda Version at deployment time.
 # See https://bref.sh/docs/environment/serverless-yml.html#plugins
-echo "${LAYER_NAME}[${REGION}]=prototype-${LAYER_NAME}:${VERSION}" >> /tmp/bref-zip/output.ini
+echo "${LAYER_NAME}[${REGION}]=test-${LAYER_NAME}:${VERSION}" >> /tmp/bref-zip/output.ini

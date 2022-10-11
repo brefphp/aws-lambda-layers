@@ -126,10 +126,6 @@ RUN cp /usr/lib64/libexslt.so.0 /bref/lib/libexslt.so.0
 RUN cp /usr/lib64/libxslt.so.1 /bref/lib/libxslt.so.1
 RUN cp /opt/remi/php81/root/lib64/php/modules/xsl.so /bref/php-extensions/xsl.so
 
-RUN cp /usr/lib64/libicuio.so.69 /bref/lib/libicuio.so.69
-RUN cp /usr/lib64/libicui18n.so.69 /bref/lib/libicui18n.so.69
-RUN cp /usr/lib64/libicuuc.so.69 /bref/lib/libicuuc.so.69
-RUN cp /usr/lib64/libicudata.so.69 /bref/lib/libicudata.so.69
 RUN cp /opt/remi/php81/root/lib64/php/modules/intl.so /bref/php-extensions/intl.so
 
 RUN cp /opt/remi/php81/root/lib64/php/modules/apcu.so /bref/php-extensions/apcu.so
@@ -161,9 +157,9 @@ FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
 
 COPY --from=extensions /bref /opt
 
-COPY php81/config/bref.ini /opt/php-ini/
-COPY php81/config/bref-extensions.ini /opt/php-ini/
-COPY php81/config/bref-opcache.ini /opt/php-ini/
+COPY php-81/config/bref.ini /opt/php-ini/
+COPY php-81/config/bref-extensions.ini /opt/php-ini/
+COPY php-81/config/bref-opcache.ini /opt/php-ini/
 
 FROM isolation as function
 

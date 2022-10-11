@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   parse:
-    image: bref/${CPU}-php80-function
+    image: bref/${CPU_PREFIX}php-80
     command: ["/parse-output-into-layers-json.php", "${CPU}"]
     environment: [PHP_INI_SCAN_DIR=/opt/php-ini/]
     entrypoint: /opt/bin/php

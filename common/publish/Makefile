@@ -1,10 +1,11 @@
 # This file is used to publish layers on multiple AWS regions in parallel.
 
+# Set LAYER_NAME before calling this.
 publish-by-type:
 	# Add executable permission to the publish script
 	chmod +x ./publish.sh
 
-	LAYER_NAME=${CPU}-${PHP_VERSION}-${TYPE} $(MAKE) -j7 parallel-publish
+	$(MAKE) -j7 parallel-publish
 
 ##########################################################################################
 

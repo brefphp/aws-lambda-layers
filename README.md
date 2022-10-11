@@ -22,7 +22,7 @@ To build step by step:
 
 Welcome to the internals of Bref! Here are some quick tips:
 
-- To make a new PHP Version, copy `php81` into `php82`, search/replace `php81` with `php82` and change PHP_VERSION on `Makefile`.
+- To make a new PHP Version, copy `php-81` into `php-82`, search/replace `php81` with `php82` and change PHP_VERSION on `Makefile`.
 - Check out `common/publish/generate-docker-compose.php` to add more regions.
 - `common/utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the Layer.
 - `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/php-extensions/curl.so`
