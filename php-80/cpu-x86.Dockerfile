@@ -164,11 +164,11 @@ COPY php-80/config/bref-opcache.ini /opt/php-ini/
 FROM isolation as function
 
 COPY common/function/bootstrap.sh /opt/bootstrap
+# Copy files to /var/runtime to support deploying as a Docker image
 COPY common/function/bootstrap.sh /var/runtime/bootstrap
-
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
-COPY --from=bref/function-internal-src /opt/bref-internal-src /opt/bref-internal-src
+COPY common/function/bootstrap.php /opt/bref/bootstrap.php
 
 COPY tests/test_4_function_handler.php /opt/tests/test_4_function_handler.php
 COPY tests/test_4_function_invocation.php /opt/tests/test_4_function_invocation.php
@@ -211,11 +211,11 @@ COPY --from=fpm-extension /usr/lib64/libdw.so.1 /opt/lib/libdw.so.1
 #COPY --from=fpm-extension /usr/lib64/libbz2.so.1 /opt/lib/libbz2.so.1
 
 COPY common/fpm/bootstrap.sh /opt/bootstrap
+# Copy files to /var/runtime to support deploying as a Docker image
 COPY common/fpm/bootstrap.sh /var/runtime/bootstrap
-
-COPY --from=bref/fpm-internal-src /opt/bref-internal-src /opt/bref-internal-src
-
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
+
+COPY --from=bref/fpm-internal-src /opt/php-fpm-runtime /opt/php-fpm-runtime
 
 COPY tests/test_5_fpm_handler.php /var/task/test_5_fpm_handler.php
 COPY tests/test_5_fpm_invocation.php /opt/tests/test_5_fpm_invocation.php

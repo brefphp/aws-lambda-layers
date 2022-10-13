@@ -7,7 +7,6 @@ export PHP_VERSION = 8.1.2
 .SILENT: function fpm
 
 function:
-	docker build -f ${ROOT_DIR}common/function/Dockerfile ${ROOT_DIR} -t bref/function-internal-src
 	docker-compose build isolation function zip-function
 	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_1_binary.php ${PHP_VERSION}
 	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_2_default_extensions.php
@@ -59,7 +58,6 @@ test_bref_file_isolation:
 	docker-compose run --rm --entrypoint /opt/bin/php -e PHP_INI_SCAN_DIR="/opt/php-ini/:/opt/tests/" isolation /opt/tests/test_6_manual_enabling_extensions.php
 
 test_function_invocation:
-	docker build -f ${ROOT_DIR}common/function/Dockerfile ${ROOT_DIR} -t bref/function-internal-src
 	docker-compose build function
 	docker-compose up -d function
 	docker-compose exec -T function /opt/bin/php /opt/tests/test_4_function_invocation.php
