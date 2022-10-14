@@ -1,5 +1,6 @@
 version: '3.8'
 
+# TODO delete?
 services:
   publish:
     image: amazon/aws-cli
