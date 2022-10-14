@@ -3,5 +3,5 @@ FROM alpine:3.14
 RUN apk add composer
 
 RUN mkdir -p /opt/php-fpm-runtime
-
-RUN cd /opt/php-fpm-runtime && composer require bref/php-fpm-runtime:dev-main --ignore-platform-reqs
+COPY composer.json /opt/php-fpm-runtime/composer.json
+RUN cd /opt/php-fpm-runtime && composer install --ignore-platform-reqs

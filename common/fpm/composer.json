@@ -1,0 +1,7 @@
+{
+    "require": {
+        "bref/php-fpm-runtime": "dev-main"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable" : true
+}
