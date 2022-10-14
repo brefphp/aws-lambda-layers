@@ -15,7 +15,7 @@ ls /lib64 -la
 # We will then read the Dockerfile, remove all comments and compare any file that we
 # may be copying into the layer that doesn't need to be there.
 
-$docker = file_get_contents(__DIR__ . '/../../../php-80/cpu-x86.Dockerfile');
+$docker = file_get_contents(__DIR__ . '/../../php-80/cpu-x86.Dockerfile');
 
 $dockerContent = explode(PHP_EOL, $docker);
 
