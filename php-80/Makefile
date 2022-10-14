@@ -1,6 +1,5 @@
 export CPU ?= x86
 export REGION ?= us-east-1
-#export AWS_PROFILE ?= deleugpn_brefphp
 export ROOT_DIR = ../
 export PHP_VERSION = 8.0.15
 
