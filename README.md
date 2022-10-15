@@ -31,6 +31,9 @@ make -f cpu-arm.Makefile layers
 
 This will create the Docker images on your machine, and generate the Lambda layer zip files in `./layers`.
 
+> **Note**
+> You can test layers manually and locally using Docker. Check out [the README in tests/manual](./tests/manual/README.md).
+
 You can also build everything _and_ upload Lambda layers to your AWS account (requiments: `make`, Docker and the AWS CLI). You will need to set up local AWS credentials (set `AWS_PROFILE` if you want to use a specific profile), and set the `ONLY_REGION` variable to publish Lambda layers only to this region:
 
 ```bash
