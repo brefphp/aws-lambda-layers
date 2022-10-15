@@ -219,6 +219,8 @@ COPY common/fpm/bootstrap.sh /opt/bootstrap
 COPY common/fpm/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
+COPY common/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
+
 COPY --from=bref/fpm-internal-src /opt/php-fpm-runtime /opt/php-fpm-runtime
 
 COPY tests/test_5_fpm_handler.php /var/task/test_5_fpm_handler.php
