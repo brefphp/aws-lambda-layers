@@ -1,32 +1,6 @@
 export CPU ?= x86
-export REGION ?= us-east-1
 export ROOT_DIR = ../
-export PHP_VERSION = 8.0.15
-
-.SILENT: function fpm
-
-function:
-	docker-compose build isolation function zip-function
-	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_1_binary.php ${PHP_VERSION}
-	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_2_default_extensions.php
-	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_3_additional_extensions.php
-	docker-compose up -d function && docker-compose exec -T function /opt/bin/php /opt/tests/test_4_function_invocation.php
-	docker-compose down
-	rm /tmp/bref-zip/ -rf
-	docker-compose run --rm zip-function
-	LAYER_NAME=${CPU}-php80-function docker-compose -f ../common/publish/docker-compose.yml run publish
-
-fpm:
-	docker build -f ${ROOT_DIR}common/fpm/Dockerfile ${ROOT_DIR} -t bref/fpm-internal-src
-	docker-compose build isolation fpm zip-fpm
-	docker-compose run --rm --entrypoint /opt/bin/php fpm /opt/tests/test_1_binary.php ${PHP_VERSION}
-	docker-compose run --rm --entrypoint /opt/bin/php fpm /opt/tests/test_2_default_extensions.php
-	docker-compose run --rm --entrypoint /opt/bin/php fpm /opt/tests/test_3_additional_extensions.php
-	docker-compose up -d fpm && docker-compose exec -T fpm /opt/bin/php /opt/tests/test_5_fpm_invocation.php
-	docker-compose down
-	rm /tmp/bref-zip/ -rf
-	docker-compose build zip-fpm && docker-compose run --rm zip-fpm
-	LAYER_NAME=${CPU}-php80-fpm docker-compose -f ../common/publish/docker-compose.yml run publish
+export PHP_VERSION = 8.0.24
 
 test:
 	$(MAKE) test_php_binary
