@@ -1,6 +1,7 @@
 # PHP layers for AWS Lambda
 
-**Warning: you are probably in the wrong place.**
+> **Warning**
+> **You are probably in the wrong place.**
 
 If you are new to PHP on Lambda or Bref, **check out https://bref.sh instead**.
 
