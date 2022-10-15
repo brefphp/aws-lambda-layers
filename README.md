@@ -19,12 +19,13 @@ If you are submitting a pull request to this repository, you will probably want 
 1. Build the Docker images and the Lambda layers (zip files) locally, to make sure that the build works correctly.
 2. Publish the Lambda layers to your AWS account to test them.
 
-TODO `make test`
+TODO `make -f cpu-x86.Makefile test`
 
 You can build everything locally (requirements: `make` and Docker):
 
 ```
-make layers
+make -f cpu-x86.Makefile layers
+make -f cpu-arm.Makefile layers
 ```
 
 This will create the Docker images on your machine, and generate the Lambda layer zip files in `./layers`.
@@ -32,7 +33,8 @@ This will create the Docker images on your machine, and generate the Lambda laye
 You can also build everything _and_ upload Lambda layers to your AWS account (requiments: `make`, Docker and the AWS CLI). You will need to set up local AWS credentials (set `AWS_PROFILE` if you want to use a specific profile), and set the `ONLY_REGION` variable to publish Lambda layers only to this region:
 
 ```bash
-ONLY_REGION=us-east-1 make upload-layers
+ONLY_REGION=us-east-1 make -f cpu-x86.Makefile upload-layers
+ONLY_REGION=us-east-1 make -f cpu-arm.Makefile upload-layers
 ```
 
 The published Lambda layers will be public (they are readonly anyway). You can find them in your AWS console (AWS Lambda service). Feel free to delete them afterwards.
