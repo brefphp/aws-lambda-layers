@@ -153,11 +153,10 @@ FROM public.ecr.aws/lambda/provided:al2-arm64 as isolation
 
 COPY --from=extensions /bref /opt
 
-COPY php-80/config/bref.ini /opt/php-ini/
-COPY php-80/config/bref-extensions.ini /opt/php-ini/
-COPY php-80/config/bref-opcache.ini /opt/php-ini/
-
 FROM isolation as function
+
+COPY common/function/bref.ini /opt/bref/etc/php/conf.d/
+COPY common/function/bref-extensions.ini /opt/bref/etc/php/conf.d/
 
 COPY common/function/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
@@ -205,6 +204,9 @@ COPY --from=fpm-extension /usr/lib64/libdw.so.1 /opt/lib/libdw.so.1
 #COPY --from=fpm-extension /usr/lib64/libcap.so.2 /opt/lib/libcap.so.2
 #COPY --from=fpm-extension /usr/lib64/libelf.so.1 /opt/lib/libelf.so.1
 #COPY --from=fpm-extension /usr/lib64/libbz2.so.1 /opt/lib/libbz2.so.1
+
+COPY common/fpm/bref.ini /opt/bref/etc/php/conf.d/
+COPY common/fpm/bref-extensions.ini /opt/bref/etc/php/conf.d/
 
 COPY common/fpm/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image

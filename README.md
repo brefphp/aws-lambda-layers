@@ -94,7 +94,7 @@ Anything we want to make available in AWS Lambda is possible by preparing the ri
 ### The php-xx folders
 
 This is the heart of Bref layers. We configure PHP using the `config` folder to store `php.ini` files that
-will be copied into `/opt/php-ini`. Note that we configure `/opt/bootstrap` to execute PHP with `PHP_INI_SCAN_DIR=/opt/php-ini:/var/task/php/conf.d/`. We also have a `Makefile` to facilitate the development, testing and building of layers.
+will be copied into `/opt/bref/etc/php/conf.d`. Note that we configure `/opt/bootstrap` to execute PHP with `PHP_INI_SCAN_DIR=/opt/bref/etc/php/conf.d:/var/task/php/conf.d/`. We also have a `Makefile` to facilitate the development, testing and building of layers.
 
 The command `make test` will build Docker Images with everything necessary for Bref Runtime and then run containers with `tests` files that will validate:
 

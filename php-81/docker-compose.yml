@@ -21,7 +21,7 @@ services:
   isolation:
     container_name: bref-${CPU}-php81-isolation
     image: bref/${CPU}-php81-isolation
-    environment: [PHP_INI_SCAN_DIR=/opt/php-ini/]
+    environment: [PHP_INI_SCAN_DIR=/opt/bref/etc/php/conf.d/]
     build:
       context: ${ROOT_DIR}
       dockerfile: php-81/cpu-${CPU}.Dockerfile
@@ -31,7 +31,7 @@ services:
     container_name: bref-${CPU}-php81-function
     image: bref/${CPU}-php81-function
     command: ["/opt/tests/test_4_function_handler.php"]
-    environment: [PHP_INI_SCAN_DIR=/opt/php-ini/]
+    environment: [PHP_INI_SCAN_DIR=/opt/bref/etc/php/conf.d/]
     stop_grace_period: 0s
     build:
       context: ${ROOT_DIR}
@@ -42,7 +42,7 @@ services:
     container_name: bref-${CPU}-php81-fpm
     image: bref/${CPU}-php81-fpm
     command: ["test_5_fpm_handler.php"]
-    environment: [PHP_INI_SCAN_DIR=/opt/php-ini/]
+    environment: [PHP_INI_SCAN_DIR=/opt/bref/etc/php/conf.d/]
     stop_grace_period: 0s
     build:
       context: ${ROOT_DIR}

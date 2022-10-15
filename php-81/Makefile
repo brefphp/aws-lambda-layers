@@ -28,7 +28,7 @@ test_bref_file_isolation:
 	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_2_default_extensions.php
 	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_3_additional_extensions.php
 	docker-compose run --rm --entrypoint /opt/bin/php isolation /opt/tests/test_6_disabled_extensions.php
-	docker-compose run --rm --entrypoint /opt/bin/php -e PHP_INI_SCAN_DIR="/opt/php-ini/:/opt/tests/" isolation /opt/tests/test_6_manual_enabling_extensions.php
+	docker-compose run --rm --entrypoint /opt/bin/php -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/opt/tests/" isolation /opt/tests/test_6_manual_enabling_extensions.php
 
 test_function_invocation:
 	docker-compose build function
@@ -50,11 +50,11 @@ test_manual_extensions:
 	docker-compose run \
 		--rm \
 		--entrypoint /opt/bin/php \
-		-e PHP_INI_SCAN_DIR="/opt/php-ini/:/opt/tests/" \
+		-e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/opt/tests/" \
 		isolation /opt/tests/test_6_manual_enabling_extensions.php
 
 ssh_extensions:
 	docker-compose run --rm --entrypoint /bin/bash extensions
 
 ssh_isolation:
-	docker-compose run -e PHP_INI_SCAN_DIR="/opt/php-ini/:/opt/tests/" --rm --entrypoint /bin/bash isolation
+	docker-compose run -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/opt/tests/" --rm --entrypoint /bin/bash isolation
