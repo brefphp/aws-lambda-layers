@@ -66,4 +66,17 @@ upload-to-docker-hub: docker-images
 
 
 clean:
-	rm layers/*.zip
+	# Remove zip files
+	rm -f layers/*.zip
+	# Clean Docker images to force rebuilding them
+	docker image rm --force bref/fpm-internal-src
+	docker image rm --force bref/php-80
+	docker image rm --force bref/php-80-zip
+	docker image rm --force bref/php-81
+	docker image rm --force bref/php-81-zip
+	docker image rm --force bref/php-80-fpm
+	docker image rm --force bref/php-80-fpm-zip
+	docker image rm --force bref/php-81-fpm
+	docker image rm --force bref/php-81-fpm-zip
+	# Clear the build cache, else all images will be rebuilt using cached layers
+	docker builder prune
