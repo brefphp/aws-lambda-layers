@@ -61,7 +61,8 @@ Requirements:
 To build Docker images, Lambda layers, publish layers to AWS (all regions) and publish Docker images to Docker Hub, run:
 
 ```bash
-make everything
+make -f cpu-x86.Makefile everything
+make -f cpu-arm.Makefile everything
 ```
 
 To build step by step:
@@ -73,7 +74,7 @@ To build step by step:
 You can restrict publishing to a single AWS region by setting the `ONLY_REGION` environment variable:
 
 ```bash
-ONLY_REGION=us-east-1 make upload-layers
+ONLY_REGION=us-east-1 make -f cpu-x86.Makefile upload-layers
 ```
 
 - `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/php-extensions/curl.so`
