@@ -20,7 +20,7 @@ if [ -z "$REGION" ]; then
     exit 1
 fi
 # If $ONLY_REGION is set and different from $REGION, then we skip this region
-if [ -z "$ONLY_REGION" ] && [ "$REGION" != "$ONLY_REGION" ]; then
+if [ -n "$ONLY_REGION" ] && [ "$REGION" != "$ONLY_REGION" ]; then
     echo "Skipping $REGION"
     exit 0
 fi
