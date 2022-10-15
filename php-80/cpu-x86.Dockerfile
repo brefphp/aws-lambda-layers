@@ -126,6 +126,10 @@ RUN cp /usr/lib64/libexslt.so.0 /bref/lib/libexslt.so.0
 RUN cp /usr/lib64/libxslt.so.1 /bref/lib/libxslt.so.1
 RUN cp /opt/remi/php80/root/lib64/php/modules/xsl.so /bref/php-extensions/xsl.so
 
+RUN cp /usr/lib64/libicuio.so.71 /bref/lib/libicuio.so.71
+RUN cp /usr/lib64/libicui18n.so.71 /bref/lib/libicui18n.so.71
+RUN cp /usr/lib64/libicuuc.so.71 /bref/lib/libicuuc.so.71
+RUN cp /usr/lib64/libicudata.so.71 /bref/lib/libicudata.so.71
 RUN cp /opt/remi/php80/root/lib64/php/modules/intl.so /bref/php-extensions/intl.so
 
 RUN cp /opt/remi/php80/root/lib64/php/modules/apcu.so /bref/php-extensions/apcu.so
