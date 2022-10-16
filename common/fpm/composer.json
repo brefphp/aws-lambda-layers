@@ -3,5 +3,10 @@
         "bref/php-fpm-runtime": "dev-main"
     },
     "minimum-stability": "dev",
-    "prefer-stable" : true
+    "prefer-stable" : true,
+    "config": {
+        "platform": {
+            "php": "8.0.7"
+        }
+    }
 }
