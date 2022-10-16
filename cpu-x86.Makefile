@@ -65,6 +65,10 @@ upload-to-docker-hub: docker-images
 	docker push breftest/php-81-fpm
 
 
+test:
+	cd tests && $(MAKE) test
+
+
 clean:
 	# Remove zip files
 	rm -f layers/*.zip

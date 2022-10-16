@@ -1,5 +1,7 @@
 <?php declare(strict_types=1);
 
+require_once __DIR__ . '/utils.php';
+
 function post(string $url, array $params)
 {
     $ch = curl_init();
@@ -16,21 +18,28 @@ function post(string $url, array $params)
 
     curl_close($ch);
 
+    if ($response === false) {
+        throw new Exception('Curl error: ' . curl_error($ch));
+    }
+
     return $response;
 }
 
 $body = ['Hello' => 'From Bref!'];
 
-$response = post('http://127.0.0.1:8080/2015-03-31/functions/function/invocations', $body);
-
-$response = json_decode($response, true);
+try {
+    $response = post('http://127.0.0.1:8080/2015-03-31/functions/function/invocations', $body);
+    $response = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+} catch (Throwable $e) {
+    error($e->getMessage() . PHP_EOL . $e->getTraceAsString());
+}
 
 if ($response['event']['Hello'] !== 'From Bref!') {
-    throw new Exception('Unexpected response: ' . json_encode($response));
+    error('Unexpected response: ' . json_encode($response));
 }
 
 if ($response['memory_limit'] !== '586M') {
-    throw new Exception('Failed to load php.ini from /var/task/php/conf.d/');
+    error('Failed to load php.ini from /var/task/php/conf.d/');
 }
 
-echo "\033[36m [Invoke] Function ✓!\033[0m" . PHP_EOL;
+success('[Invoke] Function');

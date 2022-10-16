@@ -1,9 +1,12 @@
 <?php declare(strict_types=1);
 
-$version = $_SERVER['argv'][1];
+require_once __DIR__ . '/utils.php';
 
-if (PHP_VERSION !== $version) {
-    throw new Exception("Expected version [$version] does not match " . PHP_VERSION);
+$expected = $_SERVER['argv'][1];
+$actual = str_replace('.', '', PHP_VERSION);
+
+if (! str_starts_with($actual, $expected)) {
+    error("Expected version [$expected] does not match " . PHP_VERSION);
 }
 
-echo "\033[36m [Version] $version ✓!\033[0m" . PHP_EOL;
+success("[Version] PHP version $expected");

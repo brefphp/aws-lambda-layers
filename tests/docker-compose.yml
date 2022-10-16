@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+
+    php-80:
+        image: bref/php-80
+        volumes: [ '.:/var/task:ro' ]
+        environment:
+            PHP_INI_SCAN_DIR: /opt/bref/etc/php/conf.d/
+        entrypoint: php
+
+    php-80-handler:
+        image: bref/php-80
+        volumes: [ '.:/var/task:ro' ]
+        ports: [ '9001:8080' ]
+        command: test_4_function_handler.php
+
+    php-80-fpm-handler:
+        image: bref/php-80-fpm
+        volumes: [ '.:/var/task:ro' ]
+        ports: [ '9002:8080' ]
+        command: test_5_fpm_handler.php
+
+    php-81:
+        image: bref/php-81
+        volumes: [ '.:/var/task:ro' ]
+        environment:
+            PHP_INI_SCAN_DIR: /opt/bref/etc/php/conf.d/
+        entrypoint: php
+
+    php-81-handler:
+        image: bref/php-81
+        volumes: [ '.:/var/task:ro' ]
+        ports: [ '9001:8080' ]
+        command: test_4_function_handler.php
+
+    php-81-fpm-handler:
+        image: bref/php-81-fpm
+        volumes: [ '.:/var/task:ro' ]
+        ports: [ '9002:8080' ]
+        command: test_5_fpm_handler.php
+
+    composer:
+        image: composer
+        volumes: [ '.:/app' ]

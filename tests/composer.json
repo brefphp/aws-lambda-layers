@@ -2,5 +2,10 @@
     "require": {
         "bref/bref": "^1.7",
         "bref/php-runtime": "dev-main"
+    },
+    "config": {
+        "platform": {
+            "php": "8.0.7"
+        }
     }
 }

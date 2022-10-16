@@ -18,25 +18,31 @@ Thank you for diving into this very complex part of Bref.
 If you are submitting a pull request to this repository, you will probably want to test your changes:
 
 1. Build the Docker images and the Lambda layers (zip files) locally, to make sure that the build works correctly.
-2. Publish the Lambda layers to your AWS account to test them.
-
-TODO `make -f cpu-x86.Makefile test`
+2. Run the test scripts.
+3. Publish the Lambda layers to your AWS account to test them in a real Lambda.
 
 You can build everything locally (requirements: `make` and Docker):
 
-```
+```sh
 make -f cpu-x86.Makefile layers
 make -f cpu-arm.Makefile layers
 ```
 
 This will create the Docker images on your machine, and generate the Lambda layer zip files in `./layers`.
 
+Then, run the automated tests:
+
+```sh
+make -f cpu-x86.Makefile test
+make -f cpu-arm.Makefile test
+```
+
 > **Note**
-> You can test layers manually and locally using Docker. Check out [the README in tests/manual](./tests/manual/README.md).
+> If automated tests fail, you can test layers manually using Docker. Check out [the README in `tests/`](tests/README.md).
 
-You can also build everything _and_ upload Lambda layers to your AWS account (requiments: `make`, Docker and the AWS CLI). You will need to set up local AWS credentials (set `AWS_PROFILE` if you want to use a specific profile), and set the `ONLY_REGION` variable to publish Lambda layers only to this region:
+Finally, you can also build everything _and_ upload Lambda layers to your AWS account (requirements: `make`, Docker and the AWS CLI). You will need to set up local AWS credentials (set `AWS_PROFILE` if you want to use a specific profile), and set the `ONLY_REGION` variable to publish Lambda layers only to this region:
 
-```bash
+```sh
 ONLY_REGION=us-east-1 make -f cpu-x86.Makefile upload-layers
 ONLY_REGION=us-east-1 make -f cpu-arm.Makefile upload-layers
 ```

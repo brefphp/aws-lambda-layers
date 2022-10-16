@@ -86,9 +86,6 @@ RUN cp /opt/remi/php80/root/lib64/php/modules/curl.so /bref/bref/extensions/curl
 RUN cp /opt/remi/php80/root/lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
 RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
 
-COPY tests/test_1_binary.php /bref/tests/
-COPY tests/test_2_default_extensions.php /bref/tests/
-
 FROM binary as extensions
 
 RUN yum install -y \
@@ -154,11 +151,6 @@ RUN cp /opt/remi/php80/root/lib64/php/modules/xml.so /bref/bref/extensions/xml.s
 RUN cp /opt/remi/php80/root/lib64/php/modules/xmlreader.so /bref/bref/extensions/xmlreader.so
 RUN cp /opt/remi/php80/root/lib64/php/modules/xmlwriter.so /bref/bref/extensions/xmlwriter.so
 
-COPY tests/test_3_additional_extensions.php /bref/tests/
-COPY tests/test_6_disabled_extensions.php /bref/tests/
-COPY tests/test_6_manual_enabling_extensions.php /bref/tests/
-COPY tests/test_6_manual_extensions.ini /bref/tests/
-
 FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
 
 COPY --from=extensions /bref /opt
@@ -175,17 +167,11 @@ RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 COPY common/function/bootstrap.php /opt/bref/bootstrap.php
 
-COPY tests/test_4_function_handler.php /opt/tests/test_4_function_handler.php
-COPY tests/test_4_function_invocation.php /opt/tests/test_4_function_invocation.php
-COPY tests/test_4_php.ini /var/task/php/conf.d/php.ini
-
 FROM alpine:3.14 as zip-function
 
 RUN apk add zip
 
 COPY --from=function /opt /opt
-
-RUN rm /opt/tests -rf && rm /var/task/test_5_fpm_handler.php -f
 
 WORKDIR /opt
 
@@ -227,16 +213,11 @@ COPY common/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
 COPY --from=bref/fpm-internal-src /opt/php-fpm-runtime /opt/php-fpm-runtime
 
-COPY tests/test_5_fpm_handler.php /var/task/test_5_fpm_handler.php
-COPY tests/test_5_fpm_invocation.php /opt/tests/test_5_fpm_invocation.php
-
 FROM alpine:3.14 as zip-fpm
 
 RUN apk add zip
 
 COPY --from=fpm /opt /opt
-
-RUN rm /opt/tests -rf && rm /var/task/test_5_fpm_handler.php -f
 
 WORKDIR /opt
 

@@ -1,5 +1,7 @@
 <?php declare(strict_types=1);
 
+require_once __DIR__ . '/utils.php';
+
 $extensions = [
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
@@ -7,9 +9,8 @@ $extensions = [
 ];
 
 foreach ($extensions as $extension => $test) {
-    if ($test) {
-        throw new Exception($extension . ' extension was not supposed to be loaded');
+    if (! $test) {
+        error($extension . ' extension was not loaded');
     }
-
-    echo "\033[36m [Disabled] $extension ✓!\033[0m" . PHP_EOL;
+    success("[Extension] $extension");
 }
