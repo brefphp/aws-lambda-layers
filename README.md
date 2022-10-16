@@ -83,13 +83,45 @@ You can restrict publishing to a single AWS region by setting the `ONLY_REGION` 
 ONLY_REGION=us-east-1 make -f cpu-x86.Makefile upload-layers
 ```
 
-- `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/php-extensions/curl.so`
+- `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`
 
-## How Lambda Layers work?
+## How Lambda layers work?
 
 In a nutshell, a Lambda Layer is a `zip` file. Its content is extracted to `/opt` when a Lambda starts.
 
 Anything we want to make available in AWS Lambda is possible by preparing the right files and packing them into a layer. To work properly, these files need to be compatible with the Lambda environment. AWS provides Docker images (e.g. `public.ecr.aws/lambda/provided:al2-x86_64`) that replicate it.
+
+## Lambda layers structure
+
+```sh
+/opt/ # where layers are unzipped/can add files
+
+    bin/ # where layers can add binaries
+        php # the PHP binary
+        php-fpm # the PHP-FPM binary (only for FPM layers)
+    
+    lib/ # system libraries needed by Bref
+        
+    bref/ # custom Bref files
+        extensions/ # PHP extensions
+            ...
+        etc/php/conf.d/ # automatically loaded php.ini files
+            bref.ini
+        bootstrap.php # (for the function layer only)
+        
+    php-fpm-runtime/ # the built-in FPM runtime
+        # TODO move to /opt/bref
+    
+    tests/ # TODO make sure they are not shipped
+        
+    bootstrap # entrypoint of the runtime
+
+/var/runtime/
+    bootstrap # duplicated entrypoint, used when running in Docker
+
+/var/task # the code of the Lambda function
+    php/conf.d/ # also automatically loaded php.ini files
+```
 
 ### The php-xx folders
 

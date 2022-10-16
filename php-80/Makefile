@@ -20,7 +20,7 @@ test_default_extensions:
 
 test_additional_extensions:
 	docker-compose build extensions
-	docker-compose run --rm --entrypoint /bref/bin/php extensions /bref/tests/test_3_additional_extensions.php
+	docker-compose run --rm --entrypoint /bref/bin/php -e PHP_INI_SCAN_DIR="/bref/bref/etc/php/conf.d/" extensions /bref/tests/test_3_additional_extensions.php
 
 test_bref_file_isolation:
 	docker-compose build isolation
