@@ -24,8 +24,7 @@ If you are submitting a pull request to this repository, you will probably want 
 You can build everything locally (requirements: `make` and Docker):
 
 ```sh
-make -f cpu-x86.Makefile layers
-make -f cpu-arm.Makefile layers
+make layers
 ```
 
 This will create the Docker images on your machine, and generate the Lambda layer zip files in `./layers`.
@@ -33,21 +32,40 @@ This will create the Docker images on your machine, and generate the Lambda laye
 Then, run the automated tests:
 
 ```sh
-make -f cpu-x86.Makefile test
-make -f cpu-arm.Makefile test
+make test
 ```
 
 > **Note**
 > If automated tests fail, you can test layers manually using Docker. Check out [the README in `tests/`](tests/README.md).
 
-Finally, you can also build everything _and_ upload Lambda layers to your AWS account (requirements: `make`, Docker and the AWS CLI). You will need to set up local AWS credentials (set `AWS_PROFILE` if you want to use a specific profile), and set the `ONLY_REGION` variable to publish Lambda layers only to this region:
+Finally, you can also build everything _and_ upload Lambda layers to your AWS account (requirements: `make`, Docker and the AWS CLI). You will need to set up local AWS credentials (set `AWS_PROFILE` if you want to use a specific profile).
+
+We also recommend you set the `ONLY_REGION` variable to publish Lambda layers only to this region. That can be set manually, or by creating a `.env` file:
 
 ```sh
-ONLY_REGION=us-east-1 make -f cpu-x86.Makefile upload-layers
-ONLY_REGION=us-east-1 make -f cpu-arm.Makefile upload-layers
+cp .env.example .env 
+
+# Now edit the .env file
+
+# Then publish layers:
+make upload-layers
+```
+
+You can also limit to ARM or X86 layers:
+
+```sh
+make -f cpu-x86.Makefile upload-layers
 ```
 
 The published Lambda layers will be public (they are readonly anyway). You can find them in your AWS console (AWS Lambda service). Feel free to delete them afterwards.
+
+### Debugging
+
+If you ever need to check out the content of a layer, you can start a `bash` terminal inside the Docker image:
+
+```sh
+docker run --rm -it --entrypoint=bash bref/php-80
+```
 
 ### Supporting a new PHP version
 
@@ -86,7 +104,7 @@ To build step by step:
 You can restrict publishing to a single AWS region by setting the `ONLY_REGION` environment variable:
 
 ```bash
-ONLY_REGION=us-east-1 make -f cpu-x86.Makefile upload-layers
+ONLY_REGION=us-east-1 make upload-layers
 ```
 
 - `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`
