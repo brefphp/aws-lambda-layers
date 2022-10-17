@@ -17,7 +17,7 @@ everything: clean upload-layers upload-to-docker-hub
 # Build Docker images *locally*
 docker-images:
 	# Prepare the content of `/opt` that will be copied in each layer
-	docker-compose -f ./common/docker-compose.yml build --parallel
+	docker-compose -f ./layers/docker-compose.yml build --parallel
 	# Build images for function layers
 	docker-compose build --parallel php-80 php-81
 	# Build images for FPM layers
@@ -40,12 +40,12 @@ layers: docker-images
 # Upload the layers to AWS Lambda
 upload-layers: layers
 	# Upload the Function layers to AWS
-	LAYER_NAME=php-80 $(MAKE) -C ./lambda-publish/ publish-parallel
-	LAYER_NAME=php-81 $(MAKE) -C ./lambda-publish/ publish-parallel
+	LAYER_NAME=php-80 $(MAKE) -C ./utils/lambda-publish/ publish-parallel
+	LAYER_NAME=php-81 $(MAKE) -C ./utils/lambda-publish/ publish-parallel
 
 	# Upload the FPM Layers to AWS
-	LAYER_NAME=php-80-fpm $(MAKE) -C ./lambda-publish/ publish-parallel
-	LAYER_NAME=php-81-fpm $(MAKE) -C ./lambda-publish/ publish-parallel
+	LAYER_NAME=php-80-fpm $(MAKE) -C ./utils/lambda-publish/ publish-parallel
+	LAYER_NAME=php-81-fpm $(MAKE) -C ./utils/lambda-publish/ publish-parallel
 
 
 # Build and publish Docker images to Docker Hub.

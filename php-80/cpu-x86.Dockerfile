@@ -157,15 +157,15 @@ COPY --from=extensions /bref /opt
 
 FROM isolation as function
 
-COPY common/function/bref.ini /opt/bref/etc/php/conf.d/
-COPY common/function/bref-extensions.ini /opt/bref/etc/php/conf.d/
+COPY layers/function/bref.ini /opt/bref/etc/php/conf.d/
+COPY layers/function/bref-extensions.ini /opt/bref/etc/php/conf.d/
 
-COPY common/function/bootstrap.sh /opt/bootstrap
+COPY layers/function/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY common/function/bootstrap.sh /var/runtime/bootstrap
+COPY layers/function/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
-COPY common/function/bootstrap.php /opt/bref/bootstrap.php
+COPY layers/function/bootstrap.php /opt/bref/bootstrap.php
 
 FROM alpine:3.14 as zip-function
 
@@ -201,15 +201,15 @@ COPY --from=fpm-extension /usr/lib64/libdw.so.1 /opt/lib/libdw.so.1
 #COPY --from=fpm-extension /usr/lib64/libelf.so.1 /opt/lib/libelf.so.1
 #COPY --from=fpm-extension /usr/lib64/libbz2.so.1 /opt/lib/libbz2.so.1
 
-COPY common/fpm/bref.ini /opt/bref/etc/php/conf.d/
-COPY common/fpm/bref-extensions.ini /opt/bref/etc/php/conf.d/
+COPY layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
+COPY layers/fpm/bref-extensions.ini /opt/bref/etc/php/conf.d/
 
-COPY common/fpm/bootstrap.sh /opt/bootstrap
+COPY layers/fpm/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY common/fpm/bootstrap.sh /var/runtime/bootstrap
+COPY layers/fpm/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
-COPY common/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
+COPY layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
 COPY --from=bref/fpm-internal-src /opt/php-fpm-runtime /opt/php-fpm-runtime
 

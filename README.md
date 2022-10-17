@@ -67,15 +67,15 @@ If you ever need to check out the content of a layer, you can start a `bash` ter
 docker run --rm -it --entrypoint=bash bref/php-80
 ```
 
+Also `utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the layer.
+
 ### Supporting a new PHP version
 
 The general idea is to copy `php-81` into `php-82`. Search/replace `php-81` with `php-82`, change PHP_VERSION in `Makefile`, and adapt anything else if needed.
 
 ### Supporting new regions
 
-Check out `lambda-publish/Makefile` to add more regions.
-
-- `common/utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the Layer.
+Check out `utils/lambda-publish/Makefile` to add more regions.
 
 ## How this repository works (maintainer documentation)
 
@@ -175,7 +175,7 @@ The 3rd layer is the `isolation` layer where we'll start from the standard AWS-p
 copied here as well.
 
 The 4th layer is the `function` layer where everything is packet together and the `bootstrap` file is loaded.
-The `bref-internal-src` images (see common/function & common/fpm) are used to load Bref
+The `bref-internal-src` images (see layers/fpm) are used to load Bref
 classes into the layer.
 
 The 5th layer is `zip-function`, where we get a small and fast Linux (Alpine) just to install and zip the entire
