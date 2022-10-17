@@ -1,6 +1,9 @@
-export CPU ?= arm
-export CPU-prefix ?= "arm-"
-export ROOT_DIR ?= $(shell pwd)/
+# Load .env file if it exists
+-include .env
+export # export all variables defined in .env
+export CPU = arm
+export CPU_PREFIX = arm-
+export ROOT_DIR = $(shell pwd)/
 
 
 # - Build all layers
@@ -59,5 +62,22 @@ upload-to-docker-hub: docker-images
 	docker push breftest/arm-php-80-fpm
 
 
+test:
+	cd tests && $(MAKE) test-80
+
+
 clean:
-	rm layers/*.zip
+	# Remove zip files
+	rm -f layers/arm-*.zip
+	# Clean Docker images to force rebuilding them
+	docker image rm --force bref/arm-fpm-internal-src
+	docker image rm --force bref/arm-php-80
+	docker image rm --force bref/arm-php-80-zip
+	docker image rm --force bref/arm-php-81
+	docker image rm --force bref/arm-php-81-zip
+	docker image rm --force bref/arm-php-80-fpm
+	docker image rm --force bref/arm-php-80-fpm-zip
+	docker image rm --force bref/arm-php-81-fpm
+	docker image rm --force bref/arm-php-81-fpm-zip
+	# Clear the build cache, else all images will be rebuilt using cached layers
+	docker builder prune

@@ -1,3 +1,6 @@
+# Load .env file if it exists
+-include .env
+export # export all variables defined in .env
 export CPU ?= x86
 export CPU_PREFIX ?=
 export ROOT_DIR ?= $(shell pwd)/

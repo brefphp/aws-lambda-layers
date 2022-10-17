@@ -1,3 +1,5 @@
+export CPU_PREFIX ?=
+
 .SILENT: test test-80 test-81 vendor
 
 test: test-80 test-81
