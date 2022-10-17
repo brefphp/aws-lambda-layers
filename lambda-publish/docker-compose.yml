@@ -10,4 +10,4 @@ services:
     volumes:
       - ./publish.sh:/publish.sh
       - ~/.aws:/root/.aws
-      - ./layers:/tmp/bref-zip
+      - ./output:/tmp/bref-zip

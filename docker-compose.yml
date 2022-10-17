@@ -20,7 +20,7 @@ services:
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php-80.zip"]
     volumes:
-      - ./layers:/tmp/bref-zip
+      - ./output:/tmp/bref-zip
 
 
   php-80-fpm:
@@ -39,7 +39,7 @@ services:
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php-80-fpm.zip"]
     volumes:
-      - ./layers:/tmp/bref-zip
+      - ./output:/tmp/bref-zip
 
 #### PHP 8.1
 
@@ -59,7 +59,7 @@ services:
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php-81.zip"]
     volumes:
-      - ./layers:/tmp/bref-zip
+      - ./output:/tmp/bref-zip
 
 
   php-81-fpm:
@@ -78,4 +78,4 @@ services:
     entrypoint: /bin/cp
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php-81-fpm.zip"]
     volumes:
-      - ./layers:/tmp/bref-zip
+      - ./output:/tmp/bref-zip

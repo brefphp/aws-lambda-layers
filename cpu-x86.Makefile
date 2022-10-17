@@ -30,7 +30,7 @@ layers: docker-images
 	docker-compose build --parallel php-80-zip php-81-zip
 	docker-compose build --parallel php-80-zip-fpm php-81-zip-fpm
 
-	# Run the zip containers: the layers will be copied to `./layers/`
+	# Run the zip containers: the layers will be copied to `./output/`
 	docker-compose up php-80-zip php-81-zip \
 		php-80-zip-fpm php-81-zip-fpm
 	# Clean up containers
@@ -74,7 +74,7 @@ test:
 
 clean:
 	# Remove zip files
-	rm -f layers/*.zip
+	rm -f output/*.zip
 	# Clean Docker images to force rebuilding them
 	docker image rm --force bref/fpm-internal-src
 	docker image rm --force bref/php-80

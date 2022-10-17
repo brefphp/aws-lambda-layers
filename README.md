@@ -27,7 +27,7 @@ You can build everything locally (requirements: `make` and Docker):
 make layers
 ```
 
-This will create the Docker images on your machine, and generate the Lambda layer zip files in `./layers`.
+This will create the Docker images on your machine, and generate the Lambda layer zip files in `./output`.
 
 Then, run the automated tests:
 
