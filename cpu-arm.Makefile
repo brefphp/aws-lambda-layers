@@ -22,6 +22,8 @@ docker-images:
 	docker-compose build --parallel php-80
 	# Build images for FPM layers
 	docker-compose build --parallel php-80-fpm
+	# Build images for console layers
+	docker-compose build --parallel php-80-console
 
 
 # Build Lambda layers (zip files) *locally*
@@ -39,10 +41,10 @@ layers: docker-images
 
 # Upload the layers to AWS Lambda
 upload-layers: layers
-	# Upload the Function layers to AWS
+	# Upload the function layers to AWS
 	LAYER_NAME=arm-php-80 $(MAKE) -C ./utils/lambda-publish/ publish-parallel
 
-	# Upload the FPM Layers to AWS
+	# Upload the FPM layers to AWS
 	LAYER_NAME=arm-php-80-fpm $(MAKE) -C ./utils/lambda-publish/ publish-parallel
 
 
@@ -56,10 +58,12 @@ upload-to-docker-hub: docker-images
 	# Temporarily creating aliases of the Docker images to push to the test account
 	docker tag bref/arm-php-80 breftest/arm-php-80
 	docker tag bref/arm-php-80-fpm breftest/arm-php-80-fpm
+	docker tag bref/arm-php-80-console breftest/arm-php-80-console
 
 	# TODO: change breftest/ to bref/
 	docker push breftest/arm-php-80
 	docker push breftest/arm-php-80-fpm
+	docker push breftest/arm-php-80-console
 
 
 test:
@@ -73,11 +77,8 @@ clean:
 	docker image rm --force bref/arm-fpm-internal-src
 	docker image rm --force bref/arm-php-80
 	docker image rm --force bref/arm-php-80-zip
-	docker image rm --force bref/arm-php-81
-	docker image rm --force bref/arm-php-81-zip
 	docker image rm --force bref/arm-php-80-fpm
 	docker image rm --force bref/arm-php-80-fpm-zip
-	docker image rm --force bref/arm-php-81-fpm
-	docker image rm --force bref/arm-php-81-fpm-zip
+	docker image rm --force bref/arm-php-80-console
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune

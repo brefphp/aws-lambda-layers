@@ -1,9 +1,9 @@
 # Load .env file if it exists
 -include .env
 export # export all variables defined in .env
-export CPU ?= x86
-export CPU_PREFIX ?=
-export ROOT_DIR ?= $(shell pwd)/
+export CPU = x86
+export CPU_PREFIX =
+export ROOT_DIR = $(shell pwd)/
 
 
 # - Build all layers
@@ -22,6 +22,8 @@ docker-images:
 	docker-compose build --parallel php-80 php-81
 	# Build images for FPM layers
 	docker-compose build --parallel php-80-fpm php-81-fpm
+	# Build images for console layers
+	docker-compose build --parallel php-80-console php-81-console
 
 
 # Build Lambda layers (zip files) *locally*
@@ -36,16 +38,22 @@ layers: docker-images
 	# Clean up containers
 	docker-compose down
 
+	# The console layer (only built on x86) because it's not dependent on the CPU
+	cd layers/console && zip ../../output/console.zip bootstrap.php
+
 
 # Upload the layers to AWS Lambda
 upload-layers: layers
-	# Upload the Function layers to AWS
-	LAYER_NAME=php-80 $(MAKE) -C ./utils/lambda-publish/ publish-parallel
-	LAYER_NAME=php-81 $(MAKE) -C ./utils/lambda-publish/ publish-parallel
+	# Upload the function layers to AWS
+	LAYER_NAME=php-80 $(MAKE) -C ./utils/lambda-publish publish-parallel
+	LAYER_NAME=php-81 $(MAKE) -C ./utils/lambda-publish publish-parallel
 
-	# Upload the FPM Layers to AWS
-	LAYER_NAME=php-80-fpm $(MAKE) -C ./utils/lambda-publish/ publish-parallel
-	LAYER_NAME=php-81-fpm $(MAKE) -C ./utils/lambda-publish/ publish-parallel
+	# Upload the FPM layers to AWS
+	LAYER_NAME=php-80-fpm $(MAKE) -C ./utils/lambda-publish publish-parallel
+	LAYER_NAME=php-81-fpm $(MAKE) -C ./utils/lambda-publish publish-parallel
+
+	# Upload the console layer to AWS
+	LAYER_NAME=console $(MAKE) -C ./utils/lambda-publish publish-parallel
 
 
 # Build and publish Docker images to Docker Hub.
@@ -60,12 +68,16 @@ upload-to-docker-hub: docker-images
 	docker tag bref/php-81 breftest/php-81
 	docker tag bref/php-80-fpm breftest/php-80-fpm
 	docker tag bref/php-81-fpm breftest/php-81-fpm
+	docker tag bref/php-80-console breftest/php-80-console
+	docker tag bref/php-81-console breftest/php-81-console
 
 	# TODO: change breftest/ to bref/
 	docker push breftest/php-80
 	docker push breftest/php-81
 	docker push breftest/php-80-fpm
 	docker push breftest/php-81-fpm
+	docker push breftest/php-80-console
+	docker push breftest/php-81-console
 
 
 test:
@@ -85,5 +97,7 @@ clean:
 	docker image rm --force bref/php-80-fpm-zip
 	docker image rm --force bref/php-81-fpm
 	docker image rm --force bref/php-81-fpm-zip
+	docker image rm --force bref/php-80-console
+	docker image rm --force bref/php-81-console
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
