@@ -16,12 +16,12 @@ docker-images:
 	$(MAKE) -f cpu-x86.Makefile docker-images
 	$(MAKE) -f cpu-arm.Makefile docker-images
 
-# Build Lambda layers (zip files) *locally*
+# Build Lambda layers (zip files) *locally* (will also build Docker images)
 layers:
 	$(MAKE) -f cpu-x86.Makefile layers
 	$(MAKE) -f cpu-arm.Makefile layers
 
-# Upload the layers to AWS Lambda
+# Upload the layers to AWS Lambda (will also build Docker images and layers)
 upload-layers:
 	$(MAKE) -f cpu-x86.Makefile upload-layers
 	$(MAKE) -f cpu-arm.Makefile upload-layers

@@ -1,27 +1,38 @@
 # PHP layers for AWS Lambda
 
+⚠️⚠️⚠️
+
 > **Warning**
 > **You are probably in the wrong place.**
 
-If you are new to PHP on Lambda or Bref, **check out https://bref.sh instead**.
+If you are new to PHP on Lambda or Bref, **check out [bref.sh](https://bref.sh) instead**.
+
+⚠️⚠️⚠️
 
 This project is a low-level internal piece of the Bref project. It contains the scripts to build the AWS Lambda layers and Docker images.
 
 ---
 
-## Contributing to Bref layers (contributor documentation)
+## Contributing
 
 Thank you for diving into this very complex part of Bref.
 
-### Testing changes
+If you are submitting a pull request to this repository, you probably want to test your changes:
 
-If you are submitting a pull request to this repository, you will probably want to test your changes:
-
-1. Build the Docker images and the Lambda layers (zip files) locally, to make sure that the build works correctly.
+1. Build the Docker images and the Lambda layers (zip files) locally (to make sure it works).
 2. Run the test scripts.
-3. Publish the Lambda layers to your AWS account to test them in a real Lambda.
+3. Publish the Lambda layers to your AWS account and test them in a real Lambda.
 
-You can build everything locally (requirements: `make` and Docker):
+### Requirements
+
+- `make`
+- Docker
+- AWS CLI (if publishing layers)
+- AWS credentials set up locally (if publishing layers)
+
+### Building
+
+You can build Docker images and Lambda layers locally:
 
 ```sh
 make layers
@@ -29,7 +40,9 @@ make layers
 
 This will create the Docker images on your machine, and generate the Lambda layer zip files in `./output`.
 
-Then, run the automated tests:
+### Testing
+
+After building the images, run the automated tests:
 
 ```sh
 make test
@@ -38,9 +51,14 @@ make test
 > **Note**
 > If automated tests fail, you can test layers manually using Docker. Check out [the README in `tests/`](tests/README.md).
 
-Finally, you can also build everything _and_ upload Lambda layers to your AWS account (requirements: `make`, Docker and the AWS CLI). You will need to set up local AWS credentials (set `AWS_PROFILE` if you want to use a specific profile).
+### Uploading layers
 
-We also recommend you set the `ONLY_REGION` variable to publish Lambda layers only to this region. That can be set manually, or by creating a `.env` file:
+You can build everything _and_ upload Lambda layers to your AWS account. You will need to set up local AWS credentials. The following environment variables are recognized:
+
+- `AWS_PROFILE` (optional): an AWS profile to use (instead of the default one).
+- `ONLY_REGION` (optional): if set, layers will only be published to this region, instead of _all_ regions (useful for testing).
+
+You can set those by creating a `.env` file:
 
 ```sh
 cp .env.example .env 
@@ -67,7 +85,9 @@ If you ever need to check out the content of a layer, you can start a `bash` ter
 docker run --rm -it --entrypoint=bash bref/php-80
 ```
 
-Also `utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the layer.
+Pro-tip: `ldd` is a linux utility that will show libraries (`.so` files) used by a binary/library. For example: `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`. That helps to make sure we include all the libraries needed by PHP extensions in the layers.
+
+Related: `utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the layer (i.e. `.so` files that already exist in Lambda).
 
 ### Supporting a new PHP version
 
@@ -77,45 +97,25 @@ The general idea is to copy `php-81` into `php-82`. Search/replace `php-81` with
 
 Check out `utils/lambda-publish/Makefile` to add more regions.
 
-## How this repository works (maintainer documentation)
+## How this repository works
 
-Requirements:
+### Release pipeline
 
-- `make`
-- Docker
-- AWS CLI
-- AWS credentials set up locally
-
-## Building
-
-To build Docker images, Lambda layers, publish layers to AWS (all regions) and publish Docker images to Docker Hub, run:
+To build Docker images, Lambda layers, publish layers to AWS (all regions) and publish Docker images to Docker Hub, the pipeline runs:
 
 ```bash
-make -f cpu-x86.Makefile everything
-make -f cpu-arm.Makefile everything
-```
-
-To build step by step:
-
-1. `make layers` will create the AWS Lambda layer zip files.
-2. `make upload-layers` will make the layers _and_ upload them to all regions in your AWS account (using the current AWS profile).
-3. `make docker-hub` will make the Docker images and publish them to Docker Hub.
-
-You can restrict publishing to a single AWS region by setting the `ONLY_REGION` environment variable:
-
-```bash
-ONLY_REGION=us-east-1 make upload-layers
+make everything
 ```
 
 - `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`
 
-## How Lambda layers work?
+### How Lambda layers work?
 
 In a nutshell, a Lambda Layer is a `zip` file. Its content is extracted to `/opt` when a Lambda starts.
 
 Anything we want to make available in AWS Lambda is possible by preparing the right files and packing them into a layer. To work properly, these files need to be compatible with the Lambda environment. AWS provides Docker images (e.g. `public.ecr.aws/lambda/provided:al2-x86_64`) that replicate it.
 
-## Lambda layers structure
+### Lambda layers structure
 
 ```sh
 /opt/ # where layers are unzipped/can add files
@@ -123,21 +123,19 @@ Anything we want to make available in AWS Lambda is possible by preparing the ri
     bin/ # where layers can add binaries
         php # the PHP binary
         php-fpm # the PHP-FPM binary (only for FPM layers)
-    
+
     lib/ # system libraries needed by Bref
-        
+
     bref/ # custom Bref files
         extensions/ # PHP extensions
             ...
         etc/php/conf.d/ # automatically loaded php.ini files
             bref.ini
         bootstrap.php # (for the function layer only)
-        
+
     php-fpm-runtime/ # the built-in FPM runtime
         # TODO move to /opt/bref
-    
-    tests/ # TODO make sure they are not shipped
-        
+
     bootstrap # entrypoint of the runtime
 
 /var/runtime/
@@ -149,21 +147,9 @@ Anything we want to make available in AWS Lambda is possible by preparing the ri
 
 ### The php-xx folders
 
-This is the heart of Bref layers. We configure PHP using the `config` folder to store `php.ini` files that
-will be copied into `/opt/bref/etc/php/conf.d`. Note that we configure `/opt/bootstrap` to execute PHP with `PHP_INI_SCAN_DIR=/opt/bref/etc/php/conf.d:/var/task/php/conf.d/`. We also have a `Makefile` to facilitate the development, testing and building of layers.
-
-The command `make test` will build Docker Images with everything necessary for Bref Runtime and then run containers with `tests` files that will validate:
-
-1. The PHP Binary and it's version
-2. The Core Extensions installed by default
-3. The Additional Extensions Bref provide by default
-4. The Disabled Extensions Bref provide by default
-5. Function Invocation using AWS Runtime Interface Emulator
-6. FPM Invocation using AWS Runtime Interface Emulator
-
 The Dockerfile attempts at a best-effort to follow a top-down execution process for easier reading. It starts from
 an AWS-provided Docker Image and installs PHP. Some standard files (such as the php binary) can already be
-isolated into the `/bref` folder. The use of multiple Docker Layers helps with automation tests and investigations
+isolated into the `/bref` folder. The use of multiple Docker Layers helps with investigations
 because the developer can have a faster feedback loop by checking each step of the process incrementally instead
 of trying to figure out why an entire build is failing.
 
@@ -238,23 +224,14 @@ has 8 vCPU, so publishing 7 layers at a time should go smooth.
 
 ##### AWS CodeBuild vs GitHub Actions
 
-AWS CodeBuild is preferred for publishing the layers because the account that holds the layers has no external access. It is dedicated exclusively for having the layers only and only Matthiew Napoli has access to it.
+AWS CodeBuild is preferred for publishing the layers because the account that holds the layers has no external access. It is dedicated exclusively for having the layers only and only Matthieu Napoli has access to it.
 GitHub Actions require exposing access to an external party. Using AWS CodeBuild allows us to use IAM Assume
 Role so that one "Builder Account" can build the layers and then cross-publish them onto the "Layer Account".
 The assume role limitations can be seen on aws/access.yml
 
 ##### Automation tests
 
-the tests folder contains multiple PHP scripts that are executed inside a docker container that Bref builds.
+The `tests` folder contains multiple PHP scripts that are executed inside a Docker container that Bref builds.
 These scripts are suppose to ensure that the PHP version is expected, PHP extensions are correctly installed and
 available and PHP is correctly configured. Some acceptance tests uses AWS Runtime Interface Emulator (RIE) to
 test whether a Lambda invocation is expected to work.
-
-##### bootstrap.sh file
-
-The bootstrap.sh file that exists on all layers is the entrypoint that AWS Lambda will execute to start
-Bref's layer. We strive to keep it to a minimum and leave it to mostly execute `src/Toolbox/bootstrap.php`
-so that every layer has the same starting process. We do differentiate them through an argument 
-(function, fpm, console) in order to instruct Bref on how to properly boot up the process.
-One other use of bootstrap.sh is to define `PHP_INI_SCAN_DIR` before any PHP script has started
-so that we have a chance to configure which folders we want to look for PHP configuration files.
