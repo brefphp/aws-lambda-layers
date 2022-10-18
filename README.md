@@ -38,7 +38,7 @@ You can build Docker images and Lambda layers locally:
 make layers
 ```
 
-This will create the Docker images on your machine, and generate the Lambda layer zip files in `./output`.
+The process takes about 4 minutes. It will create the Docker images on your machine, and generate the Lambda layer zip files in `./output`.
 
 ### Testing
 
