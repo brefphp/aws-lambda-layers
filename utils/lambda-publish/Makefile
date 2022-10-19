@@ -1,8 +1,11 @@
 # This file is used to publish layers on multiple AWS regions in parallel.
 
+# Maximum number of parallel processes (default: 7)
+export MAX_PARALLEL_PUBLISH ?= 7
+
 # Set LAYER_NAME before calling this.
 publish-parallel:
-	$(MAKE) -j7 parallel-publish
+	$(MAKE) -j${MAX_PARALLEL_PUBLISH} parallel-publish
 
 ##########################################################################################
 
