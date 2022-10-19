@@ -7,9 +7,16 @@ on:
         branches: [ '*' ]
 
 jobs:
-    build:
-        name: Building images and layers
+    build-x86:
+        name: Building x86 images and layers
         runs-on: ubuntu-latest
         steps:
             -   uses: actions/checkout@v2
-            -   run: make layers
+            -   run: make -f cpu-x86.Makefile layers
+
+    build-arm:
+        name: Building ARM images and layers
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v2
+            -   run: make -f cpu-arm.Makefile layers
