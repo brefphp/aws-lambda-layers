@@ -24,7 +24,7 @@ Resources:
       Source:
         Location: https://github.com/deleugpn/bref.git
         Type: GITHUB
-        BuildSpec: aws/release.buildspec.yml
+        BuildSpec: aws/builder.buildspec.yml
       Visibility: PUBLIC_READ
       Triggers:
         Webhook: true
@@ -63,7 +63,7 @@ Resources:
       Source:
         Location: https://github.com/deleugpn/bref.git
         Type: GITHUB
-        BuildSpec: aws/release.buildspec.yml
+        BuildSpec: aws/builder.buildspec.yml
       Visibility: PUBLIC_READ
       Triggers:
         Webhook: true
