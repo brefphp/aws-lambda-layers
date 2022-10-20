@@ -10,6 +10,11 @@ $extensions = [
 
 foreach ($extensions as $extension => $test) {
     if (! $test) {
+        if ($extension === 'apcu' && str_contains(php_uname('m'), 'aarch64')) {
+            echo "⨯ [Extension] APCu is skipped for ARM because it is not supported yet\n";
+            continue;
+        }
+
         error($extension . ' extension was not loaded');
     }
     success("[Extension] $extension");
