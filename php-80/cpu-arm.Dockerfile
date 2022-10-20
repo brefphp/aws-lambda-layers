@@ -1,5 +1,11 @@
 FROM public.ecr.aws/lambda/provided:al2-arm64 as binary
 
+# Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
+ENV VERSION_PHP=8.0.20-1
+# Check out the latest version available by running:
+# docker run --rm -it --entrypoint=bash public.ecr.aws/lambda/provided:al2-arm64 -c "yum install -y amazon-linux-extras && amazon-linux-extras enable php8.0 && yum list php-cli"
+
+
 # Work in a temporary /bref dir to avoid any conflict/mixup with other /opt files
 # /bref will eventually be moved to /opt
 RUN mkdir /bref \
@@ -11,7 +17,9 @@ RUN yum install -y amazon-linux-extras
 
 RUN amazon-linux-extras enable php8.0
 
-RUN yum install -y curl php-cli php-sodium unzip
+# --setopt=skip_missing_names_on_install=False makes sure we get an error if a package is missing
+RUN yum install --setopt=skip_missing_names_on_install=False -y \
+        php-cli-${VERSION_PHP}.amzn2 php-sodium unzip curl
 
 # These files are included on Amazon Linux 2
 

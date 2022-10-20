@@ -1,5 +1,11 @@
 FROM public.ecr.aws/lambda/provided:al2-x86_64 as binary
 
+# Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
+ENV VERSION_PHP=8.0.24-1
+# Check out the latest version available on this page:
+# https://rpms.remirepo.net/enterprise/7/php80/x86_64/repoview/php.html
+
+
 # Work in a temporary /bref dir to avoid any conflict/mixup with other /opt files
 # /bref will eventually be moved to /opt
 RUN mkdir /bref \
@@ -18,7 +24,9 @@ RUN yum-config-manager --enable remi-php80
 
 RUN yum update -y && yum upgrade -y
 
-RUN yum install -y php80-php
+# --setopt=skip_missing_names_on_install=False makes sure we get an error if a package is missing
+RUN yum install --setopt=skip_missing_names_on_install=False -y \
+        php80-php-${VERSION_PHP}.el7.remi.x86_64
 
 # These files are included on Amazon Linux 2
 
