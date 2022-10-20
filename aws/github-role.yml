@@ -1,21 +1,24 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: AWS IAM Role for publishing layers
+Description: OIDC provider that lets GitHub Actions deploy to AWS
 
 Parameters:
-    BuilderAccount:
+    FullRepoName:
         Type: String
 
 Resources:
-    LayerPublisherRole:
+    Role:
         Type: AWS::IAM::Role
         Properties:
-            RoleName: bref-layer-publisher
+            RoleName: bref-layer-publisher-github-actions
             AssumeRolePolicyDocument:
                 Statement:
-                    Effect: Allow
-                    Principal:
-                        AWS: !Sub "arn:aws:iam::${BuilderAccount}:role/bref-layer-builder"
-                    Action: sts:AssumeRole
+                    - Effect: Allow
+                      Action: sts:AssumeRoleWithWebIdentity
+                      Principal:
+                          Federated: !Ref GithubOidc
+                      Condition:
+                          StringLike:
+                              token.actions.githubusercontent.com:sub: !Sub repo:${FullRepoName}:*
             Policies:
                 -   PolicyName: LayerPublisherRole
                     PolicyDocument:
@@ -30,3 +33,15 @@ Resources:
                                     - lambda:ListLayerVersions
                                 Resource:
                                     - '*'
+
+    GithubOidc:
+        Type: AWS::IAM::OIDCProvider
+        Properties:
+            Url: https://token.actions.githubusercontent.com
+            ThumbprintList: [6938fd4d98bab03faadb97b34396831e3780aea1]
+            ClientIdList:
+                - sts.amazonaws.com
+
+Outputs:
+    Role:
+        Value: !GetAtt Role.Arn

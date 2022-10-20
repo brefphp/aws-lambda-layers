@@ -1,0 +1,40 @@
+name: Release
+
+# This workflow is manually triggered
+on: workflow_dispatch
+
+# Necessary to deploy to AWS using OIDC
+# https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+permissions:
+    id-token: write # This is required for requesting the JWT
+    contents: read  # This is required for actions/checkout
+
+jobs:
+    release-x86:
+        name: Publish x86 layers
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+            -   name: configure aws credentials
+                uses: aws-actions/configure-aws-credentials@v1
+                with:
+                    role-to-assume: arn:aws:iam::534081306603:role/bref-layer-publisher-github-actions
+                    role-session-name: bref-layer-publisher-github-actions
+                    aws-region: us-east-1
+            -   run: make -f cpu-x86.Makefile layers
+            -   run: make -f cpu-x86.Makefile test
+            -   run: make -f cpu-x86.Makefile upload-layers
+
+    release-arm:
+        name: Publish ARM layers
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+            # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
+            -   name: Set up QEMU to build ARM images
+                uses: docker/setup-qemu-action@v2
+            -   name: Set up Docker buildx to build ARM images
+                uses: docker/setup-buildx-action@v2
+            -   run: make -f cpu-arm.Makefile layers
+            -   run: make -f cpu-arm.Makefile test
+            -   run: make -f cpu-arm.Makefile upload-layers
