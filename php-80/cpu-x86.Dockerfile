@@ -96,7 +96,7 @@ RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
 
 FROM binary as extensions
 
-RUN yum install -y \
+RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php80-php-mbstring \
     php80-php-bcmath \
     php80-php-dom \
