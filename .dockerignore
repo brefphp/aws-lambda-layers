@@ -1,0 +1,12 @@
+.github/
+aws/
+output/
+tests/
+utils/
+.env
+.env.example
+.gitignore
+*Makefile
+*.yml
+*.md
+*.png
