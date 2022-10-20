@@ -108,7 +108,15 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-intl \
     php-pdo_pgsql \
     php-zip
-    #php-apcu NOT WORKING
+
+# Install development tools to compile extra PHP extensions
+RUN yum groupinstall -y "Development Tools"
+RUN yum install -y --setopt=skip_missing_names_on_install=False \
+    php-devel \
+    php-pear
+
+# Extra PHP extensions not provided compiled by default
+RUN pecl install apcu
 
 RUN cp /usr/lib64/php/modules/mbstring.so /bref/bref/extensions/mbstring.so
 RUN cp /usr/lib64/libonig.so.2 /bref/lib/libonig.so.2
@@ -132,8 +140,6 @@ RUN cp /usr/lib64/libicuuc.so.50 /bref/lib/libicuuc.so.50
 RUN cp /usr/lib64/libicudata.so.50 /bref/lib/libicudata.so.50
 RUN cp /usr/lib64/php/modules/intl.so /bref/bref/extensions/intl.so
 
-#RUN cp /usr/lib64/php/modules/apcu.so /bref/bref/extensions/apcu.so
-
 RUN cp /usr/lib64/libpq.so.5 /bref/lib/libpq.so.5
 #RUN cp /usr/lib64/libldap_r-2.4.so.2 /bref/lib/libldap_r-2.4.so.2
 RUN cp /usr/lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
@@ -141,6 +147,13 @@ RUN cp /usr/lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
 RUN cp /usr/lib64/libzip.so.5 /bref/lib/libzip.so.5
 RUN cp /usr/lib64/php/modules/zip.so /bref/bref/extensions/zip.so
 
+# apcu
+#RUN cp /usr/lib64/librt.so.1 /bref/lib/librt.so.1 # already in AL2
+#RUN cp /usr/lib64/libc.so.6 /bref/lib/libc.so.6 # already in AL2
+#RUN cp /usr/lib64/libpthread.so.0 /bref/lib/libpthread.so.0 # already in AL2
+RUN cp /usr/lib64/php/modules/apcu.so /bref/bref/extensions/apcu.so
+
+# other extensions without system dependencies
 RUN cp /usr/lib64/php/modules/bcmath.so /bref/bref/extensions/bcmath.so
 RUN cp /usr/lib64/php/modules/dom.so /bref/bref/extensions/dom.so
 RUN cp /usr/lib64/php/modules/opcache.so /bref/bref/extensions/opcache.so
