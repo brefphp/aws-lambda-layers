@@ -70,6 +70,7 @@ upload-to-docker-hub: docker-images
 	docker tag bref/php-81-fpm breftest/php-81-fpm
 	docker tag bref/php-80-console breftest/php-80-console
 	docker tag bref/php-81-console breftest/php-81-console
+	docker tag bref/fpm-dev-gateway breftest/fpm-dev-gateway
 
 	# TODO: change breftest/ to bref/
 	docker push breftest/php-80
@@ -78,6 +79,7 @@ upload-to-docker-hub: docker-images
 	docker push breftest/php-81-fpm
 	docker push breftest/php-80-console
 	docker push breftest/php-81-console
+	docker push breftest/fpm-dev-gateway
 
 
 test:
@@ -99,5 +101,6 @@ clean:
 	docker image rm --force bref/php-81-fpm-zip
 	docker image rm --force bref/php-80-console
 	docker image rm --force bref/php-81-console
+	docker image rm --force bref/fpm-dev-gateway
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
