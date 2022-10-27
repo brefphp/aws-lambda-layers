@@ -1,0 +1,12 @@
+{
+    "require": {
+        "bref/bref": "v2.x-dev"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable" : true,
+    "config": {
+        "platform": {
+            "php": "8.0.7"
+        }
+    }
+}
