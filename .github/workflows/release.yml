@@ -1,7 +1,12 @@
 name: Release
 
-# This workflow is manually triggered
-on: workflow_dispatch
+on:
+    # This workflow can be manually triggered
+    workflow_dispatch:
+    # But the main use case is to release new layers when a tag/release is created
+    push:
+        tags:
+            - '*' # On all tags
 
 # Necessary to deploy to AWS using OIDC
 # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
