@@ -13,6 +13,6 @@ RUN composer install --ignore-platform-req=ext-posix --ignore-platform-req=ext-s
 FROM bref/${CPU_PREFIX}php-$PHP_VERSION
 
 # Overwrite the "function" bootstrap file
-COPY bootstrap.php /opt/bref/bootstrap.php
+COPY bref/bootstrap.php /opt/bref/bootstrap.php
 
 COPY --from=composer /opt/bref/console-runtime /opt/bref/console-runtime

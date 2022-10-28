@@ -39,7 +39,7 @@ layers: docker-images
 	docker-compose down
 
 	# The console layer (only built on x86) because it's not dependent on the CPU
-	cd layers/console && zip ../../output/console.zip bootstrap.php
+	cd layers/console && zip -r ../../output/console.zip bref
 
 
 # Upload the layers to AWS Lambda
