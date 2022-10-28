@@ -7,6 +7,8 @@ test: test-80 test-81
 # This rule matches with a wildcard, for example `test-80`.
 # The `$*` variable will contained the matched part, in this case `80`.
 test-%: vendor
+	# Clean up containers from previous failed runs
+	docker-compose down
 	docker-compose run --rm -- php-$* test_1_binary.php $*
 	docker-compose run --rm -- php-$* test_2_extensions.php
 	docker-compose run --rm -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/var/task/" \
@@ -19,6 +21,10 @@ test-%: vendor
 	docker-compose up --detach php-$*-fpm-handler
 	docker-compose exec -T -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/" php-$*-fpm-handler php test_5_fpm_invocation.php \
 		|| (docker-compose logs php-$*-fpm-handler && exit 1) # print logs in case of failure
+	# Test console handler
+	docker-compose up --detach php-$*-console-handler
+	docker-compose exec -T -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/" php-$*-console-handler php test_6_console_invocation.php \
+		|| (docker-compose logs php-$*-console-handler && exit 1) # print logs in case of failure
 	# Clean up containers
 	docker-compose down
 	echo "\033[1;32m✓ Tests succeeded\033[0m"
