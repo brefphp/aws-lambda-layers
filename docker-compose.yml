@@ -46,9 +46,23 @@ services:
     image: bref/${CPU_PREFIX}php-80-console
     build:
       context: ./layers/console
+      target: console
       args:
         PHP_VERSION: 80
         CPU_PREFIX: ${CPU_PREFIX}
+
+  php-80-zip-console:
+    image: bref/${CPU_PREFIX}php-80-console-zip
+    build:
+      context: ./layers/console
+      target: zip-console
+      args:
+        PHP_VERSION: 80
+        CPU_PREFIX: ${CPU_PREFIX}
+    entrypoint: /bin/cp
+    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}console.zip"]
+    volumes:
+      - ./output:/tmp/bref-zip
 
 
 #### PHP 8.1
@@ -95,6 +109,7 @@ services:
     image: bref/${CPU_PREFIX}php-81-console
     build:
       context: ./layers/console
+      target: console
       args:
         PHP_VERSION: 81
         CPU_PREFIX: ${CPU_PREFIX}

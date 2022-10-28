@@ -31,15 +31,14 @@ layers: docker-images
 	# Build the containers that will zip the layers
 	docker-compose build --parallel php-80-zip php-81-zip
 	docker-compose build --parallel php-80-zip-fpm php-81-zip-fpm
+	docker-compose build --parallel php-80-zip-console
 
 	# Run the zip containers: the layers will be copied to `./output/`
 	docker-compose up php-80-zip php-81-zip \
-		php-80-zip-fpm php-81-zip-fpm
+		php-80-zip-fpm php-81-zip-fpm \
+		php-80-zip-console
 	# Clean up containers
 	docker-compose down
-
-	# The console layer (only built on x86) because it's not dependent on the CPU
-	cd layers/console && zip -r ../../output/console.zip bref
 
 
 # Upload the layers to AWS Lambda
