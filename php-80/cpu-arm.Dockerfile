@@ -211,7 +211,7 @@ RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 COPY layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --from=bref/fpm-internal-src /opt/php-fpm-runtime /opt/php-fpm-runtime
+COPY --from=bref/fpm-internal-src /opt/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
 
 FROM alpine:3.14 as zip-fpm
 
