@@ -18,23 +18,23 @@ docker-images:
 	# Prepare the content of `/opt` that will be copied in each layer
 	docker-compose -f ./layers/docker-compose.yml build --parallel
 	# Build images for function layers
-	docker-compose build --parallel php-80 php-81
+	docker-compose build --parallel php-80 php-81 php-82
 	# Build images for FPM layers
-	docker-compose build --parallel php-80-fpm php-81-fpm
+	docker-compose build --parallel php-80-fpm php-81-fpm php-82-fpm
 	# Build images for console layers
-	docker-compose build --parallel php-80-console php-81-console
+	docker-compose build --parallel php-80-console php-81-console php-82-console
 
 
 # Build Lambda layers (zip files) *locally*
 layers: docker-images
 	# Build the containers that will zip the layers
-	docker-compose build --parallel php-80-zip php-81-zip
-	docker-compose build --parallel php-80-zip-fpm php-81-zip-fpm
+	docker-compose build --parallel php-80-zip php-81-zip php-82-zip
+	docker-compose build --parallel php-80-zip-fpm php-81-zip-fpm php-82-zip-fpm
 	docker-compose build --parallel php-80-zip-console
 
 	# Run the zip containers: the layers will be copied to `./output/`
-	docker-compose up php-80-zip php-81-zip \
-		php-80-zip-fpm php-81-zip-fpm \
+	docker-compose up php-80-zip php-81-zip php-82-zip \
+		php-80-zip-fpm php-81-zip-fpm php-82-zip-fpm \
 		php-80-zip-console
 	# Clean up containers
 	docker-compose down
@@ -45,10 +45,12 @@ upload-layers: layers
 	# Upload the function layers to AWS
 	LAYER_NAME=php-80 $(MAKE) -C ./utils/lambda-publish publish-parallel
 	LAYER_NAME=php-81 $(MAKE) -C ./utils/lambda-publish publish-parallel
+	LAYER_NAME=php-82 $(MAKE) -C ./utils/lambda-publish publish-parallel
 
 	# Upload the FPM layers to AWS
 	LAYER_NAME=php-80-fpm $(MAKE) -C ./utils/lambda-publish publish-parallel
 	LAYER_NAME=php-81-fpm $(MAKE) -C ./utils/lambda-publish publish-parallel
+	LAYER_NAME=php-82-fpm $(MAKE) -C ./utils/lambda-publish publish-parallel
 
 	# Upload the console layer to AWS
 	LAYER_NAME=console $(MAKE) -C ./utils/lambda-publish publish-parallel

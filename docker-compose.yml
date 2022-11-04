@@ -113,3 +113,53 @@ services:
       args:
         PHP_VERSION: 81
         CPU_PREFIX: ${CPU_PREFIX}
+
+
+#### PHP 8.2
+
+  php-82:
+    image: bref/${CPU_PREFIX}php-82
+    build:
+      context: .
+      dockerfile: php-82/cpu-${CPU}.Dockerfile
+      target: function
+
+  php-82-zip:
+    image: bref/${CPU_PREFIX}php-82-zip
+    build:
+      context: .
+      dockerfile: php-82/cpu-${CPU}.Dockerfile
+      target: zip-function
+    entrypoint: /bin/cp
+    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php-82.zip"]
+    volumes:
+      - ./output:/tmp/bref-zip
+
+
+  php-82-fpm:
+    image: bref/${CPU_PREFIX}php-82-fpm
+    build:
+      context: .
+      dockerfile: php-82/cpu-${CPU}.Dockerfile
+      target: fpm
+
+  php-82-zip-fpm:
+    image: bref/${CPU_PREFIX}php-82-fpm-zip
+    build:
+      context: .
+      dockerfile: php-82/cpu-${CPU}.Dockerfile
+      target: zip-fpm
+    entrypoint: /bin/cp
+    command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php-82-fpm.zip"]
+    volumes:
+      - ./output:/tmp/bref-zip
+
+
+  php-82-console:
+    image: bref/${CPU_PREFIX}php-82-console
+    build:
+      context: ./layers/console
+      target: console
+      args:
+        PHP_VERSION: 82
+        CPU_PREFIX: ${CPU_PREFIX}
