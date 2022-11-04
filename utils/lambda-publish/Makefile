@@ -31,11 +31,11 @@ europe-1:
 
 europe-2:
 	REGION=eu-north-1 ./publish.sh #Europe (Stockholm)
-	#REGION=eu-south-1 ./publish.sh #Europe (Milan)
+	REGION=eu-south-1 ./publish.sh #Europe (Milan)
 	REGION=eu-central-1 ./publish.sh #Europe (Frankfurt)
 
 asia-1:
-	#REGION=ap-east-1 ./publish.sh #Asia Pacific (Hong Kong)
+	REGION=ap-east-1 ./publish.sh #Asia Pacific (Hong Kong)
 	REGION=ap-south-1 ./publish.sh #Asia Pacific (Mumbai)
 	REGION=ap-southeast-1 ./publish.sh #Asia Pacific (Singapore)
 
@@ -45,6 +45,6 @@ asia-2:
 	REGION=ap-northeast-2 ./publish.sh #Asia Pacific (Seoul)
 
 miscellaneous:
-	#REGION=af-south-1 ./publish.sh #Africa (Cape Town)
-	#REGION=me-south-1 ./publish.sh #Middle East (Bahrain)
+	REGION=af-south-1 ./publish.sh #Africa (Cape Town)
+	REGION=me-south-1 ./publish.sh #Middle East (Bahrain)
 	REGION=ap-southeast-2 ./publish.sh #Asia Pacific (Sydney)
