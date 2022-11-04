@@ -51,6 +51,24 @@ jobs:
             -   run: make -f cpu-arm.Makefile upload-layers
 
     update-layer-versions:
+        name: Update layer versions in brefphp/bref
+        runs-on: ubuntu-latest
+        needs: [release-x86, release-arm]
+        steps:
+            -   name: Trigger layer update in brefphp/bref
+                uses: actions/github-script@v6
+                with:
+                    github-token: ${{ secrets.GH_TOKEN_TRIGGER }}
+                    script: |
+                        await github.rest.actions.createWorkflowDispatch({
+                          owner: 'brefphp',
+                          repo: 'bref',
+                          workflow_id: 'update-layer-versions.yml',
+                          ref: 'v2'
+                        })
+
+    update-layer-js-versions:
+        name: Update layer versions in brefphp/layers.js
         runs-on: ubuntu-latest
         needs: [release-x86, release-arm]
         steps:
