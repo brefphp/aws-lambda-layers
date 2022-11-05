@@ -3,7 +3,6 @@
 export # export all variables defined in .env
 export CPU = x86
 export CPU_PREFIX =
-export ROOT_DIR = $(shell pwd)/
 
 
 # - Build all layers

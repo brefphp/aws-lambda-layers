@@ -3,7 +3,6 @@
 export # export all variables defined in .env
 export CPU = arm
 export CPU_PREFIX = arm-
-export ROOT_DIR = $(shell pwd)/
 
 
 # - Build all layers
