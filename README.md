@@ -99,15 +99,20 @@ Check out `utils/lambda-publish/Makefile` to add more regions.
 
 ## How this repository works
 
-### Release pipeline
+### Repository workflow
 
-To build Docker images, Lambda layers, publish layers to AWS (all regions) and publish Docker images to Docker Hub, the pipeline runs:
-
-```bash
-make everything
-```
-
-- `ldd` is a linux utility that will show libraries used by a binary e.g. `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`
+1. A PR is opened on this repository.
+    - GitHub Actions will build the layers and test them (but not publish them).
+2. The PR is merged by a Bref maintainer.
+3. A new release is tagged by a Bref maintainer.
+4. GitHub Actions will build the layers, test them, and publish the layers and Docker images.
+5. The "update layer versions" job in [brefphp/bref](https://github.com/brefphp/bref) will be triggered automatically.
+    - A pull request will be opened with an updated `layers.json` file.
+    - A Bref maintainer can then merge the PR and manually release a new Bref version.
+6. The "update layer versions and release" job in [brefphp/layers.js](https://github.com/brefphp/layers.js) will be triggered automatically.
+    - The `layers.json` file will be updated with new layer versions.
+    - A new GitHub tag and release will be created.
+    - A new release of the `@bref.sh/layers` NPM package will be published.
 
 ### How Lambda layers work?
 
@@ -174,11 +179,6 @@ The 6th layer goes back to `extensions` and start `fpm-extension`. Here we're ba
 The 7th layer goes back to `isolation` and start `fpm`. It mimics steps 3th and 4th but for the FPM Layer.
 
 Lastly, layer 8th zips FPM and pack everything ready for AWS Lambda.
-
-### Runtime Changes Workflow
-
-![](readme.workflow.png)
-
 
 ## Design decisions log
 
