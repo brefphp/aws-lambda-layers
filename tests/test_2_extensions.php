@@ -2,17 +2,69 @@
 
 require_once __DIR__ . '/utils.php';
 
+$expectedExtensions = [
+    'bcmath',
+    'ctype',
+    'curl',
+    'date',
+    'dom',
+    'exif',
+    'fileinfo',
+    'filter',
+    'ftp',
+    'gettext',
+    'hash',
+    'iconv',
+    'json',
+    'libxml',
+    'mbstring',
+    'mysqli',
+    'mysqlnd',
+    'Zend OPcache',
+    'openssl',
+    'pcntl',
+    'pcre',
+    'PDO',
+    'pdo_sqlite',
+    'pdo_mysql',
+    'Phar',
+    'posix',
+    'readline',
+    'Reflection',
+    'session',
+    'SimpleXML',
+    'sodium',
+    'soap',
+    'sockets',
+    'SPL',
+    'sqlite3',
+    'tokenizer',
+    'xml',
+    'xmlreader',
+    'xmlwriter',
+    'xsl',
+    'zlib',
+];
+$loadedExtensions = get_loaded_extensions();
+$missingExtensions = array_diff($expectedExtensions, $loadedExtensions);
+if ($missingExtensions) {
+    error('[Extensions] The following extensions are missing: ' . implode(', ', $missingExtensions));
+}
+
+// The tests below are more robust: sometimes an extension is "loaded" but broken (e.g. a system lib missing)
+
 $coreExtensions = [
     'date' => class_exists(\DateTime::class),
     'filter_var' => filter_var('bref@bref.com', FILTER_VALIDATE_EMAIL),
     'hash' => hash('md5', 'Bref') === 'df4647d91c4a054af655c8eea2bce541',
-    'libxml' => class_exists(\libXMLError::class),
+    'libxml' => class_exists(\LibXMLError::class),
     'openssl' => strlen(openssl_random_pseudo_bytes(1)) === 1,
     'pntcl' => function_exists('pcntl_fork'),
     'pcre' => preg_match('/abc/', 'abcde', $matches) && $matches[0] === 'abc',
     'readline' => READLINE_LIB === 'libedit',
     'reflection' => class_exists(\ReflectionClass::class),
     'session' => session_status() === PHP_SESSION_NONE,
+    'zip' => class_exists(\ZipArchive::class),
     'zlib' => md5(gzcompress('abcde')) === 'db245560922b42f1935e73e20b30980e',
 ];
 foreach ($coreExtensions as $extension => $test) {
