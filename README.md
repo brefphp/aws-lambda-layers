@@ -194,6 +194,11 @@ But for x86 architecture, we see that using remi-collet will not be a problem fo
 We can see the impact of this on arm64 (Graviton2 Support). Since remi-collet doesn't distribute arm64,
 we may have to rely on `amazon-linux-extras`, which is 5 months behind (as of this writing) with PHP 8.0.8.
 
+Useful links:
+
+- https://blog.remirepo.net/pages/English-FAQ#scl
+- https://rpms.remirepo.net/wizard/
+
 ##### Bundling extensions
 
 While developing a new Runtime, the first attempt was to provide an "alpine-like" Bref Layer: only the PHP
