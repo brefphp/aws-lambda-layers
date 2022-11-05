@@ -106,7 +106,8 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-xmlwriter \
     php-xsl \
     php-intl \
-    php-pdo_pgsql
+    php-pdo_pgsql \
+    php-zip
     #php-apcu NOT WORKING
 
 RUN cp /usr/lib64/php/modules/mbstring.so /bref/bref/extensions/mbstring.so
@@ -136,6 +137,9 @@ RUN cp /usr/lib64/php/modules/intl.so /bref/bref/extensions/intl.so
 RUN cp /usr/lib64/libpq.so.5 /bref/lib/libpq.so.5
 #RUN cp /usr/lib64/libldap_r-2.4.so.2 /bref/lib/libldap_r-2.4.so.2
 RUN cp /usr/lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
+
+RUN cp /usr/lib64/libzip.so.5 /bref/lib/libzip.so.5
+RUN cp /usr/lib64/php/modules/zip.so /bref/bref/extensions/zip.so
 
 RUN cp /usr/lib64/php/modules/bcmath.so /bref/bref/extensions/bcmath.so
 RUN cp /usr/lib64/php/modules/dom.so /bref/bref/extensions/dom.so
