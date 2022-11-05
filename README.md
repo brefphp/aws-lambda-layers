@@ -200,7 +200,7 @@ While developing a new Runtime, the first attempt was to provide an "alpine-like
 binary and no extension (or minimal extensions) installed. This turned out to slow down the process
 by a big factor because every layer needs to be compiled for multiple PHP versions and deployed
 across 21 AWS Region (at this time). Except for php-intl, most extensions are extremely small and lightweight.
-The benefits of maintaining a lightweight layer long-term didn't outweight the costs at this time.
+The benefits of maintaining a lightweight layer long-term didn't outweigh the costs at this time.
 
 ##### Variables vs Repetitive Code
 
@@ -216,22 +216,19 @@ readability.
 
 ##### Layer Publishing
 
-It would have been ideal to be able to upload the layers to a single S3 folder and then "publish" a new layer by pointing it to the existing S3Bucket/S3Key. However, AWS Lambda does not allow publishing layers from a bucket in another region. Layers must be published on each region individually.
+It would have been ideal to be able to upload the layers to a single S3 folder and then "publish" a new layer by pointing it to the existing S3Bucket/S3Key. However, AWS Lambda does not allow publishing layers from a bucket in another region. Layers must be published on each region individually, so instead we upload the zip files for every layer published.
 
 Parallelization of all regions at once often leads to network crashing. The strategy applied divides AWS
-regions in chunks (7 to be precise) and tries to publish 7 layers at a time. AWS CodeBuild LARGE instance
-has 8 vCPU, so publishing 7 layers at a time should go smooth.
+regions in chunks (7 to be precise) and tries to publish 7 layers at a time.
 
 ##### AWS CodeBuild vs GitHub Actions
 
-AWS CodeBuild is preferred for publishing the layers because the account that holds the layers has no external access. It is dedicated exclusively for having the layers only and only Matthieu Napoli has access to it.
-GitHub Actions require exposing access to an external party. Using AWS CodeBuild allows us to use IAM Assume
-Role so that one "Builder Account" can build the layers and then cross-publish them onto the "Layer Account".
-The assume role limitations can be seen on aws/access.yml
+AWS CodeBuild was used for Bref v1 builds, as it lets us use large instances to build faster. Bref 1 layers took an hour to build. Additionally, using CodeBuild allowed to avoid using AWS access keys to publish layers.
+
+However, Bref 2's build only take 10 minutes, and runs really well in GitHub Actions. Additionally, using OIDC we can authorize this repository to publish into the AWS account with very restricted permissions _without_ using AWS access keys (assume role, just like CodeBuild).
+
+As such, we use GitHub Actions as it's simpler to set up, entirely public and much easier to follow.
 
 ##### Automation tests
 
-The `tests` folder contains multiple PHP scripts that are executed inside a Docker container that Bref builds.
-These scripts are suppose to ensure that the PHP version is expected, PHP extensions are correctly installed and
-available and PHP is correctly configured. Some acceptance tests uses AWS Runtime Interface Emulator (RIE) to
-test whether a Lambda invocation is expected to work.
+The `tests` folder contains multiple PHP scripts that are executed inside a Docker container that Bref builds. These scripts are supposed to ensure that the PHP version is expected, PHP extensions are correctly installed and available and PHP is correctly configured. Some acceptance tests uses AWS Runtime Interface Emulator (RIE) to test whether a Lambda invocation is expected to work.
