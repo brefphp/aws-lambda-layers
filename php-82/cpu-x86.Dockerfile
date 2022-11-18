@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/provided:al2-x86_64 as binary
 
 # Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
-ENV VERSION_PHP=8.2.0~rc5-18
+ENV VERSION_PHP=8.2.0~RC6-7
 # Check out the latest version available on this page:
 # https://rpms.remirepo.net/enterprise/7/php82/x86_64/repoview/php-cli.html
 # See also https://github.com/remicollet/remirepo/issues/206
@@ -28,7 +28,7 @@ RUN yum update -y && yum upgrade -y
 
 # --setopt=skip_missing_names_on_install=False makes sure we get an error if a package is missing
 RUN yum install --setopt=skip_missing_names_on_install=False -y \
-        php82-php-cli-${VERSION_PHP}.el7.remi.x86_64
+        php-cli-${VERSION_PHP}.el7.remi.x86_64
 
 # These files are included on Amazon Linux 2
 
@@ -46,7 +46,7 @@ RUN yum install --setopt=skip_missing_names_on_install=False -y \
 # RUN cp /lib64/libsmime3.so /bref/lib/libsmime3.so
 
 # PHP Binary
-RUN cp /opt/remi/php82/root/usr/bin/php /bref/bin/php && chmod +x /bref/bin/php
+RUN cp /usr/bin/php /bref/bin/php && chmod +x /bref/bin/php
 RUN cp /lib64/libtinfo.so.5 /bref/lib/libtinfo.so.5
 RUN cp /lib64/libedit.so.0 /bref/lib/libedit.so.0
 RUN cp /lib64/libncurses.so.5 /bref/lib/libncurses.so.5
@@ -70,17 +70,17 @@ RUN cp /lib64/libncurses.so.5 /bref/lib/libncurses.so.5
 #RUN cp /lib64/libpcre.so.1 /bref/lib/libpcre.so.1
 
 # Default Extensions
-RUN cp /opt/remi/php82/root/lib64/php/modules/ctype.so /bref/bref/extensions/ctype.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/exif.so /bref/bref/extensions/exif.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/fileinfo.so /bref/bref/extensions/fileinfo.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/ftp.so /bref/bref/extensions/ftp.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/gettext.so /bref/bref/extensions/gettext.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/iconv.so /bref/bref/extensions/iconv.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/sockets.so /bref/bref/extensions/sockets.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/tokenizer.so /bref/bref/extensions/tokenizer.so
+RUN cp /lib64/php/modules/ctype.so /bref/bref/extensions/ctype.so
+RUN cp /lib64/php/modules/exif.so /bref/bref/extensions/exif.so
+RUN cp /lib64/php/modules/fileinfo.so /bref/bref/extensions/fileinfo.so
+RUN cp /lib64/php/modules/ftp.so /bref/bref/extensions/ftp.so
+RUN cp /lib64/php/modules/gettext.so /bref/bref/extensions/gettext.so
+RUN cp /lib64/php/modules/iconv.so /bref/bref/extensions/iconv.so
+RUN cp /lib64/php/modules/sockets.so /bref/bref/extensions/sockets.so
+RUN cp /lib64/php/modules/tokenizer.so /bref/bref/extensions/tokenizer.so
 
 # cURL
-RUN cp /opt/remi/php82/root/lib64/php/modules/curl.so /bref/bref/extensions/curl.so
+RUN cp /lib64/php/modules/curl.so /bref/bref/extensions/curl.so
 #RUN cp /lib64/libcurl.so.4 /bref/lib/libcurl.so.4
 #RUN cp /lib64/libnghttp2.so.14 /bref/lib/libnghttp2.so.14
 #RUN cp /lib64/libidn2.so.0 /bref/lib/libidn2.so.0
@@ -94,78 +94,78 @@ RUN cp /opt/remi/php82/root/lib64/php/modules/curl.so /bref/bref/extensions/curl
 
 # sodium
 # TODO
-#RUN cp /opt/remi/php82/root/lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
+#RUN cp /lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
 #RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
 
 FROM binary as extensions
 
 RUN yum install -y --setopt=skip_missing_names_on_install=False \
-    php82-php-mbstring \
-    php82-php-bcmath \
-    php82-php-dom \
-    php82-php-mysqli \
-    php82-php-mysqlnd \
-    php82-php-opcache \
-    php82-php-pdo \
-    php82-php-pdo_mysql \
-    php82-php-phar \
-    php82-php-posix \
-    php82-php-simplexml \
-    php82-php-soap \
-    php82-php-xml \
-    php82-php-xmlreader \
-    php82-php-xmlwriter \
-    php82-php-xsl \
-    php82-php-intl \
-    php82-php-apcu \
-    php82-php-pdo_pgsql \
-    php82-php-zip
+    php-mbstring \
+    php-bcmath \
+    php-dom \
+    php-mysqli \
+    php-mysqlnd \
+    php-opcache \
+    php-pdo \
+    php-pdo_mysql \
+    php-phar \
+    php-posix \
+    php-simplexml \
+    php-soap \
+    php-xml \
+    php-xmlreader \
+    php-xmlwriter \
+    php-xsl \
+    php-intl \
+    php-apcu \
+    php-pdo_pgsql \
+    php-zip
 
-RUN cp /opt/remi/php82/root/lib64/php/modules/mbstring.so /bref/bref/extensions/mbstring.so
+RUN cp /lib64/php/modules/mbstring.so /bref/bref/extensions/mbstring.so
 RUN cp /usr/lib64/libonig.so.105 /bref/lib/libonig.so.105
 
 # mysqli depends on mysqlnd
-RUN cp /opt/remi/php82/root/lib64/php/modules/mysqli.so /bref/bref/extensions/mysqli.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/mysqlnd.so /bref/bref/extensions/mysqlnd.so
+RUN cp /lib64/php/modules/mysqli.so /bref/bref/extensions/mysqli.so
+RUN cp /lib64/php/modules/mysqlnd.so /bref/bref/extensions/mysqlnd.so
 
 #RUN cp /usr/lib64/libsqlite3.so.0 /bref/lib/libsqlite3.so.0
-RUN cp /opt/remi/php82/root/lib64/php/modules/sqlite3.so /bref/bref/extensions/sqlite3.so
+RUN cp /lib64/php/modules/sqlite3.so /bref/bref/extensions/sqlite3.so
 
 RUN cp /usr/lib64/libgpg-error.so.0 /bref/lib/libgpg-error.so.0
 RUN cp /usr/lib64/libgcrypt.so.11 /bref/lib/libgcrypt.so.11
 RUN cp /usr/lib64/libexslt.so.0 /bref/lib/libexslt.so.0
 RUN cp /usr/lib64/libxslt.so.1 /bref/lib/libxslt.so.1
-RUN cp /opt/remi/php82/root/lib64/php/modules/xsl.so /bref/bref/extensions/xsl.so
+RUN cp /lib64/php/modules/xsl.so /bref/bref/extensions/xsl.so
 
 RUN cp /usr/lib64/libicuio.so.71 /bref/lib/libicuio.so.71
 RUN cp /usr/lib64/libicui18n.so.71 /bref/lib/libicui18n.so.71
 RUN cp /usr/lib64/libicuuc.so.71 /bref/lib/libicuuc.so.71
 RUN cp /usr/lib64/libicudata.so.71 /bref/lib/libicudata.so.71
-RUN cp /opt/remi/php82/root/lib64/php/modules/intl.so /bref/bref/extensions/intl.so
+RUN cp /lib64/php/modules/intl.so /bref/bref/extensions/intl.so
 
-RUN cp /opt/remi/php82/root/lib64/php/modules/apcu.so /bref/bref/extensions/apcu.so
+RUN cp /lib64/php/modules/apcu.so /bref/bref/extensions/apcu.so
 
 RUN cp /usr/lib64/libpq.so.5 /bref/lib/libpq.so.5
 #RUN cp /usr/lib64/libldap_r-2.4.so.2 /bref/lib/libldap_r-2.4.so.2
-RUN cp /opt/remi/php82/root/lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
+RUN cp /lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
 
 RUN cp /usr/lib64/libzip.so.5 /bref/lib/libzip.so.5
 RUN cp /usr/lib64/libzstd.so.1 /bref/lib/libzstd.so.1
-RUN cp /opt/remi/php82/root/lib64/php/modules/zip.so /bref/bref/extensions/zip.so
+RUN cp /lib64/php/modules/zip.so /bref/bref/extensions/zip.so
 
-RUN cp /opt/remi/php82/root/lib64/php/modules/bcmath.so /bref/bref/extensions/bcmath.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/dom.so /bref/bref/extensions/dom.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/opcache.so /bref/bref/extensions/opcache.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/pdo.so /bref/bref/extensions/pdo.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/pdo_mysql.so /bref/bref/extensions/pdo_mysql.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/pdo_sqlite.so /bref/bref/extensions/pdo_sqlite.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/phar.so /bref/bref/extensions/phar.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/posix.so /bref/bref/extensions/posix.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/simplexml.so /bref/bref/extensions/simplexml.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/soap.so /bref/bref/extensions/soap.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/xml.so /bref/bref/extensions/xml.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/xmlreader.so /bref/bref/extensions/xmlreader.so
-RUN cp /opt/remi/php82/root/lib64/php/modules/xmlwriter.so /bref/bref/extensions/xmlwriter.so
+RUN cp /lib64/php/modules/bcmath.so /bref/bref/extensions/bcmath.so
+RUN cp /lib64/php/modules/dom.so /bref/bref/extensions/dom.so
+RUN cp /lib64/php/modules/opcache.so /bref/bref/extensions/opcache.so
+RUN cp /lib64/php/modules/pdo.so /bref/bref/extensions/pdo.so
+RUN cp /lib64/php/modules/pdo_mysql.so /bref/bref/extensions/pdo_mysql.so
+RUN cp /lib64/php/modules/pdo_sqlite.so /bref/bref/extensions/pdo_sqlite.so
+RUN cp /lib64/php/modules/phar.so /bref/bref/extensions/phar.so
+RUN cp /lib64/php/modules/posix.so /bref/bref/extensions/posix.so
+RUN cp /lib64/php/modules/simplexml.so /bref/bref/extensions/simplexml.so
+RUN cp /lib64/php/modules/soap.so /bref/bref/extensions/soap.so
+RUN cp /lib64/php/modules/xml.so /bref/bref/extensions/xml.so
+RUN cp /lib64/php/modules/xmlreader.so /bref/bref/extensions/xmlreader.so
+RUN cp /lib64/php/modules/xmlwriter.so /bref/bref/extensions/xmlwriter.so
 
 FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
 
@@ -200,11 +200,11 @@ RUN zip --quiet --recurse-paths /tmp/layer.zip .
 
 FROM extensions as fpm-extension
 
-RUN yum install -y php82-php-fpm
+RUN yum install -y php-fpm
 
 FROM isolation as fpm
 
-COPY --from=fpm-extension /opt/remi/php82/root/sbin/php-fpm /opt/bin/php-fpm
+COPY --from=fpm-extension /sbin/php-fpm /opt/bin/php-fpm
 
 COPY --from=fpm-extension /usr/lib64/libsystemd.so.0 /opt/lib/libsystemd.so.0
 COPY --from=fpm-extension /usr/lib64/liblz4.so.1 /opt/lib/liblz4.so.1
