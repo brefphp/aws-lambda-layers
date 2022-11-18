@@ -92,11 +92,6 @@ RUN cp /lib64/php/modules/curl.so /bref/bref/extensions/curl.so
 #RUN cp /lib64/libplc4.so /bref/lib/libplc4.so
 #RUN cp /lib64/libnspr4.so /bref/lib/libnspr4.so
 
-# sodium
-# TODO
-#RUN cp /lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
-#RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
-
 FROM binary as extensions
 
 RUN yum install -y --setopt=skip_missing_names_on_install=False \
@@ -112,6 +107,7 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-posix \
     php-simplexml \
     php-soap \
+    php-sodium \
     php-xml \
     php-xmlreader \
     php-xmlwriter \
@@ -152,6 +148,9 @@ RUN cp /lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
 RUN cp /usr/lib64/libzip.so.5 /bref/lib/libzip.so.5
 RUN cp /usr/lib64/libzstd.so.1 /bref/lib/libzstd.so.1
 RUN cp /lib64/php/modules/zip.so /bref/bref/extensions/zip.so
+
+RUN cp /lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
+RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
 
 RUN cp /lib64/php/modules/bcmath.so /bref/bref/extensions/bcmath.so
 RUN cp /lib64/php/modules/dom.so /bref/bref/extensions/dom.so
