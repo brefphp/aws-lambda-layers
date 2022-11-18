@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/provided:al2-arm64 as binary
 
 # Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
-ENV VERSION_PHP=8.0.20-1
+ENV VERSION_PHP=8.0.25-1
 # Check out the latest version available by running:
 # docker run --rm -it --entrypoint=bash public.ecr.aws/lambda/provided:al2-arm64 -c "yum install -y amazon-linux-extras && amazon-linux-extras enable php8.0 && yum list php-cli"
 
