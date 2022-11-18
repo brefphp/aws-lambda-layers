@@ -118,7 +118,8 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php82-php-xsl \
     php82-php-intl \
     php82-php-apcu \
-    php82-php-pdo_pgsql
+    php82-php-pdo_pgsql \
+    php82-php-zip
 
 RUN cp /opt/remi/php82/root/lib64/php/modules/mbstring.so /bref/bref/extensions/mbstring.so
 RUN cp /usr/lib64/libonig.so.105 /bref/lib/libonig.so.105
@@ -147,6 +148,10 @@ RUN cp /opt/remi/php82/root/lib64/php/modules/apcu.so /bref/bref/extensions/apcu
 RUN cp /usr/lib64/libpq.so.5 /bref/lib/libpq.so.5
 #RUN cp /usr/lib64/libldap_r-2.4.so.2 /bref/lib/libldap_r-2.4.so.2
 RUN cp /opt/remi/php82/root/lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
+
+RUN cp /usr/lib64/libzip.so.5 /bref/lib/libzip.so.5
+RUN cp /usr/lib64/libzstd.so.1 /bref/lib/libzstd.so.1
+RUN cp /opt/remi/php82/root/lib64/php/modules/zip.so /bref/bref/extensions/zip.so
 
 RUN cp /opt/remi/php82/root/lib64/php/modules/bcmath.so /bref/bref/extensions/bcmath.so
 RUN cp /opt/remi/php82/root/lib64/php/modules/dom.so /bref/bref/extensions/dom.so
