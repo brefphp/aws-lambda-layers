@@ -32,6 +32,7 @@ europe-1:
 europe-2:
 	REGION=eu-north-1 ./publish.sh #Europe (Stockholm)
 	REGION=eu-south-1 ./publish.sh #Europe (Milan)
+	REGION=eu-south-2 ./publish.sh #Europe (Spain)
 	REGION=eu-central-1 ./publish.sh #Europe (Frankfurt)
 
 asia-1:
