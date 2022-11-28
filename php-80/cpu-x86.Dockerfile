@@ -169,6 +169,9 @@ FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
 
 COPY --from=extensions /bref /opt
 
+# This doesn't do anything on Lambda, but is useful when running via Docker (e.g. local dev)
+ENV PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d:/var/task/php/conf.d"
+
 FROM isolation as function
 
 COPY layers/function/bref.ini /opt/bref/etc/php/conf.d/
