@@ -15,15 +15,15 @@ test-%: vendor
 		-- php-$* test_3_manual_enabling_extensions.php
 	# Test function handler
 	docker-compose up --detach php-$*-handler
-	docker-compose exec -T -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/" php-$*-handler php test_4_function_invocation.php \
+	docker-compose exec -T php-$*-handler php test_4_function_invocation.php \
 		|| (docker-compose logs php-$*-handler && exit 1) # print logs in case of failure
 	# Test FPM handler
 	docker-compose up --detach php-$*-fpm-handler
-	docker-compose exec -T -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/" php-$*-fpm-handler php test_5_fpm_invocation.php \
+	docker-compose exec -T php-$*-fpm-handler php test_5_fpm_invocation.php \
 		|| (docker-compose logs php-$*-fpm-handler && exit 1) # print logs in case of failure
 	# Test console handler
 	docker-compose up --detach php-$*-console-handler
-	docker-compose exec -T -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/" php-$*-console-handler php test_6_console_invocation.php \
+	docker-compose exec -T php-$*-console-handler php test_6_console_invocation.php \
 		|| (docker-compose logs php-$*-console-handler && exit 1) # print logs in case of failure
 	# Clean up containers
 	docker-compose down

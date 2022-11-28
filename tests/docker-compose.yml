@@ -5,8 +5,6 @@ services:
     php-80:
         image: bref/${CPU_PREFIX}php-80
         volumes: [ '.:/var/task:ro' ]
-        environment:
-            PHP_INI_SCAN_DIR: /opt/bref/etc/php/conf.d/
         entrypoint: php
 
     php-80-handler:
@@ -30,8 +28,6 @@ services:
     php-81:
         image: bref/${CPU_PREFIX}php-81
         volumes: [ '.:/var/task:ro' ]
-        environment:
-            PHP_INI_SCAN_DIR: /opt/bref/etc/php/conf.d/
         entrypoint: php
 
     php-81-handler:
@@ -55,8 +51,6 @@ services:
     php-82:
         image: bref/${CPU_PREFIX}php-82
         volumes: [ '.:/var/task:ro' ]
-        environment:
-            PHP_INI_SCAN_DIR: /opt/bref/etc/php/conf.d/
         entrypoint: php
 
     php-82-handler:
