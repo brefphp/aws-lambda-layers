@@ -8,6 +8,12 @@ $extensions = [
     'pdo_pgsql' => extension_loaded('pdo_pgsql'),
 ];
 
+$extensionDir = ini_get('extension_dir');
+if ($extensionDir !== '/opt/bref/extensions') {
+    error("extension_dir points to $extensionDir instead of /opt/bref/extensions");
+}
+success("[Extension] extension_dir points to /opt/bref/extensions");
+
 foreach ($extensions as $extension => $test) {
     if (! $test) {
         if ($extension === 'apcu' && str_contains(php_uname('m'), 'aarch64')) {
