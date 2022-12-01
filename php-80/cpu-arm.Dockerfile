@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/provided:al2-arm64 as build-environment
+FROM bref/base-devel-arm as build-environment
 
 # Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
 ENV VERSION_PHP=8.0.25-1
@@ -19,7 +19,7 @@ RUN amazon-linux-extras enable php8.0
 
 # --setopt=skip_missing_names_on_install=False makes sure we get an error if a package is missing
 RUN yum install --setopt=skip_missing_names_on_install=False -y \
-        php-cli-${VERSION_PHP}.amzn2 unzip curl
+        php-cli-${VERSION_PHP}.amzn2
 
 # These files are included on Amazon Linux 2
 
@@ -105,7 +105,6 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-zip
 
 # Install development tools to compile extra PHP extensions
-RUN yum groupinstall -y "Development Tools"
 RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-devel \
     php-pear

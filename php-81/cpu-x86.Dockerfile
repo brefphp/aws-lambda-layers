@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/provided:al2-x86_64 as build-environment
+FROM bref/base-devel-x86 as build-environment
 
 # Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
 ENV VERSION_PHP=8.1.12-1
@@ -12,14 +12,6 @@ RUN mkdir /bref \
 &&  mkdir /bref/bin \
 &&  mkdir /bref/lib \
 &&  mkdir -p /bref/bref/extensions
-
-# yum-utils installs the yum-config-manager command
-RUN yum install -y \
-        https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
-        https://rpms.remirepo.net/enterprise/remi-release-7.rpm \
-        yum-utils \
-        epel-release \
-        curl
 
 RUN yum-config-manager --enable remi-php81
 
@@ -115,7 +107,6 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-zip
 
 # Install development tools to compile extra PHP extensions
-RUN yum groupinstall -y "Development Tools"
 RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-devel \
     php-pear
