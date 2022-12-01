@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/provided:al2-x86_64 as binary
+FROM public.ecr.aws/lambda/provided:al2-x86_64 as build-environment
 
 # Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
 ENV VERSION_PHP=8.1.12-1
@@ -91,8 +91,6 @@ RUN cp /lib64/php/modules/curl.so /bref/bref/extensions/curl.so
 #RUN cp /lib64/libplc4.so /bref/lib/libplc4.so
 #RUN cp /lib64/libnspr4.so /bref/lib/libnspr4.so
 
-FROM binary as extensions
-
 RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-mbstring \
     php-bcmath \
@@ -115,6 +113,12 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-apcu \
     php-pdo_pgsql \
     php-zip
+
+# Install development tools to compile extra PHP extensions
+RUN yum groupinstall -y "Development Tools"
+RUN yum install -y --setopt=skip_missing_names_on_install=False \
+    php-devel \
+    php-pear
 
 RUN cp /lib64/php/modules/mbstring.so /bref/bref/extensions/mbstring.so
 RUN cp /usr/lib64/libonig.so.105 /bref/lib/libonig.so.105
@@ -148,9 +152,11 @@ RUN cp /usr/lib64/libzip.so.5 /bref/lib/libzip.so.5
 RUN cp /usr/lib64/libzstd.so.1 /bref/lib/libzstd.so.1
 RUN cp /lib64/php/modules/zip.so /bref/bref/extensions/zip.so
 
+# sodium
 RUN cp /lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
 RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
 
+# other extensions without system dependencies
 RUN cp /lib64/php/modules/bcmath.so /bref/bref/extensions/bcmath.so
 RUN cp /lib64/php/modules/dom.so /bref/bref/extensions/dom.so
 RUN cp /lib64/php/modules/opcache.so /bref/bref/extensions/opcache.so
@@ -165,9 +171,10 @@ RUN cp /lib64/php/modules/xml.so /bref/bref/extensions/xml.so
 RUN cp /lib64/php/modules/xmlreader.so /bref/bref/extensions/xmlreader.so
 RUN cp /lib64/php/modules/xmlwriter.so /bref/bref/extensions/xmlwriter.so
 
+# Start from a clean image to copy only the files we need
 FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
 
-COPY --from=extensions /bref /opt
+COPY --from=build-environment /bref /opt
 
 # This doesn't do anything on Lambda, but is useful when running via Docker (e.g. local dev)
 ENV PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d:/var/task/php/conf.d"
@@ -199,7 +206,7 @@ RUN zip --quiet --recurse-paths /tmp/layer.zip .
 # packaged. Now we'll go back one step and start from the extensions so that we
 # can install fpm. Then we'll start the fpm layer and quickly isolate fpm.
 
-FROM extensions as fpm-extension
+FROM build-environment as fpm-extension
 
 RUN yum install -y php-fpm
 

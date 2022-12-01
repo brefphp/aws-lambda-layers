@@ -158,27 +158,24 @@ isolated into the `/bref` folder. The use of multiple Docker Layers helps with i
 because the developer can have a faster feedback loop by checking each step of the process incrementally instead
 of trying to figure out why an entire build is failing.
 
-The 2nd layer is the `extensions` where all extensions are installed and isolated into the `/bref` folder.
-Reminder that `ldd` is a linux utility that helps discover which files need isolating.
-
-The 3rd layer is the `isolation` layer where we'll start from the standard AWS-provided image all over again
+The 2nd layer is the `isolation` layer where we'll start from the standard AWS-provided image all over again
 (getting rid of any residual unnecessary file) and then copying `/bref` into `/opt`. PHP Configurations are
 copied here as well.
 
-The 4th layer is the `function` layer where everything is packet together and the `bootstrap` file is loaded.
+The 3rd layer is the `function` layer where everything is packet together and the `bootstrap` file is loaded.
 The `bref-internal-src` images (see layers/fpm) are used to load Bref
 classes into the layer.
 
-The 5th layer is `zip-function`, where we get a small and fast Linux (Alpine) just to install and zip the entire
+The 4th layer is `zip-function`, where we get a small and fast Linux (Alpine) just to install and zip the entire
 `/opt` content. We use docker-compose volumes to map `/tmp/bref-zip` from host to the container so that we can
 zip everything and get the zipped file out of the container.
 
-The 6th layer goes back to `extensions` and start `fpm-extension`. Here we're back at step 2 so that we can install
+The 5th layer goes back to `extensions` and start `fpm-extension`. Here we're back at step 2 so that we can install
 `fpm`.
 
-The 7th layer goes back to `isolation` and start `fpm`. It mimics steps 3th and 4th but for the FPM Layer.
+The 6th layer goes back to `isolation` and start `fpm`. It mimics steps 3th and 4th but for the FPM Layer.
 
-Lastly, layer 8th zips FPM and pack everything ready for AWS Lambda.
+Lastly, layer 7 zips FPM and pack everything ready for AWS Lambda.
 
 ## Design decisions log
 

@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/provided:al2-arm64 as binary
+FROM public.ecr.aws/lambda/provided:al2-arm64 as build-environment
 
 # Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
 ENV VERSION_PHP=8.0.25-1
@@ -19,7 +19,7 @@ RUN amazon-linux-extras enable php8.0
 
 # --setopt=skip_missing_names_on_install=False makes sure we get an error if a package is missing
 RUN yum install --setopt=skip_missing_names_on_install=False -y \
-        php-cli-${VERSION_PHP}.amzn2 php-sodium unzip curl
+        php-cli-${VERSION_PHP}.amzn2 unzip curl
 
 # These files are included on Amazon Linux 2
 
@@ -82,12 +82,6 @@ RUN cp /usr/lib64/php/modules/curl.so /bref/bref/extensions/curl.so
 #RUN cp /lib64/libplc4.so /bref/lib/libplc4.so
 #RUN cp /lib64/libnspr4.so /bref/lib/libnspr4.so
 
-# sodium
-RUN cp /usr/lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
-RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
-
-FROM binary as extensions
-
 RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-mbstring \
     php-bcmath \
@@ -101,6 +95,7 @@ RUN yum install -y --setopt=skip_missing_names_on_install=False \
     php-posix \
     php-simplexml \
     php-soap \
+    php-sodium \
     php-xml \
     php-xmlreader \
     php-xmlwriter \
@@ -147,6 +142,10 @@ RUN cp /usr/lib64/php/modules/pdo_pgsql.so /bref/bref/extensions/pdo_pgsql.so
 RUN cp /usr/lib64/libzip.so.5 /bref/lib/libzip.so.5
 RUN cp /usr/lib64/php/modules/zip.so /bref/bref/extensions/zip.so
 
+# sodium
+RUN cp /usr/lib64/php/modules/sodium.so /bref/bref/extensions/sodium.so
+RUN cp /usr/lib64/libsodium.so.23 /bref/lib/libsodium.so.23
+
 # apcu
 #RUN cp /usr/lib64/librt.so.1 /bref/lib/librt.so.1 # already in AL2
 #RUN cp /usr/lib64/libc.so.6 /bref/lib/libc.so.6 # already in AL2
@@ -168,9 +167,10 @@ RUN cp /usr/lib64/php/modules/xml.so /bref/bref/extensions/xml.so
 RUN cp /usr/lib64/php/modules/xmlreader.so /bref/bref/extensions/xmlreader.so
 RUN cp /usr/lib64/php/modules/xmlwriter.so /bref/bref/extensions/xmlwriter.so
 
+# Start from a clean image to copy only the files we need
 FROM public.ecr.aws/lambda/provided:al2-arm64 as isolation
 
-COPY --from=extensions /bref /opt
+COPY --from=build-environment /bref /opt
 
 # This doesn't do anything on Lambda, but is useful when running via Docker (e.g. local dev)
 ENV PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d:/var/task/php/conf.d"
@@ -202,7 +202,7 @@ RUN zip --quiet --recurse-paths /tmp/layer.zip .
 # packaged. Now we'll go back one step and start from the extensions so that we
 # can install fpm. Then we'll start the fpm layer and quickly isolate fpm.
 
-FROM extensions as fpm-extension
+FROM build-environment as fpm-extension
 
 RUN yum install -y php-fpm
 
