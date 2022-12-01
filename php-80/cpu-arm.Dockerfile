@@ -39,7 +39,7 @@ RUN yum install --setopt=skip_missing_names_on_install=False -y \
 # PHP Binary
 RUN cp /usr/bin/php /bref/bin/php && chmod +x /bref/bin/php
 RUN cp /lib64/libedit.so.0 /bref/lib/libedit.so.0
-RUN cp /lib64/libncurses.so.6 /bref/lib/libncurses.so.6
+#RUN cp /lib64/libncurses.so.6 /bref/lib/libncurses.so.6 # already in AL2
 #RUN cp /lib64/libcrypt.so.1 /bref/lib/libcrypt.so.1
 #RUN cp /lib64/libresolv.so.2 /bref/lib/libresolv.so.2
 #RUN cp /lib64/libm.so.6 /bref/lib/libm.so.6
@@ -123,16 +123,16 @@ RUN cp /usr/lib64/php/modules/mysqlnd.so /bref/bref/extensions/mysqlnd.so
 #RUN cp /usr/lib64/libsqlite3.so.0 /bref/lib/libsqlite3.so.0
 RUN cp /usr/lib64/php/modules/sqlite3.so /bref/bref/extensions/sqlite3.so
 
-RUN cp /usr/lib64/libgpg-error.so.0 /bref/lib/libgpg-error.so.0
-RUN cp /usr/lib64/libgcrypt.so.11 /bref/lib/libgcrypt.so.11
+#RUN cp /usr/lib64/libgpg-error.so.0 /bref/lib/libgpg-error.so.0
+#RUN cp /usr/lib64/libgcrypt.so.11 /bref/lib/libgcrypt.so.11
 RUN cp /usr/lib64/libexslt.so.0 /bref/lib/libexslt.so.0
 RUN cp /usr/lib64/libxslt.so.1 /bref/lib/libxslt.so.1
 RUN cp /usr/lib64/php/modules/xsl.so /bref/bref/extensions/xsl.so
 
-RUN cp /usr/lib64/libicuio.so.50 /bref/lib/libicuio.so.50
-RUN cp /usr/lib64/libicui18n.so.50 /bref/lib/libicui18n.so.50
-RUN cp /usr/lib64/libicuuc.so.50 /bref/lib/libicuuc.so.50
-RUN cp /usr/lib64/libicudata.so.50 /bref/lib/libicudata.so.50
+#RUN cp /usr/lib64/libicuio.so.50 /bref/lib/libicuio.so.50 # already in AL2
+#RUN cp /usr/lib64/libicui18n.so.50 /bref/lib/libicui18n.so.50 # already in AL2
+#RUN cp /usr/lib64/libicuuc.so.50 /bref/lib/libicuuc.so.50 # already in AL2
+#RUN cp /usr/lib64/libicudata.so.50 /bref/lib/libicudata.so.50 # already in AL2
 RUN cp /usr/lib64/php/modules/intl.so /bref/bref/extensions/intl.so
 
 RUN cp /usr/lib64/libpq.so.5 /bref/lib/libpq.so.5
@@ -212,8 +212,8 @@ COPY --from=fpm-extension /usr/sbin/php-fpm /opt/bin/php-fpm
 
 COPY --from=fpm-extension /usr/lib64/libsystemd.so.0 /opt/lib/libsystemd.so.0
 COPY --from=fpm-extension /usr/lib64/liblz4.so.1 /opt/lib/liblz4.so.1
-COPY --from=fpm-extension /usr/lib64/libgcrypt.so.11 /opt/lib/libgcrypt.so.11
-COPY --from=fpm-extension /usr/lib64/libgpg-error.so.0 /opt/lib/libgpg-error.so.0
+#COPY --from=fpm-extension /usr/lib64/libgcrypt.so.11 /opt/lib/libgcrypt.so.11
+#COPY --from=fpm-extension /usr/lib64/libgpg-error.so.0 /opt/lib/libgpg-error.so.0
 COPY --from=fpm-extension /usr/lib64/libdw.so.1 /opt/lib/libdw.so.1
 #COPY --from=fpm-extension /usr/lib64/libacl.so.1 /opt/lib/libacl.so.1
 #COPY --from=fpm-extension /usr/lib64/libattr.so.1 /opt/lib/libattr.so.1
