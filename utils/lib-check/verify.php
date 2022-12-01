@@ -30,7 +30,9 @@ $docker = implode(PHP_EOL, $dockerContent);
 
 $libraries = file(__DIR__ . '/al2-x64.txt');
 // For some reason some libraries are actually not in Lambda, despite being in the docker image 🤷
-$libraries = array_filter($libraries, fn ($library) => !str_contains($library, 'libgcrypt.so'));
+$libraries = array_filter($libraries, function ($library) {
+    return ! str_contains($library, 'libgcrypt.so') && ! str_contains($library, 'libgpg-error.so');
+});
 
 foreach ($libraries as $library) {
     if (! str_contains($library, '.so')) {
