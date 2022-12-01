@@ -17,6 +17,8 @@ everything: clean upload-layers upload-to-docker-hub
 docker-images:
 	# Prepare the content of `/opt` that will be copied in each layer
 	docker-compose -f ./layers/docker-compose.yml build --parallel
+	# Build images for "build environment"
+	docker-compose build --parallel build-php-80
 	# Build images for function layers
 	docker-compose build --parallel php-80
 	# Build images for FPM layers
@@ -55,11 +57,13 @@ upload-layers: layers
 # and re-upload them with the right tag.
 upload-to-docker-hub: docker-images
 	# Temporarily creating aliases of the Docker images to push to the test account
+	docker tag bref/arm-build-php-80 breftest/arm-build-php-80
 	docker tag bref/arm-php-80 breftest/arm-php-80
 	docker tag bref/arm-php-80-fpm breftest/arm-php-80-fpm
 	docker tag bref/arm-php-80-console breftest/arm-php-80-console
 
 	# TODO: change breftest/ to bref/
+	docker push breftest/arm-build-php-80
 	docker push breftest/arm-php-80
 	docker push breftest/arm-php-80-fpm
 	docker push breftest/arm-php-80-console
@@ -74,6 +78,7 @@ clean:
 	rm -f output/arm-*.zip
 	# Clean Docker images to force rebuilding them
 	docker image rm --force bref/arm-fpm-internal-src
+	docker image rm --force bref/arm-build-php-80
 	docker image rm --force bref/arm-php-80
 	docker image rm --force bref/arm-php-80-zip
 	docker image rm --force bref/arm-php-80-fpm

@@ -17,6 +17,8 @@ everything: clean upload-layers upload-to-docker-hub
 docker-images:
 	# Prepare the content of `/opt` that will be copied in each layer
 	docker-compose -f ./layers/docker-compose.yml build --parallel
+	# Build images for "build environment"
+	docker-compose build --parallel build-php-80 build-php-81 build-php-82
 	# Build images for function layers
 	docker-compose build --parallel php-80 php-81 php-82
 	# Build images for FPM layers
@@ -64,21 +66,33 @@ upload-layers: layers
 # and re-upload them with the right tag.
 upload-to-docker-hub: docker-images
 	# Temporarily creating aliases of the Docker images to push to the test account
+	docker tag bref/build-php-80 breftest/build-php-80
+	docker tag bref/build-php-81 breftest/build-php-81
+	docker tag bref/build-php-82 breftest/build-php-82
 	docker tag bref/php-80 breftest/php-80
 	docker tag bref/php-81 breftest/php-81
+	docker tag bref/php-82 breftest/php-82
 	docker tag bref/php-80-fpm breftest/php-80-fpm
 	docker tag bref/php-81-fpm breftest/php-81-fpm
+	docker tag bref/php-82-fpm breftest/php-82-fpm
 	docker tag bref/php-80-console breftest/php-80-console
 	docker tag bref/php-81-console breftest/php-81-console
+	docker tag bref/php-82-console breftest/php-82-console
 	docker tag bref/fpm-dev-gateway breftest/fpm-dev-gateway
 
 	# TODO: change breftest/ to bref/
+	docker push breftest/build-php-80
+	docker push breftest/build-php-81
+	docker push breftest/build-php-82
 	docker push breftest/php-80
 	docker push breftest/php-81
+	docker push breftest/php-82
 	docker push breftest/php-80-fpm
 	docker push breftest/php-81-fpm
+	docker push breftest/php-82-fpm
 	docker push breftest/php-80-console
 	docker push breftest/php-81-console
+	docker push breftest/php-82-console
 	docker push breftest/fpm-dev-gateway
 
 
@@ -91,16 +105,24 @@ clean:
 	rm -f output/*.zip
 	# Clean Docker images to force rebuilding them
 	docker image rm --force bref/fpm-internal-src
+	docker image rm --force bref/build-php-80
+	docker image rm --force bref/build-php-81
+	docker image rm --force bref/build-php-82
 	docker image rm --force bref/php-80
-	docker image rm --force bref/php-80-zip
 	docker image rm --force bref/php-81
+	docker image rm --force bref/php-82
+	docker image rm --force bref/php-80-zip
 	docker image rm --force bref/php-81-zip
+	docker image rm --force bref/php-82-zip
 	docker image rm --force bref/php-80-fpm
-	docker image rm --force bref/php-80-fpm-zip
 	docker image rm --force bref/php-81-fpm
+	docker image rm --force bref/php-82-fpm
+	docker image rm --force bref/php-80-fpm-zip
 	docker image rm --force bref/php-81-fpm-zip
+	docker image rm --force bref/php-82-fpm-zip
 	docker image rm --force bref/php-80-console
 	docker image rm --force bref/php-81-console
+	docker image rm --force bref/php-82-console
 	docker image rm --force bref/fpm-dev-gateway
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
