@@ -1,0 +1,21 @@
+name: Update the base-devel image once a week
+
+on:
+    # This workflow can be manually triggered
+    workflow_dispatch:
+    schedule:
+        # Once a week
+        -   cron: '0 0 * * 0'
+
+jobs:
+    publish-base-devel:
+        name: Build and publish base-devel
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+            -   name: Log in to Docker Hub
+                uses: docker/login-action@v2
+                with:
+                    username: ${{ secrets.DOCKER_USERNAME }}
+                    password: ${{ secrets.DOCKER_PASSWORD }}
+            -   run: cd base-devel && make upload-to-docker-hub
