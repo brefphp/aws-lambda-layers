@@ -123,7 +123,7 @@ RUN cp /usr/lib64/php/modules/mysqlnd.so /bref/bref/extensions/mysqlnd.so
 RUN cp /usr/lib64/php/modules/sqlite3.so /bref/bref/extensions/sqlite3.so
 
 #RUN cp /usr/lib64/libgpg-error.so.0 /bref/lib/libgpg-error.so.0
-#RUN cp /usr/lib64/libgcrypt.so.11 /bref/lib/libgcrypt.so.11
+RUN cp /usr/lib64/libgcrypt.so.11 /bref/lib/libgcrypt.so.11
 RUN cp /usr/lib64/libexslt.so.0 /bref/lib/libexslt.so.0
 RUN cp /usr/lib64/libxslt.so.1 /bref/lib/libxslt.so.1
 RUN cp /usr/lib64/php/modules/xsl.so /bref/bref/extensions/xsl.so
@@ -211,7 +211,7 @@ COPY --from=fpm-extension /usr/sbin/php-fpm /opt/bin/php-fpm
 
 COPY --from=fpm-extension /usr/lib64/libsystemd.so.0 /opt/lib/libsystemd.so.0
 COPY --from=fpm-extension /usr/lib64/liblz4.so.1 /opt/lib/liblz4.so.1
-#COPY --from=fpm-extension /usr/lib64/libgcrypt.so.11 /opt/lib/libgcrypt.so.11
+COPY --from=fpm-extension /usr/lib64/libgcrypt.so.11 /opt/lib/libgcrypt.so.11
 #COPY --from=fpm-extension /usr/lib64/libgpg-error.so.0 /opt/lib/libgpg-error.so.0
 COPY --from=fpm-extension /usr/lib64/libdw.so.1 /opt/lib/libdw.so.1
 #COPY --from=fpm-extension /usr/lib64/libacl.so.1 /opt/lib/libacl.so.1

@@ -28,9 +28,9 @@ $dockerContent = array_filter($dockerContent, fn ($item) => ! str_starts_with($i
 
 $docker = implode(PHP_EOL, $dockerContent);
 
-$content = file_get_contents(__DIR__ . '/al2-x64.txt');
-
-$libraries = explode(PHP_EOL, $content);
+$libraries = file(__DIR__ . '/al2-x64.txt');
+// For some reason some libraries are actually not in Lambda, despite being in the docker image 🤷
+$libraries = array_filter($libraries, fn ($library) => !str_contains($library, 'libgcrypt.so'));
 
 foreach ($libraries as $library) {
     if (! str_contains($library, '.so')) {
