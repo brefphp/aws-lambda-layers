@@ -25,6 +25,8 @@ docker-images:
 	docker-compose build --parallel php-80-fpm
 	# Build images for console layers
 	docker-compose build --parallel php-80-console
+	# Build dev images
+	docker-compose build --parallel php-80-fpm-dev
 
 
 # Build Lambda layers (zip files) *locally*

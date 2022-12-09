@@ -49,6 +49,14 @@ services:
     volumes:
       - ./output:/tmp/bref-zip
 
+  php-80-fpm-dev:
+    image: bref/${CPU_PREFIX}php-80-fpm-dev
+    build:
+      context: layers/fpm-dev
+      args:
+        PHP_VERSION: 80
+        CPU_PREFIX: ${CPU_PREFIX}
+
 
   php-80-console:
     image: bref/${CPU_PREFIX}php-80-console
@@ -120,6 +128,14 @@ services:
     volumes:
       - ./output:/tmp/bref-zip
 
+  php-81-fpm-dev:
+    image: bref/${CPU_PREFIX}php-81-fpm-dev
+    build:
+      context: layers/fpm-dev
+      args:
+        PHP_VERSION: 81
+        CPU_PREFIX: ${CPU_PREFIX}
+
 
   php-81-console:
     image: bref/${CPU_PREFIX}php-81-console
@@ -177,6 +193,14 @@ services:
     command: ["/tmp/layer.zip", "/tmp/bref-zip/${CPU_PREFIX}php-82-fpm.zip"]
     volumes:
       - ./output:/tmp/bref-zip
+
+  php-82-fpm-dev:
+    image: bref/${CPU_PREFIX}php-82-fpm-dev
+    build:
+      context: layers/fpm-dev
+      args:
+        PHP_VERSION: 82
+        CPU_PREFIX: ${CPU_PREFIX}
 
 
   php-82-console:
