@@ -1,7 +1,7 @@
 FROM bref/base-devel-x86 as build-environment
 
 # Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
-ENV VERSION_PHP=8.2.0~RC6-7
+ENV VERSION_PHP=8.2.0-1
 # Check out the latest version available on this page:
 # https://rpms.remirepo.net/enterprise/7/php82/x86_64/repoview/php-cli.html
 # See also https://github.com/remicollet/remirepo/issues/206
