@@ -77,6 +77,7 @@ clean:
 	docker image rm --force bref/arm-php-80-zip
 	docker image rm --force bref/arm-php-80-fpm
 	docker image rm --force bref/arm-php-80-fpm-zip
+	docker image rm --force bref/arm-php-80-fpm-dev
 	docker image rm --force bref/arm-php-80-console
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
