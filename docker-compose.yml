@@ -5,7 +5,7 @@ services:
 #### PHP 8.0
 
   build-php-80:
-    image: bref/build-${CPU_PREFIX}php-80
+    image: bref/${CPU_PREFIX}build-php-80
     build:
       context: .
       dockerfile: php-80/cpu-${CPU}.Dockerfile
@@ -76,7 +76,7 @@ services:
 #### PHP 8.1
 
   build-php-81:
-    image: bref/build-${CPU_PREFIX}php-81
+    image: bref/${CPU_PREFIX}build-php-81
     build:
       context: .
       dockerfile: php-81/cpu-${CPU}.Dockerfile
@@ -134,7 +134,7 @@ services:
 #### PHP 8.2
 
   build-php-82:
-    image: bref/build-${CPU_PREFIX}php-82
+    image: bref/${CPU_PREFIX}build-php-82
     build:
       context: .
       dockerfile: php-82/cpu-${CPU}.Dockerfile
