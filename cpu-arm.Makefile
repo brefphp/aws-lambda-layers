@@ -50,23 +50,15 @@ upload-layers: layers
 
 
 # Build and publish Docker images to Docker Hub.
-# Only publishes the `latest` version.
-# This process is executed when a merge to `main` happens.
-# When a release tag is created, GitHub Actions
-# will download the latest images, tag them with the version number
-# and re-upload them with the right tag.
 upload-to-docker-hub: docker-images
-	# Temporarily creating aliases of the Docker images to push to the test account
-	docker tag bref/arm-build-php-80 breftest/arm-build-php-80
-	docker tag bref/arm-php-80 breftest/arm-php-80
-	docker tag bref/arm-php-80-fpm breftest/arm-php-80-fpm
-	docker tag bref/arm-php-80-console breftest/arm-php-80-console
-
-	# TODO: change breftest/ to bref/
-	docker push breftest/arm-build-php-80
-	docker push breftest/arm-php-80
-	docker push breftest/arm-php-80-fpm
-	docker push breftest/arm-php-80-console
+	for image in \
+	  "bref/arm-php-80" "bref/arm-php-80-fpm" "bref/arm-php-80-console" "bref/arm-build-php-80"; \
+	do \
+		docker tag $$image $$image:2 ; \
+		docker push $$image:2 ; \
+	done
+	# TODO: when v2 becomes "latest", we should also push "latest" tags
+	# We could actually use `docker push --all-tags` at the end probably?
 
 
 test:

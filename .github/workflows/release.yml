@@ -26,9 +26,15 @@ jobs:
                     role-to-assume: arn:aws:iam::534081306603:role/bref-layer-publisher-github-actions
                     role-session-name: bref-layer-publisher-github-actions
                     aws-region: us-east-1
+            -   name: Configure Docker Hub credentials
+                uses: docker/login-action@v2
+                with:
+                    username: ${{ secrets.DOCKER_USERNAME }}
+                    password: ${{ secrets.DOCKER_PASSWORD }}
             -   run: make -f cpu-x86.Makefile layers
             -   run: make -f cpu-x86.Makefile test
             -   run: make -f cpu-x86.Makefile upload-layers
+            -   run: make -f cpu-x86.Makefile upload-to-docker-hub
 
     release-arm:
         name: Publish ARM layers
@@ -41,6 +47,11 @@ jobs:
                     role-to-assume: arn:aws:iam::534081306603:role/bref-layer-publisher-github-actions
                     role-session-name: bref-layer-publisher-github-actions
                     aws-region: us-east-1
+            -   name: Configure Docker Hub credentials
+                uses: docker/login-action@v2
+                with:
+                    username: ${{ secrets.DOCKER_USERNAME }}
+                    password: ${{ secrets.DOCKER_PASSWORD }}
             # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
             -   name: Set up QEMU to build ARM images
                 uses: docker/setup-qemu-action@v2
@@ -49,11 +60,12 @@ jobs:
             -   run: make -f cpu-arm.Makefile layers
             -   run: make -f cpu-arm.Makefile test
             -   run: make -f cpu-arm.Makefile upload-layers
+            -   run: make -f cpu-arm.Makefile upload-to-docker-hub
 
     update-layer-versions:
         name: Update layer versions in brefphp/bref
         runs-on: ubuntu-latest
-        needs: [release-x86, release-arm]
+        needs: [ release-x86, release-arm ]
         steps:
             -   name: Trigger layer update in brefphp/bref
                 uses: actions/github-script@v6
@@ -70,7 +82,7 @@ jobs:
     update-layer-js-versions:
         name: Update layer versions in brefphp/layers.js
         runs-on: ubuntu-latest
-        needs: [release-x86, release-arm]
+        needs: [ release-x86, release-arm ]
         steps:
             -   name: Trigger release in brefphp/layers.js
                 uses: actions/github-script@v6

@@ -59,41 +59,19 @@ upload-layers: layers
 
 
 # Build and publish Docker images to Docker Hub.
-# Only publishes the `latest` version.
-# This process is executed when a merge to `main` happens.
-# When a release tag is created, GitHub Actions
-# will download the latest images, tag them with the version number
-# and re-upload them with the right tag.
 upload-to-docker-hub: docker-images
-	# Temporarily creating aliases of the Docker images to push to the test account
-	docker tag bref/build-php-80 breftest/build-php-80
-	docker tag bref/build-php-81 breftest/build-php-81
-	docker tag bref/build-php-82 breftest/build-php-82
-	docker tag bref/php-80 breftest/php-80
-	docker tag bref/php-81 breftest/php-81
-	docker tag bref/php-82 breftest/php-82
-	docker tag bref/php-80-fpm breftest/php-80-fpm
-	docker tag bref/php-81-fpm breftest/php-81-fpm
-	docker tag bref/php-82-fpm breftest/php-82-fpm
-	docker tag bref/php-80-console breftest/php-80-console
-	docker tag bref/php-81-console breftest/php-81-console
-	docker tag bref/php-82-console breftest/php-82-console
-	docker tag bref/fpm-dev-gateway breftest/fpm-dev-gateway
-
-	# TODO: change breftest/ to bref/
-	docker push breftest/build-php-80
-	docker push breftest/build-php-81
-	docker push breftest/build-php-82
-	docker push breftest/php-80
-	docker push breftest/php-81
-	docker push breftest/php-82
-	docker push breftest/php-80-fpm
-	docker push breftest/php-81-fpm
-	docker push breftest/php-82-fpm
-	docker push breftest/php-80-console
-	docker push breftest/php-81-console
-	docker push breftest/php-82-console
-	docker push breftest/fpm-dev-gateway
+	# While in beta we tag and push the `:2` version, later we'll push `:latest` as well
+	for image in \
+	  "bref/php-80" "bref/php-80-fpm" "bref/php-80-console" "bref/build-php-80" \
+	  "bref/php-81" "bref/php-81-fpm" "bref/php-81-console" "bref/build-php-81" \
+	  "bref/php-82" "bref/php-82-fpm" "bref/php-82-console" "bref/build-php-82" \
+	  "bref/fpm-dev-gateway"; \
+	do \
+		docker tag $$image $$image:2 ; \
+		docker push $$image:2 ; \
+	done
+	# TODO: when v2 becomes "latest", we should also push "latest" tags
+	# We could actually use `docker push --all-tags` at the end probably?
 
 
 test:
