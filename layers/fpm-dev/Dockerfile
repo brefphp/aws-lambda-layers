@@ -9,7 +9,7 @@ ARG PHP_VERSION
 RUN mkdir -p /opt/bref/extensions
 
 # Install xdebug
-RUN yum install --setopt=skip_missing_names_on_install=False -y php-xdebug
+RUN pecl install xdebug
 RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 # Install Blackfire
