@@ -25,6 +25,8 @@ docker-images:
 	docker-compose build --parallel php-80-fpm
 	# Build images for console layers
 	docker-compose build --parallel php-80-console
+	# Build dev images
+	docker-compose build --parallel php-80-fpm-dev
 
 
 # Build Lambda layers (zip files) *locally*
@@ -75,6 +77,7 @@ clean:
 	docker image rm --force bref/arm-php-80-zip
 	docker image rm --force bref/arm-php-80-fpm
 	docker image rm --force bref/arm-php-80-fpm-zip
+	docker image rm --force bref/arm-php-80-fpm-dev
 	docker image rm --force bref/arm-php-80-console
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune

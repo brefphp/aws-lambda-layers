@@ -25,6 +25,8 @@ docker-images:
 	docker-compose build --parallel php-80-fpm php-81-fpm php-82-fpm
 	# Build images for console layers
 	docker-compose build --parallel php-80-console php-81-console php-82-console
+	# Build dev images
+	docker-compose build --parallel php-80-fpm-dev php-81-fpm-dev php-82-fpm-dev
 
 
 # Build Lambda layers (zip files) *locally*
@@ -64,8 +66,7 @@ upload-to-docker-hub: docker-images
 	for image in \
 	  "bref/php-80" "bref/php-80-fpm" "bref/php-80-console" "bref/build-php-80" \
 	  "bref/php-81" "bref/php-81-fpm" "bref/php-81-console" "bref/build-php-81" \
-	  "bref/php-82" "bref/php-82-fpm" "bref/php-82-console" "bref/build-php-82" \
-	  "bref/fpm-dev-gateway"; \
+	  "bref/php-82" "bref/php-82-fpm" "bref/php-82-console" "bref/build-php-82"; \
 	do \
 		docker tag $$image $$image:2 ; \
 		docker push $$image:2 ; \
@@ -98,9 +99,11 @@ clean:
 	docker image rm --force bref/php-80-fpm-zip
 	docker image rm --force bref/php-81-fpm-zip
 	docker image rm --force bref/php-82-fpm-zip
+	docker image rm --force bref/php-80-fpm-dev
+	docker image rm --force bref/php-81-fpm-dev
+	docker image rm --force bref/php-82-fpm-dev
 	docker image rm --force bref/php-80-console
 	docker image rm --force bref/php-81-console
 	docker image rm --force bref/php-82-console
-	docker image rm --force bref/fpm-dev-gateway
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune

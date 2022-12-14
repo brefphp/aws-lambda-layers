@@ -4,7 +4,3 @@ services:
   fpm-pkg:
     image: bref/fpm-internal-src
     build: ./fpm
-
-  fpm-dev-gateway:
-    image: bref/fpm-dev-gateway
-    build: ./fpm-dev-gateway
