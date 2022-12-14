@@ -64,9 +64,9 @@ upload-layers: layers
 upload-to-docker-hub: docker-images
 	# While in beta we tag and push the `:2` version, later we'll push `:latest` as well
 	for image in \
-	  "bref/php-80" "bref/php-80-fpm" "bref/php-80-console" "bref/build-php-80" \
-	  "bref/php-81" "bref/php-81-fpm" "bref/php-81-console" "bref/build-php-81" \
-	  "bref/php-82" "bref/php-82-fpm" "bref/php-82-console" "bref/build-php-82"; \
+	  "bref/php-80" "bref/php-80-fpm" "bref/php-80-console" "bref/build-php-80" "bref/php-80-fpm-dev" \
+	  "bref/php-81" "bref/php-81-fpm" "bref/php-81-console" "bref/build-php-81" "bref/php-81-fpm-dev" \
+	  "bref/php-82" "bref/php-82-fpm" "bref/php-82-console" "bref/build-php-82" "bref/php-82-fpm-dev"; \
 	do \
 		docker tag $$image $$image:2 ; \
 		docker push $$image:2 ; \
