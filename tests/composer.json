@@ -1,7 +1,6 @@
 {
     "require": {
-        "bref/bref": "^1.7",
-        "bref/php-runtime": "dev-main"
+        "bref/bref": "v2.x-dev"
     },
     "config": {
         "platform": {
