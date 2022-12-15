@@ -1,6 +1,6 @@
 {
     "require": {
-        "bref/php-fpm-runtime": "^2@beta"
+        "bref/php-fpm-runtime": "^2"
     },
     "minimum-stability": "dev",
     "prefer-stable" : true,
