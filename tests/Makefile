@@ -25,6 +25,10 @@ test-%: vendor
 	docker-compose up --detach php-$*-console-handler
 	docker-compose exec -T php-$*-console-handler php test_6_console_invocation.php \
 		|| (docker-compose logs php-$*-console-handler && exit 1) # print logs in case of failure
+	# Test that we can override PHP_INI_SCAN_DIR
+	docker-compose up --detach php-$*-handler-test7
+	docker-compose exec -T php-$*-handler-test7 php test_7_custom_ini_scan_dir.php \
+		|| (docker-compose logs php-$*-handler && exit 1) # print logs in case of failure
 	# Clean up containers
 	docker-compose down
 	echo "\033[1;32m✓ Tests succeeded\033[0m"

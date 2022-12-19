@@ -13,6 +13,15 @@ services:
         ports: [ '9001:8080' ]
         command: test_4_function_handler.php
 
+    php-80-handler-test7:
+        image: bref/${CPU_PREFIX}php-80
+        volumes: [ '.:/var/task:ro' ]
+        ports: [ '9004:8080' ]
+        command: test_4_function_handler.php
+        environment:
+            # Override for test 7
+            PHP_INI_SCAN_DIR: "/opt/bref/etc/php/conf.d/:/var/task/"
+
     php-80-fpm-handler:
         image: bref/${CPU_PREFIX}php-80-fpm
         volumes: [ '.:/var/task:ro' ]
@@ -36,6 +45,15 @@ services:
         ports: [ '9001:8080' ]
         command: test_4_function_handler.php
 
+    php-81-handler-test7:
+        image: bref/${CPU_PREFIX}php-81
+        volumes: [ '.:/var/task:ro' ]
+        ports: [ '9004:8080' ]
+        command: test_4_function_handler.php
+        environment:
+            # Override for test 7
+            PHP_INI_SCAN_DIR: "/opt/bref/etc/php/conf.d/:/var/task/"
+
     php-81-fpm-handler:
         image: bref/${CPU_PREFIX}php-81-fpm
         volumes: [ '.:/var/task:ro' ]
@@ -58,6 +76,15 @@ services:
         volumes: [ '.:/var/task:ro' ]
         ports: [ '9001:8080' ]
         command: test_4_function_handler.php
+
+    php-82-handler-test7:
+        image: bref/${CPU_PREFIX}php-82
+        volumes: [ '.:/var/task:ro' ]
+        ports: [ '9004:8080' ]
+        command: test_4_function_handler.php
+        environment:
+            # Override for test 7
+            PHP_INI_SCAN_DIR: "/opt/bref/etc/php/conf.d/:/var/task/"
 
     php-82-fpm-handler:
         image: bref/${CPU_PREFIX}php-82-fpm
