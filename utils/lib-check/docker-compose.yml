@@ -1,13 +1,22 @@
 version: '3.8'
 
 services:
-    # List all files from `/lib64` into `al2-x64.txt`
-    update-list:
+
+    # List all files from `/lib64` into `libs-x86.txt`
+    update-x86:
         image: public.ecr.aws/lambda/provided:al2-x86_64
         entrypoint: /bin/sh
-        command: [ "-c", "find /lib64/ -maxdepth 1 -not -type d -printf '%f\n' | sort > /al2-x64.txt" ]
+        command: [ "-c", "find /lib64/ -maxdepth 1 -not -type d -printf '%f\n' | sort > /libs-x86.txt" ]
         # Alternative approach from https://gist.github.com/vladgolubev/439559fc7597a4fb51eaa9e97b72f319
         # but it seems to list less files, so I'm not sure we should use that alternative
 #        command: [ "-c", "/sbin/ldconfig -p | awk '{print $$1}' | sort > /al2-x64.txt" ]
         volumes:
-            - ./al2-x64.txt:/al2-x64.txt
+            - ./libs-x86.txt:/libs-x86.txt
+
+    # List all files from `/lib64` into `libs-arm.txt`
+    update-arm:
+        image: public.ecr.aws/lambda/provided:al2-arm64
+        entrypoint: /bin/sh
+        command: [ "-c", "find /lib64/ -maxdepth 1 -not -type d -printf '%f\n' | sort > /libs-arm.txt" ]
+        volumes:
+            - ./libs-arm.txt:/libs-arm.txt

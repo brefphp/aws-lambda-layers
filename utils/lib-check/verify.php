@@ -1,5 +1,7 @@
 <?php declare(strict_types=1);
 
+require_once __DIR__ . '/../../tests/utils.php';
+
 # This file is only used manually.
 # The goal is to reduce layer size by not copying any file that is not strictly necessary.
 # We do this by executing one Lambda with the following `/opt/bootstrap` file:
@@ -28,7 +30,7 @@ $dockerContent = array_filter($dockerContent, fn ($item) => ! str_starts_with($i
 
 $docker = implode(PHP_EOL, $dockerContent);
 
-$libraries = file(__DIR__ . '/al2-x64.txt');
+$libraries = file(__DIR__ . "/libs-$argv[2].txt");
 // For some reason some libraries are actually not in Lambda, despite being in the docker image 🤷
 $libraries = array_filter($libraries, function ($library) {
     return ! str_contains($library, 'libgcrypt.so') && ! str_contains($library, 'libgpg-error.so');
@@ -40,8 +42,8 @@ foreach ($libraries as $library) {
     }
 
     if (str_contains($docker, $library)) {
-        echo "[$library] is present in Docker but is also present on /lib64 by default" . PHP_EOL;
+        error("[$library] is present in Docker but is also present on /lib64 by default");
     }
 }
 
-echo 'OK' . PHP_EOL;
+success($argv[1]);
