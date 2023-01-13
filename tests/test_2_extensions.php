@@ -61,7 +61,7 @@ $coreExtensions = [
     'openssl' => strlen(openssl_random_pseudo_bytes(1)) === 1,
     'pntcl' => function_exists('pcntl_fork'),
     'pcre' => preg_match('/abc/', 'abcde', $matches) && $matches[0] === 'abc',
-    'readline' => READLINE_LIB === 'libedit',
+    'readline' => READLINE_LIB === 'readline',
     'reflection' => class_exists(\ReflectionClass::class),
     'session' => session_status() === PHP_SESSION_NONE,
     'zip' => class_exists(\ZipArchive::class),
