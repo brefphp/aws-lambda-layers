@@ -115,25 +115,26 @@ COPY --link --from=build-environment /opt /opt
 
 FROM isolation as function
 
-COPY layers/function/bref.ini /opt/bref/etc/php/conf.d/
-COPY layers/function/bref-extensions.ini /opt/bref/etc/php/conf.d/
+COPY --link layers/function/bref.ini /opt/bref/etc/php/conf.d/
+COPY --link layers/function/bref-extensions.ini /opt/bref/etc/php/conf.d/
 
-COPY layers/function/bootstrap.sh /opt/bootstrap
+COPY --link layers/function/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY layers/function/bootstrap.sh /var/runtime/bootstrap
+COPY --link layers/function/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
-COPY layers/function/bootstrap.php /opt/bref/bootstrap.php
+COPY --link layers/function/bootstrap.php /opt/bref/bootstrap.php
 
 FROM alpine:3.14 as zip-function
 
 RUN apk add zip
 
-COPY --from=function /opt /opt
+COPY --link --from=function /opt /opt
 
 WORKDIR /opt
 
 RUN zip --quiet --recurse-paths /tmp/layer.zip .
+
 
 # Up until here the entire file has been designed as a top-down reading/execution.
 # Everything necessary for the `function` layer has been installed, isolated and
@@ -142,40 +143,32 @@ RUN zip --quiet --recurse-paths /tmp/layer.zip .
 
 FROM build-environment as fpm-extension
 
-RUN yum install -y php-fpm
+RUN cp ${INSTALL_DIR}/sbin/php-fpm /opt/bin/php-fpm
+RUN php /bref/lib-copy/copy-dependencies.php /opt/bin/php-fpm /opt/lib
+
 
 FROM isolation as fpm
 
-COPY --from=fpm-extension /sbin/php-fpm /opt/bin/php-fpm
+COPY --link --from=fpm-extension /opt /opt
 
-COPY --from=fpm-extension /usr/lib64/libsystemd.so.0 /opt/lib/libsystemd.so.0
-COPY --from=fpm-extension /usr/lib64/liblz4.so.1 /opt/lib/liblz4.so.1
-COPY --from=fpm-extension /usr/lib64/libgcrypt.so.11 /opt/lib/libgcrypt.so.11
-COPY --from=fpm-extension /usr/lib64/libgpg-error.so.0 /opt/lib/libgpg-error.so.0
-COPY --from=fpm-extension /usr/lib64/libdw.so.1 /opt/lib/libdw.so.1
-#COPY --from=fpm-extension /usr/lib64/libacl.so.1 /opt/lib/libacl.so.1
-#COPY --from=fpm-extension /usr/lib64/libattr.so.1 /opt/lib/libattr.so.1
-#COPY --from=fpm-extension /usr/lib64/libcap.so.2 /opt/lib/libcap.so.2
-#COPY --from=fpm-extension /usr/lib64/libelf.so.1 /opt/lib/libelf.so.1
-#COPY --from=fpm-extension /usr/lib64/libbz2.so.1 /opt/lib/libbz2.so.1
+COPY --link layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
+# TODO merge in the first file now that it's a much simpler file?
+COPY --link layers/fpm/bref-extensions.ini /opt/bref/etc/php/conf.d/
 
-COPY layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
-COPY layers/fpm/bref-extensions.ini /opt/bref/etc/php/conf.d/
-
-COPY layers/fpm/bootstrap.sh /opt/bootstrap
+COPY --link layers/fpm/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY layers/fpm/bootstrap.sh /var/runtime/bootstrap
+COPY --link layers/fpm/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
-COPY layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
+COPY --link layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --from=bref/fpm-internal-src /opt/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
+COPY --link --from=bref/fpm-internal-src /opt/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
 
 FROM alpine:3.14 as zip-fpm
 
 RUN apk add zip
 
-COPY --from=fpm /opt /opt
+COPY --link --from=fpm /opt /opt
 
 WORKDIR /opt
 
