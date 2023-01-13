@@ -14,6 +14,9 @@ jobs:
             -   uses: actions/checkout@v3
             -   name: Set up Docker buildx to use BuildKit features
                 uses: docker/setup-buildx-action@v2
+                with:
+                    # Sets up `docker build` command as an alias to `docker buildx`
+                    install: true
             -   run: make -f cpu-x86.Makefile layers
             -   run: make -f cpu-x86.Makefile test
 
