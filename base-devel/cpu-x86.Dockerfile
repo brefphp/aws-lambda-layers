@@ -340,7 +340,7 @@ RUN make && make install
 
 ###############################################################################
 # Install some dev files for using old libraries already on the system
-# readline-devel : needed for the --with-libedit flag
+# readline-devel : needed for the readline extension
 # gettext-devel : needed for the --with-gettext flag
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
