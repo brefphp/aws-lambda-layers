@@ -20,8 +20,7 @@ jobs:
             -   name: Build base-devel-x86
                 uses: docker/build-push-action@v3
                 with:
-                    context: base-devel
-                    file: cpu-x86.Dockerfile
+                    file: base-devel/cpu-x86.Dockerfile
                     tags: bref/base-devel-x86:latest
                     # This is needed to make the built image available in later steps
                     # https://docs.docker.com/engine/reference/commandline/buildx_build/#load
