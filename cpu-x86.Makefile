@@ -111,3 +111,5 @@ clean:
 	docker image rm --force bref/php-82-console
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
+
+.PHONY: base-devel
