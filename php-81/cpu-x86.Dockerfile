@@ -1,25 +1,110 @@
 FROM bref/base-devel-x86 as build-environment
 
-# Specifying the exact PHP version lets us avoid the Docker cache when a new version comes out
-ENV VERSION_PHP=8.1.12-1
-# Check out the latest version available on this page:
-# https://rpms.remirepo.net/enterprise/7/php81/x86_64/repoview/php-cli.html
+ENV VERSION_PHP=8.1.14
+
+RUN mkdir -p /tmp/php
+WORKDIR /tmp/php
+
+# PHP Build
+# https://github.com/php/php-src/releases
+# Needs:
+#   - zlib
+#   - libxml2
+#   - openssl
+#   - readline
+#   - sodium
+
+# Download and unpack the source code
+# --location will follow redirects
+# --silent will hide the progress, but also the errors: we restore error messages with --show-error
+# --fail makes sure that curl returns an error instead of fetching the 404 page
+RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
+  | tar xzC . --strip-components=1
+
+# Configure the build
+# -fstack-protector-strong : Be paranoid about stack overflows
+# -fpic : Make PHP's main executable position-independent (improves ASLR security mechanism, and has no performance impact on x86_64)
+# -fpie : Support Address Space Layout Randomization (see -fpic)
+# -O3 : Optimize for fastest binaries possible.
+# -I : Add the path to the list of directories to be searched for header files during preprocessing.
+# --enable-option-checking=fatal: make sure invalid --configure-flags are fatal errors instead of just warnings
+# --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
+# --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
+# --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
+RUN ./buildconf --force
+RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
+        CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
+        LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
+    ./configure \
+        --build=x86_64-pc-linux-gnu \
+        --prefix=${INSTALL_DIR} \
+        --enable-option-checking=fatal \
+        --enable-sockets \
+        --with-config-file-path=/opt/bref/etc/php \
+        --with-config-file-scan-dir=/opt/bref/etc/php/conf.d:/var/task/php/conf.d \
+        --enable-fpm \
+        --disable-cgi \
+        --enable-cli \
+        --disable-phpdbg \
+        --with-sodium \
+        --with-readline \
+        --with-openssl \
+        --with-zlib=${INSTALL_DIR} \
+        --with-zlib-dir=${INSTALL_DIR} \
+        --with-curl \
+        --enable-exif \
+        --enable-ftp \
+        --with-gettext \
+        --enable-mbstring \
+        --with-pdo-mysql=shared,mysqlnd \
+        --with-mysqli \
+        --enable-pcntl \
+        --with-zip \
+        --enable-bcmath \
+        --with-pdo-pgsql=shared,${INSTALL_DIR} \
+        --enable-intl=shared \
+        --enable-soap \
+        --with-xsl=${INSTALL_DIR} \
+        # necessary for `pecl` to work (to install PHP extensions)
+        --with-pear
+RUN make -j $(nproc)
+# Run `make install` and override PEAR's PHAR URL because pear.php.net is down
+RUN set -xe; \
+    make install PEAR_INSTALLER_URL='https://github.com/pear/pearweb_phars/raw/master/install-pear-nozlib.phar'; \
+    { find ${INSTALL_DIR}/bin ${INSTALL_DIR}/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; }; \
+    make clean; \
+    cp php.ini-production ${INSTALL_DIR}/etc/php/php.ini
 
 
-# Work in a temporary /bref dir to avoid any conflict/mixup with other /opt files
-# /bref will eventually be moved to /opt
-RUN mkdir /bref \
-&&  mkdir /bref/bin \
-&&  mkdir /bref/lib \
-&&  mkdir -p /bref/bref/extensions
+# Install extensions
+# We can install extensions manually or using `pecl`
+RUN pecl install APCu
 
-RUN yum-config-manager --enable remi-php81
 
-RUN yum update -y && yum upgrade -y
+# ---------------------------------------------------------------
+# Start from a clean image to copy only the files we need
+FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
 
-# --setopt=skip_missing_names_on_install=False makes sure we get an error if a package is missing
-RUN yum install --setopt=skip_missing_names_on_install=False -y \
-        php-cli-${VERSION_PHP}.el7.remi.x86_64
+RUN mkdir /opt/bin \
+&&  mkdir /opt/lib \
+&&  mkdir -p /opt/bref/extensions
+
+
+RUN cp ${INSTALL_DIR}/bin/php /bref/bin/php && chmod +x /bref/bin/php
+
+
+# --------------------------------------------------------
+# Now we copy what we need from:
+# - /lib | /lib64 (system libraries installed with `yum`)
+# - /usr/local/bin | /usr/local/lib | /usr/local/lib64 (libraries compiled from source)
+# into `/opt` (the directory of Lambda layers)
+#
+# HOW?
+# `ldd /usr/local/bin/php` will list the libraries a binary or library depends on.
+# We use `ldd` and copy all the dependencies.
+# BUT some system libraries are native to Amazon Linux 2 (they already exist in Lambda),
+# so we don't copy these (the lines will be commented below to show that we know about them).
+
 
 # These files are included on Amazon Linux 2
 
@@ -37,7 +122,7 @@ RUN yum install --setopt=skip_missing_names_on_install=False -y \
 # RUN cp /lib64/libsmime3.so /bref/lib/libsmime3.so
 
 # PHP Binary
-RUN cp /usr/bin/php /bref/bin/php && chmod +x /bref/bin/php
+RUN cp ${INSTALL_DIR}/bin/php /bref/bin/php && chmod +x /bref/bin/php
 RUN cp /lib64/libtinfo.so.5 /bref/lib/libtinfo.so.5
 RUN cp /lib64/libedit.so.0 /bref/lib/libedit.so.0
 RUN cp /lib64/libncurses.so.5 /bref/lib/libncurses.so.5
@@ -60,16 +145,6 @@ RUN cp /lib64/libncurses.so.5 /bref/lib/libncurses.so.5
 #RUN cp /lib64/libtinfo.so.6 /bref/lib/libtinfo.so.6
 #RUN cp /lib64/libpcre.so.1 /bref/lib/libpcre.so.1
 
-# Default Extensions
-RUN cp /lib64/php/modules/ctype.so /bref/bref/extensions/ctype.so
-RUN cp /lib64/php/modules/exif.so /bref/bref/extensions/exif.so
-RUN cp /lib64/php/modules/fileinfo.so /bref/bref/extensions/fileinfo.so
-RUN cp /lib64/php/modules/ftp.so /bref/bref/extensions/ftp.so
-RUN cp /lib64/php/modules/gettext.so /bref/bref/extensions/gettext.so
-RUN cp /lib64/php/modules/iconv.so /bref/bref/extensions/iconv.so
-RUN cp /lib64/php/modules/sockets.so /bref/bref/extensions/sockets.so
-RUN cp /lib64/php/modules/tokenizer.so /bref/bref/extensions/tokenizer.so
-
 # cURL
 RUN cp /lib64/php/modules/curl.so /bref/bref/extensions/curl.so
 #RUN cp /lib64/libcurl.so.4 /bref/lib/libcurl.so.4
@@ -82,34 +157,6 @@ RUN cp /lib64/php/modules/curl.so /bref/bref/extensions/curl.so
 #RUN cp /lib64/libplds4.so /bref/lib/libplds4.so
 #RUN cp /lib64/libplc4.so /bref/lib/libplc4.so
 #RUN cp /lib64/libnspr4.so /bref/lib/libnspr4.so
-
-RUN yum install -y --setopt=skip_missing_names_on_install=False \
-    php-mbstring \
-    php-bcmath \
-    php-dom \
-    php-mysqli \
-    php-mysqlnd \
-    php-opcache \
-    php-pdo \
-    php-pdo_mysql \
-    php-phar \
-    php-posix \
-    php-simplexml \
-    php-soap \
-    php-sodium \
-    php-xml \
-    php-xmlreader \
-    php-xmlwriter \
-    php-xsl \
-    php-intl \
-    php-apcu \
-    php-pdo_pgsql \
-    php-zip
-
-# Install development tools to compile extra PHP extensions
-RUN yum install -y --setopt=skip_missing_names_on_install=False \
-    php-devel \
-    php-pear
 
 RUN cp /lib64/php/modules/mbstring.so /bref/bref/extensions/mbstring.so
 RUN cp /usr/lib64/libonig.so.105 /bref/lib/libonig.so.105
@@ -161,9 +208,6 @@ RUN cp /lib64/php/modules/soap.so /bref/bref/extensions/soap.so
 RUN cp /lib64/php/modules/xml.so /bref/bref/extensions/xml.so
 RUN cp /lib64/php/modules/xmlreader.so /bref/bref/extensions/xmlreader.so
 RUN cp /lib64/php/modules/xmlwriter.so /bref/bref/extensions/xmlwriter.so
-
-# Start from a clean image to copy only the files we need
-FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
 
 COPY --from=build-environment /bref /opt
 
