@@ -14,10 +14,6 @@ FROM public.ecr.aws/lambda/provided:al2-x86_64
 WORKDIR /tmp
 
 
-# Lambda is based on Amazon Linux 2. Lock YUM to that release version.
-RUN sed -i 's/releasever=latest/releaserver=amzn2/' /etc/yum.conf
-
-
 RUN set -xe \
     # Download yum repository data to cache
  && yum makecache \
