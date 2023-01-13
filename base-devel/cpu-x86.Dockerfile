@@ -36,9 +36,8 @@ SHELL ["/bin/bash", "-c"]
 # We need a base path for all the sourcecode we will build from.
 ENV BUILD_DIR="/tmp/build"
 
-# We need a base path for the builds to install to. This path must
-# match the path that bref will be unpackaged to in Lambda.
-ENV INSTALL_DIR="/opt/bref"
+# Target installation path for all the packages we will compile
+ENV INSTALL_DIR="/tmp/bref"
 
 # We need some default compiler variables setup
 ENV PKG_CONFIG_PATH="${INSTALL_DIR}/lib64/pkgconfig:${INSTALL_DIR}/lib/pkgconfig" \
@@ -76,7 +75,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Used By:
 #   - xml2
 ENV VERSION_ZLIB=1.2.13
-ENV ZLIB_BUILD_DIR=${BUILD_DIR}/xml2
+ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
 RUN set -xe; \
     mkdir -p ${ZLIB_BUILD_DIR}; \
     curl -Ls  http://zlib.net/zlib-${VERSION_ZLIB}.tar.xz \
@@ -317,6 +316,26 @@ RUN cd ${POSTGRES_BUILD_DIR}/src/interfaces/libpq && make && make install
 RUN cd ${POSTGRES_BUILD_DIR}/src/bin/pg_config && make && make install
 RUN cd ${POSTGRES_BUILD_DIR}/src/backend && make generated-headers
 RUN cd ${POSTGRES_BUILD_DIR}/src/include && make install
+
+
+###############################################################################
+# Oniguruma
+# This library is not packaged in PHP since PHP 7.4.
+# See https://github.com/php/php-src/blob/43dc7da8e3719d3e89bd8ec15ebb13f997bbbaa9/UPGRADING#L578-L581
+# We do not install the system version because I didn't manage to make it work...
+# Ideally we shouldn't compile it ourselves.
+# https://github.com/kkos/oniguruma/releases
+# Needed by:
+#   - php mbstring
+ENV VERSION_ONIG=6.9.8
+ENV ONIG_BUILD_DIR=${BUILD_DIR}/oniguruma
+RUN set -xe; \
+    mkdir -p ${ONIG_BUILD_DIR}; \
+    curl -Ls https://github.com/kkos/oniguruma/releases/download/v${VERSION_ONIG}/onig-${VERSION_ONIG}.tar.gz \
+    | tar xzC ${ONIG_BUILD_DIR} --strip-components=1
+WORKDIR  ${ONIG_BUILD_DIR}
+RUN ./configure --prefix=${INSTALL_DIR}
+RUN make && make install
 
 
 ###############################################################################
