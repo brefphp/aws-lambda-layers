@@ -1,5 +1,9 @@
-build:
-	docker compose build
+build: build-x86 build-arm
+
+build-x86:
+	docker compose build x86
+build-arm:
+	docker compose build arm
 
 upload-to-docker-hub: build
 	docker tag bref/base-devel-arm bref/base-devel-arm

@@ -13,6 +13,10 @@ export CPU_PREFIX =
 everything: clean upload-layers upload-to-docker-hub
 
 
+base-devel:
+	cd base-devel && $(MAKE) build-x86
+
+
 # Build Docker images *locally*
 docker-images:
 	# Prepare the content of `/opt` that will be copied in each layer

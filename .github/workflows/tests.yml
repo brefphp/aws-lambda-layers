@@ -17,6 +17,7 @@ jobs:
                 with:
                     # Sets up `docker build` command as an alias to `docker buildx`
                     install: true
+            -   run: make -f cpu-x86.Makefile base-devel
             -   run: make -f cpu-x86.Makefile layers
             -   run: make -f cpu-x86.Makefile test
 
