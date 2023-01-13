@@ -47,9 +47,10 @@ ENV PKG_CONFIG_PATH="${INSTALL_DIR}/lib64/pkgconfig:${INSTALL_DIR}/lib/pkgconfig
 
 ENV LD_LIBRARY_PATH="${INSTALL_DIR}/lib64:${INSTALL_DIR}/lib"
 
-# Enable parallelism for cmake (like make -j)
+# Enable parallelism by default for make and cmake (like make -j)
 # See https://stackoverflow.com/a/50883540/245552
-RUN export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)
+ENV CMAKE_BUILD_PARALLEL_LEVEL=4
+ENV MAKEFLAGS='-j4'
 
 # Ensure we have all the directories we require in the container.
 RUN mkdir -p ${BUILD_DIR}  \
@@ -121,9 +122,13 @@ RUN set -xe; \
         no-tests \
         shared \
         zlib
-RUN set -xe; \
-    make install \
- && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
+# Explicitly compile make without parallelism because it fails if we use -jX (no error message)
+# I'm not 100% sure why, and I already lost 4 hours on this, but I found this:
+# https://github.com/openssl/openssl/issues/9931
+# https://stackoverflow.com/questions/28639207/why-cant-i-compile-openssl-with-multiple-threads-make-j3
+# Run `make install_sw` instead of `make install_sw` to skip installing man pages https://github.com/openssl/openssl/issues/8170
+RUN make -j1 install_sw
+RUN curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
 
 ###############################################################################
 # LIBSSH2
