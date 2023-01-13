@@ -126,8 +126,8 @@ RUN set -xe; \
 # I'm not 100% sure why, and I already lost 4 hours on this, but I found this:
 # https://github.com/openssl/openssl/issues/9931
 # https://stackoverflow.com/questions/28639207/why-cant-i-compile-openssl-with-multiple-threads-make-j3
-# Run `make install_sw` instead of `make install_sw` to skip installing man pages https://github.com/openssl/openssl/issues/8170
-RUN make -j1 install_sw
+# Run `make install_sw install_ssldirs` instead of `make install` to skip installing man pages https://github.com/openssl/openssl/issues/8170
+RUN make -j1 install_sw install_ssldirs
 RUN curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
 
 ###############################################################################
