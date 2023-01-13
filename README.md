@@ -169,7 +169,7 @@ The `bref-internal-src` images (see layers/fpm) are used to load Bref
 classes into the layer.
 
 The 4th layer is `zip-function`, where we get a small and fast Linux (Alpine) just to install and zip the entire
-`/opt` content. We use docker-compose volumes to map `/tmp/bref-zip` from host to the container so that we can
+`/opt` content. We use docker compose volumes to map `/tmp/bref-zip` from host to the container so that we can
 zip everything and get the zipped file out of the container.
 
 The 5th layer goes back to `extensions` and start `fpm-extension`. Here we're back at step 2 so that we can install
@@ -211,7 +211,7 @@ The benefits of maintaining a lightweight layer long-term didn't outweigh the co
 Before landing on the current architecture, there was several attempts (7 to be exact) on a back-and-forth
 between more environment variables vs more repetitive code. Environment variables grows complexity because
 they require contributors to understand how they intertwine with each other. We have layers, php version and
-CPU architecture. A more "reusable" Dockerfile or docker-compose requires a more complex Makefile. In contrast,
+CPU architecture. A more "reusable" Dockerfile or docker compose requires a more complex Makefile. In contrast,
 a simpler and straight-forward Makefile requires more code duplication for Docker and Docker Compose.
 The current format makes it so that old PHP layers can easily be removed by dropping an entire folder
 and a new PHP Version can be added by copying an existing folder and doing search/replace on the

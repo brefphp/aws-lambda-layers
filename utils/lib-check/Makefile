@@ -6,5 +6,5 @@ check:
 	@php verify.php php-81/cpu-arm.Dockerfile arm
 
 update:
-	docker-compose run --rm update-x86
-	docker-compose run --rm update-arm
+	docker compose run --rm update-x86
+	docker compose run --rm update-arm

@@ -16,30 +16,30 @@ everything: clean upload-layers upload-to-docker-hub
 # Build Docker images *locally*
 docker-images:
 	# Prepare the content of `/opt` that will be copied in each layer
-	docker-compose -f ./layers/docker-compose.yml build --parallel
+	docker compose -f ./layers/docker-compose.yml build
 	# Build images for "build environment"
-	docker-compose build --parallel build-php-80 build-php-81
+	docker compose build build-php-80 build-php-81
 	# Build images for function layers
-	docker-compose build --parallel php-80 php-81
+	docker compose build php-80 php-81
 	# Build images for FPM layers
-	docker-compose build --parallel php-80-fpm php-81-fpm
+	docker compose build php-80-fpm php-81-fpm
 	# Build images for console layers
-	docker-compose build --parallel php-80-console php-81-console
+	docker compose build php-80-console php-81-console
 	# Build dev images
-	docker-compose build --parallel php-80-fpm-dev php-81-fpm-dev
+	docker compose build php-80-fpm-dev php-81-fpm-dev
 
 
 # Build Lambda layers (zip files) *locally*
 layers: docker-images
 	# Build the containers that will zip the layers
-	docker-compose build --parallel php-80-zip php-81-zip \
+	docker compose build php-80-zip php-81-zip \
 									php-80-zip-fpm php-81-zip-fpm
 
 	# Run the zip containers: the layers will be copied to `./output/`
-	docker-compose up php-80-zip php-81-zip \
+	docker compose up php-80-zip php-81-zip \
 		php-80-zip-fpm php-81-zip-fpm
 	# Clean up containers
-	docker-compose down
+	docker compose down
 
 
 # Upload the layers to AWS Lambda

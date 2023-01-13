@@ -1,5 +1,5 @@
 build:
-	docker-compose build --parallel
+	docker compose build
 
 upload-to-docker-hub: build
 	docker tag bref/base-devel-arm bref/base-devel-arm
