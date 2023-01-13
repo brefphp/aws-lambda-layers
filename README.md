@@ -85,7 +85,11 @@ If you ever need to check out the content of a layer, you can start a `bash` ter
 docker run --rm -it --entrypoint=bash bref/php-80
 ```
 
-Pro-tip: `ldd` is a linux utility that will show libraries (`.so` files) used by a binary/library. For example: `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`. That helps to make sure we include all the libraries needed by PHP extensions in the layers.
+> **Note:**
+> 
+> `ldd` is a linux utility that will show libraries (`.so` files) used by a binary/library. For example: `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`. That helps to make sure we include all the libraries needed by PHP extensions in the layers.
+> 
+> However, `ldd` fails when running on another CPU architecture. So instead of `ldd`, we use `objdump -p /usr/bin/bash | grep NEEDED` (that needs to be installed with `yum install binutils`).
 
 Related: `utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the layer (i.e. `.so` files that already exist in Lambda).
 
