@@ -18,9 +18,6 @@ jobs:
                     # Sets up `docker build` command as an alias to `docker buildx`
                     install: true
             -   run: make -f cpu-x86.Makefile layers
-                env:
-                    # Enable buildx/BuildKit in Docker Compose
-                    COMPOSE_DOCKER_CLI_BUILD: 1
             -   run: make -f cpu-x86.Makefile test
 
     tests-arm:
