@@ -87,9 +87,7 @@ RUN set -xe; \
  && CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    ./configure \
-    --prefix=${INSTALL_DIR} \
-    --64
+    ./configure --prefix=${INSTALL_DIR} --64
 RUN set -xe; \
     make install \
  && rm ${INSTALL_DIR}/lib/libz.a
@@ -111,8 +109,7 @@ RUN set -xe; \
     curl -Ls  https://github.com/openssl/openssl/archive/OpenSSL_${VERSION_OPENSSL//./_}.tar.gz \
   | tar xzC ${OPENSSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${OPENSSL_BUILD_DIR}/
-RUN set -xe; \
-    CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./config \
@@ -145,8 +142,7 @@ RUN set -xe; \
     curl -Ls https://github.com/libssh2/libssh2/releases/download/libssh2-${VERSION_LIBSSH2}/libssh2-${VERSION_LIBSSH2}.tar.gz \
   | tar xzC ${LIBSSH2_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSSH2_BUILD_DIR}/bin/
-RUN set -xe; \
-    CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
@@ -158,8 +154,7 @@ RUN set -xe; \
         -DENABLE_ZLIB_COMPRESSION=ON \
         -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
         -DCMAKE_BUILD_TYPE=RELEASE
-RUN set -xe; \
-    cmake  --build . --target install
+RUN cmake  --build . --target install
 
 ###############################################################################
 # LIBNGHTTP2
@@ -178,15 +173,13 @@ RUN set -xe; \
     curl -Ls https://github.com/nghttp2/nghttp2/releases/download/v${VERSION_NGHTTP2}/nghttp2-${VERSION_NGHTTP2}.tar.gz \
     | tar xzC ${NGHTTP2_BUILD_DIR} --strip-components=1
 WORKDIR  ${NGHTTP2_BUILD_DIR}/
-RUN set -xe; \
-    CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --enable-lib-only \
     --prefix=${INSTALL_DIR}
-RUN set -xe; \
-    make install
+RUN make install
 
 
 ###############################################################################
@@ -201,12 +194,11 @@ RUN set -xe; \
 ENV VERSION_CURL=7.85.0
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
-            mkdir -p ${CURL_BUILD_DIR}/bin; \
-curl -Ls https://github.com/curl/curl/archive/curl-${VERSION_CURL//./_}.tar.gz \
-| tar xzC ${CURL_BUILD_DIR} --strip-components=1
+    mkdir -p ${CURL_BUILD_DIR}/bin; \
+    curl -Ls https://github.com/curl/curl/archive/curl-${VERSION_CURL//./_}.tar.gz \
+    | tar xzC ${CURL_BUILD_DIR} --strip-components=1
 WORKDIR  ${CURL_BUILD_DIR}/
-RUN set -xe; \
-    ./buildconf \
+RUN ./buildconf \
  && CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
@@ -231,8 +223,7 @@ RUN set -xe; \
     --with-ssl \
     --with-libssh2 \
     --with-nghttp2
-RUN set -xe; \
-    make install
+RUN make install
 
 ###############################################################################
 # LIBXML2
@@ -248,8 +239,7 @@ RUN set -xe; \
     curl -Ls https://download.gnome.org/sources/libxml2/${VERSION_XML2%.*}/libxml2-${VERSION_XML2}.tar.xz \
   | tar xJC ${XML2_BUILD_DIR} --strip-components=1
 WORKDIR  ${XML2_BUILD_DIR}/
-RUN set -xe; \
-    CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
@@ -263,8 +253,7 @@ RUN set -xe; \
     --with-icu \
     --with-zlib=${INSTALL_DIR} \
     --without-python
-RUN set -xe; \
-    make install \
+RUN make install \
  && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
 
 ###############################################################################
@@ -279,15 +268,13 @@ RUN set -xe; \
     curl -Ls https://github.com/nih-at/libzip/releases/download/v${VERSION_ZIP}/libzip-${VERSION_ZIP}.tar.gz \
   | tar xzC ${ZIP_BUILD_DIR} --strip-components=1
 WORKDIR  ${ZIP_BUILD_DIR}/bin/
-RUN set -xe; \
-    CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
-    -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-    -DCMAKE_BUILD_TYPE=RELEASE
-RUN set -xe; \
-    cmake  --build . --target install
+        -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+        -DCMAKE_BUILD_TYPE=RELEASE
+RUN cmake  --build . --target install
 
 ###############################################################################
 # LIBSODIUM
@@ -301,14 +288,12 @@ RUN set -xe; \
     curl -Ls https://github.com/jedisct1/libsodium/archive/${VERSION_LIBSODIUM}.tar.gz \
   | tar xzC ${LIBSODIUM_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSODIUM_BUILD_DIR}/
-RUN set -xe; \
-    CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./autogen.sh \
 && ./configure --prefix=${INSTALL_DIR}
-RUN set -xe; \
-    make install
+RUN make install
 
 ###############################################################################
 # Postgres
@@ -324,15 +309,14 @@ RUN set -xe; \
     curl -Ls https://github.com/postgres/postgres/archive/REL_${VERSION_POSTGRES//./_}.tar.gz \
     | tar xzC ${POSTGRES_BUILD_DIR} --strip-components=1
 WORKDIR  ${POSTGRES_BUILD_DIR}/
-RUN set -xe; \
-    CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure --prefix=${INSTALL_DIR} --with-openssl --without-readline
-RUN set -xe; cd ${POSTGRES_BUILD_DIR}/src/interfaces/libpq && make -j $(nproc) && make install
-RUN set -xe; cd ${POSTGRES_BUILD_DIR}/src/bin/pg_config && make -j $(nproc) && make install
-RUN set -xe; cd ${POSTGRES_BUILD_DIR}/src/backend && make generated-headers
-RUN set -xe; cd ${POSTGRES_BUILD_DIR}/src/include && make install
+RUN cd ${POSTGRES_BUILD_DIR}/src/interfaces/libpq && make && make install
+RUN cd ${POSTGRES_BUILD_DIR}/src/bin/pg_config && make && make install
+RUN cd ${POSTGRES_BUILD_DIR}/src/backend && make generated-headers
+RUN cd ${POSTGRES_BUILD_DIR}/src/include && make install
 
 
 ###############################################################################
