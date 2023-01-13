@@ -79,6 +79,8 @@ $extensions = [
     'json' => function_exists('json_encode'),
     'bcmath' => function_exists('bcadd'),
     'ctype' => function_exists('ctype_digit'),
+    // https://github.com/brefphp/aws-lambda-layers/issues/42
+    'curl-with-http2' => defined('CURL_HTTP_VERSION_2'),
     'dom' => class_exists(\DOMDocument::class),
     'exif' => function_exists('exif_imagetype'),
     'fileinfo' => function_exists('finfo_file'),
