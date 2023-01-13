@@ -1,3 +1,4 @@
+# syntax = docker/dockerfile:1.4
 ARG CPU_PREFIX
 ARG PHP_VERSION
 
@@ -21,8 +22,8 @@ RUN if [[ $CPU_PREFIX == "arm-" ]]; then curl -A "Docker" -o /opt/bref/extension
 
 FROM bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm
 
-COPY --from=build_extensions  /opt /opt
-COPY bref-entrypoint.sh /
+COPY --link --from=build_extensions /opt /opt
+COPY --link bref-entrypoint.sh /
 RUN chmod +x /bref-entrypoint.sh
 
 # Install node to run the JS app below
@@ -30,7 +31,7 @@ RUN curl --silent --location https://rpm.nodesource.com/setup_16.x | bash -
 RUN yum install --setopt=skip_missing_names_on_install=False -y nodejs
 
 # Install the bref/local-api-gateway app in our container (avoids running 2 containers)
-COPY --from=bref/local-api-gateway /app /local-api-gateway
+COPY --link --from=bref/local-api-gateway /app /local-api-gateway
 EXPOSE 8000
 
 # Add `php/conf.dev.d` to the path where PHP looks for configuration files
