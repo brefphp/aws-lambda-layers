@@ -18,7 +18,7 @@ base-devel:
 
 
 # Build Docker images *locally*
-docker-images:
+docker-images: base-devel
 	# Prepare the content of `/opt` that will be copied in each layer
 	docker compose -f ./layers/docker-compose.yml build
 	# Build images for "build environment"
