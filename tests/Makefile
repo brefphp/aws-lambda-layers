@@ -9,10 +9,13 @@ test: test-80 test-81 test-82
 test-%: vendor
 	# Clean up containers from previous failed runs
 	docker compose down
-	docker compose run --rm -- php-$* test_1_binary.php $*
-	docker compose run --rm -- php-$* test_2_extensions.php
-	docker compose run --rm -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/var/task/" \
-		-- php-$* test_3_manual_enabling_extensions.php
+	docker run --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/${CPU_PREFIX}php-$* \
+		   test_1_binary.php $*
+	docker run --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/${CPU_PREFIX}php-$* \
+		   test_2_extensions.php
+	docker run --rm -v=$(PWD):/var/task:ro --entrypoint=php \
+		   -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/var/task/" bref/${CPU_PREFIX}php-$* \
+ 		   test_3_manual_enabling_extensions.php
 	# Test function handler
 	docker compose up --detach php-$*-handler
 	docker compose exec -T php-$*-handler php test_4_function_invocation.php \
