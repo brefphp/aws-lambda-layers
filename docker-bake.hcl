@@ -1,5 +1,5 @@
 group "default" {
-  targets = ["base-devel", "build-php"]
+  targets = ["build-php", "php", "php-fpm", "console", "php-fpm-dev"]
 }
 
 variable "CPU" {
