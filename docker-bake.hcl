@@ -32,6 +32,7 @@ target "php" {
   target = "function"
   tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}"]
   contexts = {
+    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
   }
 }
