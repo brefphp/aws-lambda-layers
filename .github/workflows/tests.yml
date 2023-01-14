@@ -29,6 +29,8 @@ jobs:
                     # https://docs.docker.com/build/cache/backends/gha/
                     cache-from: type=gha
                     cache-to: type=gha,mode=max
+            -   run: docker image inspect bref/base-devel-x86:latest
+            -   run: docker image ls -a
             -   run: make -f cpu-x86.Makefile layers
             -   run: make -f cpu-x86.Makefile test
 
