@@ -41,6 +41,14 @@ jobs:
                         build-php.cache-to=type=gha,scope=build-php-${{ matrix.php_version }},mode=max
                         php.cache-from=type=gha,scope=php-${{ matrix.php_version }}
                         php.cache-to=type=gha,scope=php-${{ matrix.php_version }},mode=max
+                        php-fpm.cache-from=type=gha,scope=php-fpm-${{ matrix.php_version }}
+                        php-fpm.cache-to=type=gha,scope=php-fpm-${{ matrix.php_version }},mode=max
+                        fpm-internal-src.cache-from=type=gha,scope=fpm-internal-src-${{ matrix.php_version }}
+                        fpm-internal-src.cache-to=type=gha,scope=fpm-internal-src-${{ matrix.php_version }},mode=max
+                        console.cache-from=type=gha,scope=console-${{ matrix.php_version }}
+                        console.cache-to=type=gha,scope=console-${{ matrix.php_version }},mode=max
+                        php-fpm-dev.cache-from=type=gha,scope=php-fpm-dev-${{ matrix.php_version }}
+                        php-fpm-dev.cache-to=type=gha,scope=php-fpm-dev-${{ matrix.php_version }},mode=max
             -   run: make -f cpu-x86.Makefile test
 
     tests-arm:

@@ -37,6 +37,11 @@ target "php" {
   }
 }
 
+target "fpm-internal-src" {
+  context = "layers/fpm"
+  tags = ["bref/fpm-internal-src"]
+}
+
 target "php-fpm" {
   dockerfile = "php-${PHP_VERSION}/cpu-${CPU}.Dockerfile"
   target = "fpm"
@@ -45,6 +50,7 @@ target "php-fpm" {
     "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
+    "bref/fpm-internal-src" = "target:fpm-internal-src"
   }
 }
 
@@ -75,5 +81,6 @@ target "php-fpm-dev" {
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm" = "target:php-fpm"
+    "bref/local-api-gateway" = "docker-image://bref/local-api-gateway:latest"
   }
 }
