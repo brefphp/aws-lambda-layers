@@ -18,20 +18,11 @@ jobs:
                     # Sets up `docker build` command as an alias to `docker buildx`
                     install: true
             -   name: Build base-devel-x86
-                uses: docker/build-push-action@v3
+                uses: docker/bake-action@v2.3.0
                 with:
-                    file: base-devel/cpu-x86.Dockerfile
-                    tags: bref/base-devel-x86:latest
-                    # This is needed to make the built image available in later steps
+                    # This is needed to make the built images available in later steps
                     # https://docs.docker.com/engine/reference/commandline/buildx_build/#load
                     load: true
-                    # Cache Docker layers in the GitHub Actions cache
-                    # https://docs.docker.com/build/cache/backends/gha/
-                    cache-from: type=gha
-                    cache-to: type=gha,mode=max
-            -   run: docker image inspect bref/base-devel-x86:latest
-            -   run: docker image ls -a
-            -   run: make -f cpu-x86.Makefile layers
             -   run: make -f cpu-x86.Makefile test
 
     tests-arm:
