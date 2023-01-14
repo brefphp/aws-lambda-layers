@@ -10,6 +10,11 @@ jobs:
     tests-x86:
         name: Build x86 images, layers, and run tests
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                php_version:
+                    - 80
+                    - 81
         steps:
             -   uses: actions/checkout@v3
             -   name: Set up Docker buildx to use BuildKit features
@@ -17,12 +22,23 @@ jobs:
                 with:
                     # Sets up `docker build` command as an alias to `docker buildx`
                     install: true
-            -   name: Build base-devel-x86
+            -   name: Build Docker images
                 uses: docker/bake-action@v2.3.0
                 with:
+                    targets: build-php
                     # This is needed to make the built images available in later steps
                     # https://docs.docker.com/engine/reference/commandline/buildx_build/#load
                     load: true
+                    # Cache Docker layers in GitHub Actions cache, scoped per image
+                    # https://github.com/docker/bake-action/issues/87#issuecomment-1184659151
+                    set: |
+                        base-devel.cache-from=type=gha,scope=base-devel-x86
+                        base-devel.cache-to=type=gha,scope=base-devel-x86,mode=max
+                        build-php.cache-from=type=gha,scope=build-php-${{ matrix.php_version }}
+                        build-php.cache-to=type=gha,scope=build-php-${{ matrix.php_version }},mode=max
+                env:
+                    PHP_VERSION: ${{ matrix.php_version }}
+                    CPU: x86
             -   run: make -f cpu-x86.Makefile test
 
     tests-arm:
