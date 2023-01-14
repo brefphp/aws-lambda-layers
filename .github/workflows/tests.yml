@@ -8,7 +8,7 @@ on:
 
 jobs:
     tests-x86:
-        name: Build x86 images, layers, and run tests
+        name: Build and tests x86 layers
         runs-on: ubuntu-latest
         strategy:
             matrix:
@@ -24,8 +24,11 @@ jobs:
                     install: true
             -   name: Build Docker images
                 uses: docker/bake-action@v2.3.0
+                env:
+                    PHP_VERSION: ${{ matrix.php_version }}
+                    CPU: x86
                 with:
-                    targets: build-php
+                    targets: php
                     # This is needed to make the built images available in later steps
                     # https://docs.docker.com/engine/reference/commandline/buildx_build/#load
                     load: true
@@ -36,9 +39,8 @@ jobs:
                         base-devel.cache-to=type=gha,scope=base-devel-x86,mode=max
                         build-php.cache-from=type=gha,scope=build-php-${{ matrix.php_version }}
                         build-php.cache-to=type=gha,scope=build-php-${{ matrix.php_version }},mode=max
-                env:
-                    PHP_VERSION: ${{ matrix.php_version }}
-                    CPU: x86
+                        php.cache-from=type=gha,scope=php-${{ matrix.php_version }}
+                        php.cache-to=type=gha,scope=php-${{ matrix.php_version }},mode=max
             -   run: make -f cpu-x86.Makefile test
 
     tests-arm:

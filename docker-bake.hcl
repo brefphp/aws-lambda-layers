@@ -23,6 +23,15 @@ target "build-php" {
   tags = ["bref/${CPU_PREFIX}build-php-${PHP_VERSION}"]
   contexts = {
     // Dependency to the base image
-    "bref/base-devel-x86" = "target:base-devel"
+    "bref/base-devel-${CPU}" = "target:base-devel"
+  }
+}
+
+target "php" {
+  dockerfile = "php-${PHP_VERSION}/cpu-${CPU}.Dockerfile"
+  target = "function"
+  tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}"]
+  contexts = {
+    "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
   }
 }
