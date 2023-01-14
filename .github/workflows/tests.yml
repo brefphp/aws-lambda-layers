@@ -7,8 +7,29 @@ on:
         branches: [ '*' ]
 
 jobs:
+    build-base-devel-x86:
+        name: Build base-devel-x86
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+            -   uses: docker/setup-buildx-action@v2 # to use BuildKit features
+            -   uses: docker/build-push-action@v3
+                with:
+                    file: base-devel/cpu-x86.Dockerfile
+                    tags: bref/base-devel-x86:latest
+                    outputs: type=docker,dest=/tmp/base-devel-x86.tar
+                    # Cache Docker layers in the GitHub Actions cache
+                    # https://docs.docker.com/build/cache/backends/gha/
+                    cache-from: type=gha
+                    cache-to: type=gha,mode=max
+            -   uses: actions/upload-artifact@v3 # Expose /tmp/base-devel-x86.tar to other jobs
+                with:
+                    name: base-devel-x86
+                    path: /tmp/base-devel-x86.tar
+
     tests-x86:
         name: Build x86 images, layers, and run tests
+        needs: build-base-devel-x86
         runs-on: ubuntu-latest
         steps:
             -   uses: actions/checkout@v3
@@ -17,18 +38,14 @@ jobs:
                 with:
                     # Sets up `docker build` command as an alias to `docker buildx`
                     install: true
-            -   name: Build base-devel-x86
-                uses: docker/build-push-action@v3
+            -   uses: actions/download-artifact@v3
                 with:
-                    file: base-devel/cpu-x86.Dockerfile
-                    tags: bref/base-devel-x86:latest
-                    # This is needed to make the built image available in later steps
-                    # https://docs.docker.com/engine/reference/commandline/buildx_build/#load
-                    load: true
-                    # Cache Docker layers in the GitHub Actions cache
-                    # https://docs.docker.com/build/cache/backends/gha/
-                    cache-from: type=gha
-                    cache-to: type=gha,mode=max
+                    name: base-devel-x86
+                    path: /tmp/base-devel-x86.tar
+            -   name: Load the bref/base-devel-x86 image
+                run: |
+                    docker load --input /tmp/base-devel-x86.tar
+                    docker image ls -a
             -   run: make -f cpu-x86.Makefile layers
             -   run: make -f cpu-x86.Makefile test
 
