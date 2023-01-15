@@ -11,6 +11,7 @@ jobs:
         name: Build and tests x86 layers
         runs-on: ubuntu-latest
         strategy:
+            fail-fast: false
             matrix:
                 php_version:
                     - 80
