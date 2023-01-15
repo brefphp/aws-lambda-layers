@@ -53,7 +53,7 @@ test-%: vendor
 	echo "\033[1;32m✓ Tests succeeded\033[0m"
 
 vendor:
-	docker compose run --rm composer install
+	docker run --rm -v=$(PWD):/app composer install
 
 clean:
 	rm -rf vendor composer.lock
