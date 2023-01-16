@@ -91,6 +91,7 @@ RUN set -xe; \
     make install \
  && rm ${INSTALL_DIR}/lib/libz.a
 
+
 ###############################################################################
 # OPENSSL
 # https://github.com/openssl/openssl/releases
@@ -126,6 +127,7 @@ RUN CFLAGS="" \
 RUN make -j1 install_sw install_ssldirs
 RUN curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
 
+
 ###############################################################################
 # LIBSSH2
 # https://github.com/libssh2/libssh2/releases
@@ -154,6 +156,7 @@ RUN CFLAGS="" \
         -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
         -DCMAKE_BUILD_TYPE=RELEASE
 RUN cmake  --build . --target install
+
 
 ###############################################################################
 # LIBNGHTTP2
@@ -224,6 +227,7 @@ RUN ./buildconf \
     --with-nghttp2
 RUN make install
 
+
 ###############################################################################
 # LIBXML2
 # https://github.com/GNOME/libxml2/releases
@@ -255,6 +259,7 @@ RUN CFLAGS="" \
 RUN make install \
  && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
 
+
 ###############################################################################
 # LIBZIP
 # https://github.com/nih-at/libzip/releases
@@ -275,6 +280,7 @@ RUN CFLAGS="" \
         -DCMAKE_BUILD_TYPE=RELEASE
 RUN cmake  --build . --target install
 
+
 ###############################################################################
 # LIBSODIUM
 # https://github.com/jedisct1/libsodium/releases
@@ -293,6 +299,7 @@ RUN CFLAGS="" \
     ./autogen.sh \
 && ./configure --prefix=${INSTALL_DIR}
 RUN make install
+
 
 ###############################################################################
 # Postgres
@@ -346,6 +353,8 @@ RUN make && make install
 # libxslt-devel : needed for the XSL extension
 # sqlite-devel : Since PHP 7.4 this must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
 RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel sqlite-devel
+
+# TODO Remove the following lines?
 
 RUN cp -a /usr/lib64/libgcrypt.so* ${INSTALL_DIR}/lib64/
 
