@@ -37,6 +37,7 @@ if (php_uname('m') !== 'x86_64') {
 }
 
 $librariesThatExistOnLambda = file(__DIR__ . "/libs-$arch.txt");
+$librariesThatExistOnLambda = array_map('trim', $librariesThatExistOnLambda);
 // For some reason some libraries are actually not in Lambda, despite being in the docker image 🤷
 $librariesThatExistOnLambda = array_filter($librariesThatExistOnLambda, function ($library) {
     return ! str_contains($library, 'libgcrypt.so') && ! str_contains($library, 'libgpg-error.so');
@@ -44,7 +45,13 @@ $librariesThatExistOnLambda = array_filter($librariesThatExistOnLambda, function
 
 $requiredLibraries = listAllDependenciesRecursively($pathToCheck);
 // Exclude existing system libraries
-$requiredLibraries = array_filter($requiredLibraries, fn(string $lib) => !in_array($lib, $librariesThatExistOnLambda, true));
+$requiredLibraries = array_filter($requiredLibraries, function (string $lib) use ($librariesThatExistOnLambda) {
+    $keep = ! in_array(basename($lib), $librariesThatExistOnLambda, true);
+    if (! $keep) {
+        echo "Skipping $lib because it's already in Lambda" . PHP_EOL;
+    }
+    return $keep;
+});
 
 // Copy all the libraries
 foreach ($requiredLibraries as $libraryPath) {
