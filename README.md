@@ -32,6 +32,10 @@ If you are submitting a pull request to this repository, you probably want to te
 
 ### Building
 
+> **Warning:**
+>
+> On macOS, do not enable [the experimental Rosetta emulation](https://docs.docker.com/desktop/release-notes/#4160). This causes a Segmentation Fault when running `php-fpm` in the Docker images.
+
 You can build Docker images and Lambda layers locally:
 
 ```sh
