@@ -7,8 +7,6 @@ test: test-80 test-81 test-82
 # This rule matches with a wildcard, for example `test-80`.
 # The `$*` variable will contained the matched part, in this case `80`.
 test-%: vendor
-	docker image ls
-
 	docker run --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/${CPU_PREFIX}php-$* \
 		   test_1_binary.php $*
 
