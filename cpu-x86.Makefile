@@ -5,16 +5,9 @@ export CPU = x86
 export CPU_PREFIX =
 
 
-# - Build all layers
-# - Publish all Docker images to Docker Hub
-# - Publish all layers to AWS Lambda
-# Uses the current AWS_PROFILE. Most users will not want to use this option
-# as this will publish all layers to all regions + publish all Docker images.
-everything: clean upload-layers upload-to-docker-hub
-
-
-base-devel:
-	cd base-devel && $(MAKE) build-x86
+# Build all Docker images and layers *locally*
+# Use this to test your changes
+default: docker-images layers
 
 
 # Build Docker images *locally*
@@ -25,7 +18,7 @@ docker-images:
 
 
 # Build Lambda layers (zip files) *locally*
-layers: docker-images layer-php-80 layer-php-81 layer-php-82 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm
+layers: layer-php-80 layer-php-81 layer-php-82 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm
 	# Handle this layer specifically
 	./utils/docker-zip-dir.sh bref/php-80-console-zip console
 # This rule matches with a wildcard, for example `layer-php-80`.
@@ -35,6 +28,8 @@ layer-%:
 
 
 # Upload the layers to AWS Lambda
+# Uses the current AWS_PROFILE. Most users will not want to use this option
+# as this will publish all layers to all regions + publish all Docker images.
 upload-layers: layers
 	# Upload the function layers to AWS
 	LAYER_NAME=php-80 $(MAKE) -C ./utils/lambda-publish publish-parallel
@@ -50,8 +45,8 @@ upload-layers: layers
 	LAYER_NAME=console $(MAKE) -C ./utils/lambda-publish publish-parallel
 
 
-# Build and publish Docker images to Docker Hub.
-upload-to-docker-hub: docker-images
+# Publish Docker images to Docker Hub.
+upload-to-docker-hub:
 	# While in beta we tag and push the `:2` version, later we'll push `:latest` as well
 	for image in \
 	  "bref/php-80" "bref/php-80-fpm" "bref/php-80-console" "bref/build-php-80" "bref/php-80-fpm-dev" \
@@ -97,5 +92,3 @@ clean:
 	docker image rm --force bref/php-82-console
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
-
-.PHONY: base-devel

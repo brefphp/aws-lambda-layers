@@ -40,7 +40,7 @@ If you are submitting a pull request to this repository, you probably want to te
 You can build Docker images and Lambda layers locally:
 
 ```sh
-make layers
+make
 ```
 
 The process takes about 4 minutes. It will create the Docker images on your machine, and generate the Lambda layer zip files in `./output`.
@@ -70,6 +70,9 @@ cp .env.example .env
 
 # Now edit the .env file
 
+# Then build layers:
+make
+
 # Then publish layers:
 make upload-layers
 ```
@@ -77,6 +80,7 @@ make upload-layers
 You can also limit to ARM or X86 layers:
 
 ```sh
+make -f cpu-x86.Makefile
 make -f cpu-x86.Makefile upload-layers
 ```
 
