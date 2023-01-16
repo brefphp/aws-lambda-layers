@@ -78,7 +78,7 @@ ENV VERSION_ZLIB=1.2.13
 ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
 RUN set -xe; \
     mkdir -p ${ZLIB_BUILD_DIR}; \
-    curl -Ls  http://zlib.net/zlib-${VERSION_ZLIB}.tar.xz \
+    curl -Ls https://zlib.net/zlib-${VERSION_ZLIB}.tar.xz \
   | tar xJC ${ZLIB_BUILD_DIR} --strip-components=1
 WORKDIR  ${ZLIB_BUILD_DIR}/
 RUN set -xe; \
