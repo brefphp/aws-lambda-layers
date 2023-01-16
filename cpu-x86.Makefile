@@ -19,7 +19,9 @@ base-devel:
 
 # Build Docker images *locally*
 docker-images:
-	docker buildx bake --load
+	PHP_VERSION=80 docker buildx bake --load
+	PHP_VERSION=81 docker buildx bake --load
+	PHP_VERSION=82 docker buildx bake --load
 
 
 # Build Lambda layers (zip files) *locally*
