@@ -71,7 +71,7 @@ target "console" {
 
 target "php-fpm-dev" {
   context = "layers/fpm-dev"
-  tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm"]
+  tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm-dev"]
   args = {
     PHP_VERSION = "${PHP_VERSION}"
     CPU_PREFIX = "${CPU_PREFIX}"
