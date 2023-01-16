@@ -22,7 +22,7 @@ layers: layer-php-80 layer-php-81 layer-php-82 layer-php-80-fpm layer-php-81-fpm
 # This rule matches with a wildcard, for example `layer-php-80`.
 # The `$*` variable will contained the matched part, in this case `php-80`.
 layer-%:
-	./utils/docker-zip-dir.sh bref/$* $*
+	./utils/docker-zip-dir.sh bref/arm-$* arm-$*
 
 
 # Upload the layers to AWS Lambda
