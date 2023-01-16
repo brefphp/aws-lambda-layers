@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.4
 FROM bref/base-devel-arm as build-environment
 
-ENV VERSION_PHP=8.1.14
+ENV VERSION_PHP=8.2.0
 
 RUN mkdir -p /tmp/php
 WORKDIR /tmp/php

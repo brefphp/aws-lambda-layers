@@ -60,8 +60,9 @@ upload-to-docker-hub:
 	# We could actually use `docker push --all-tags` at the end probably?
 
 
-test:
-	cd tests && $(MAKE) test
+test: test-80 test-81 test-82
+test-%:
+	cd tests && $(MAKE) test-$*
 
 
 clean:
