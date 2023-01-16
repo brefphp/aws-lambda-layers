@@ -125,16 +125,6 @@ RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 COPY --link layers/function/bootstrap.php /opt/bref/bootstrap.php
 
-FROM alpine:3.14 as zip-function
-
-RUN apk add zip
-
-COPY --link --from=function /opt /opt
-
-WORKDIR /opt
-
-RUN zip --quiet --recurse-paths /tmp/layer.zip .
-
 
 # Up until here the entire file has been designed as a top-down reading/execution.
 # Everything necessary for the `function` layer has been installed, isolated and
@@ -163,13 +153,3 @@ RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 COPY --link layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
 COPY --link --from=bref/fpm-internal-src /opt/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
-
-FROM alpine:3.14 as zip-fpm
-
-RUN apk add zip
-
-COPY --link --from=fpm /opt /opt
-
-WORKDIR /opt
-
-RUN zip --quiet --recurse-paths /tmp/layer.zip .

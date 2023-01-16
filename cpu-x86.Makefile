@@ -23,18 +23,13 @@ docker-images:
 
 
 # Build Lambda layers (zip files) *locally*
-layers: docker-images
-	# Build the containers that will zip the layers
-	docker compose build php-80-zip php-81-zip php-82-zip
-	docker compose build php-80-zip-fpm php-81-zip-fpm php-82-zip-fpm
-	docker compose build php-80-zip-console
-
-	# Run the zip containers: the layers will be copied to `./output/`
-	docker compose up php-80-zip php-81-zip php-82-zip \
-		php-80-zip-fpm php-81-zip-fpm php-82-zip-fpm \
-		php-80-zip-console
-	# Clean up containers
-	docker compose down
+layers: docker-images layer-php-80 layer-php-81 layer-php-82 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm
+	# Handle this layer specifically
+	./utils/docker-zip-dir.sh bref/php-80-console-zip console
+# This rule matches with a wildcard, for example `layer-php-80`.
+# The `$*` variable will contained the matched part, in this case `php-80`.
+layer-%:
+	./utils/docker-zip-dir.sh bref/$* $*
 
 
 # Upload the layers to AWS Lambda

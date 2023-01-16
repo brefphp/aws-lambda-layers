@@ -26,6 +26,7 @@ If you are submitting a pull request to this repository, you probably want to te
 ### Requirements
 
 - `make`
+- `zip`
 - Docker
 - AWS CLI (if publishing layers)
 - AWS credentials set up locally (if publishing layers)
