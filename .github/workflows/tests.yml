@@ -46,11 +46,13 @@ jobs:
                     load: true
                     # Cache Docker layers in GitHub Actions cache, scoped per image
                     # https://github.com/docker/bake-action/issues/87#issuecomment-1184659151
+                    # We use `mode=max` (cache ALL layers instead of just tags) only on specific images
+                    # else it creates a huge cache and we get GitHub Actions cache timeouts.
                     set: |
                         base-devel.cache-from=type=gha,scope=base-devel-${{ matrix.cpu }}
                         base-devel.cache-to=type=gha,scope=base-devel-${{ matrix.cpu }},mode=max
                         build-php.cache-from=type=gha,scope=build-${{ matrix.cpu }}-php-${{ matrix.php_version }}
-                        build-php.cache-to=type=gha,scope=build-${{ matrix.cpu }}-php-${{ matrix.php_version }},mode=max
+                        build-php.cache-to=type=gha,scope=build-${{ matrix.cpu }}-php-${{ matrix.php_version }}
                         php.cache-from=type=gha,scope=${{ matrix.cpu }}-php-${{ matrix.php_version }}
                         php.cache-to=type=gha,scope=${{ matrix.cpu }}-php-${{ matrix.php_version }}
                         php-fpm.cache-from=type=gha,scope=${{ matrix.cpu }}-php-fpm-${{ matrix.php_version }}
