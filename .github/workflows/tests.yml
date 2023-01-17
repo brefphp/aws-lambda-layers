@@ -61,6 +61,8 @@ jobs:
                         php-fpm-dev.cache-from=type=gha,scope=${{ matrix.cpu }}-php-fpm-dev-${{ matrix.php_version }}
                         php-fpm-dev.cache-to=type=gha,scope=${{ matrix.cpu }}-php-fpm-dev-${{ matrix.php_version }},mode=max
 
+            -   run: docker image ls
+
             -   name: Test that layers can be exported
                 run: |
                     make -f cpu-${{ matrix.cpu }}.Makefile layer-php-${{ matrix.php_version }}
