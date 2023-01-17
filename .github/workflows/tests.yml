@@ -47,25 +47,20 @@ jobs:
                     # Cache Docker layers in GitHub Actions cache, scoped per image
                     # https://github.com/docker/bake-action/issues/87#issuecomment-1184659151
                     # We unfortunately don't use `mode=max` (which caches ALL layers instead of just tags)
-                    # because it creates a huge cache and we get GitHub Actions cache timeouts:
+                    # nor do we cache all images because it creates a huge number of cache requests
+                    # and we get GitHub Actions cache timeouts:
                     # https://github.com/moby/buildkit/issues/2804
                     set: |
                         base-devel.cache-from=type=gha,scope=base-devel-${{ matrix.cpu }}
                         base-devel.cache-to=type=gha,scope=base-devel-${{ matrix.cpu }}
                         build-php.cache-from=type=gha,scope=build-${{ matrix.cpu }}-php-${{ matrix.php_version }}
                         build-php.cache-to=type=gha,scope=build-${{ matrix.cpu }}-php-${{ matrix.php_version }}
-                        php.cache-from=type=gha,scope=${{ matrix.cpu }}-php-${{ matrix.php_version }}
-                        php.cache-to=type=gha,scope=${{ matrix.cpu }}-php-${{ matrix.php_version }}
-                        php-fpm.cache-from=type=gha,scope=${{ matrix.cpu }}-php-fpm-${{ matrix.php_version }}
-                        php-fpm.cache-to=type=gha,scope=${{ matrix.cpu }}-php-fpm-${{ matrix.php_version }}
                         fpm-internal-src.cache-from=type=gha,scope=${{ matrix.cpu }}-fpm-internal-src-${{ matrix.php_version }}
                         fpm-internal-src.cache-to=type=gha,scope=${{ matrix.cpu }}-fpm-internal-src-${{ matrix.php_version }}
                         console.cache-from=type=gha,scope=${{ matrix.cpu }}-console-${{ matrix.php_version }}
                         console.cache-to=type=gha,scope=${{ matrix.cpu }}-console-${{ matrix.php_version }}
                         php-fpm-dev.cache-from=type=gha,scope=${{ matrix.cpu }}-php-fpm-dev-${{ matrix.php_version }}
                         php-fpm-dev.cache-to=type=gha,scope=${{ matrix.cpu }}-php-fpm-dev-${{ matrix.php_version }}
-
-            -   run: docker image ls
 
             -   name: Test that layers can be exported
                 run: |
