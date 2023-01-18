@@ -66,33 +66,6 @@ RUN mkdir -p ${BUILD_DIR}  \
 
 
 ###############################################################################
-# ZLIB
-# https://github.com/madler/zlib/releases
-# Needed for:
-#   - openssl
-#   - curl
-#   - php
-# Used By:
-#   - xml2
-ENV VERSION_ZLIB=1.2.13
-ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
-RUN set -xe; \
-    mkdir -p ${ZLIB_BUILD_DIR}; \
-    curl -Ls https://zlib.net/zlib-${VERSION_ZLIB}.tar.xz \
-  | tar xJC ${ZLIB_BUILD_DIR} --strip-components=1
-WORKDIR  ${ZLIB_BUILD_DIR}/
-RUN set -xe; \
-    make distclean \
- && CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
-    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    ./configure --prefix=${INSTALL_DIR} --64
-RUN set -xe; \
-    make install \
- && rm ${INSTALL_DIR}/lib/libz.a
-
-
-###############################################################################
 # OPENSSL
 # https://github.com/openssl/openssl/releases
 # Needs:
@@ -254,7 +227,7 @@ RUN CFLAGS="" \
     --with-history \
     --enable-ipv6=no \
     --with-icu \
-    --with-zlib=${INSTALL_DIR} \
+    --with-zlib \
     --without-python
 RUN make install \
  && cp xml2-config ${INSTALL_DIR}/bin/xml2-config

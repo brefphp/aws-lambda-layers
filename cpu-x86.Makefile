@@ -30,7 +30,7 @@ layer-%:
 # Upload the layers to AWS Lambda
 # Uses the current AWS_PROFILE. Most users will not want to use this option
 # as this will publish all layers to all regions + publish all Docker images.
-upload-layers: layers
+upload-layers:
 	# Upload the function layers to AWS
 	LAYER_NAME=php-80 $(MAKE) -C ./utils/lambda-publish publish-parallel
 	LAYER_NAME=php-81 $(MAKE) -C ./utils/lambda-publish publish-parallel

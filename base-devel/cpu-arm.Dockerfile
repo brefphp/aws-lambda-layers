@@ -227,7 +227,7 @@ RUN CFLAGS="" \
     --with-history \
     --enable-ipv6=no \
     --with-icu \
-    --with-zlib=${INSTALL_DIR} \
+    --with-zlib \
     --without-python
 RUN make install \
  && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
