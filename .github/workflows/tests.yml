@@ -24,44 +24,16 @@ jobs:
 
             -   uses: actions/checkout@v3
 
-            # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
-            -   name: Set up QEMU to build ARM images
-                uses: docker/setup-qemu-action@v2
-
-            -   name: Set up Docker buildx to use BuildKit features
-                uses: docker/setup-buildx-action@v2
-                with:
-                    # Sets up `docker build` command as an alias to `docker buildx`
-                    install: true
+            -   uses: depot/setup-action@v1
 
             -   name: Build Docker images
-                uses: docker/bake-action@v2.3.0
+                run: make -f cpu-${{ matrix.cpu }}.Makefile docker-images
                 env:
+                    DEPOT_TOKEN: ${{ secrets.DEPOT_TOKEN }}
                     PHP_VERSION: ${{ matrix.php_version }}
                     CPU: ${{ matrix.cpu }}
                     CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
                     IMAGE_VERSION_SUFFIX: ${{ (matrix.cpu == 'arm') && 'arm64' || 'x86_64' }}
-                with:
-                    # This is needed to make the built images available in later steps
-                    # https://docs.docker.com/engine/reference/commandline/buildx_build/#load
-                    load: true
-                    # Cache Docker layers in GitHub Actions cache, scoped per image
-                    # https://github.com/docker/bake-action/issues/87#issuecomment-1184659151
-                    # We unfortunately don't use `mode=max` (which caches ALL layers instead of just tags)
-                    # nor do we cache all images because it creates a huge number of cache requests
-                    # and we get GitHub Actions cache timeouts:
-                    # https://github.com/moby/buildkit/issues/2804
-                    set: |
-                        base-devel.cache-from=type=gha,scope=base-devel-${{ matrix.cpu }}
-                        base-devel.cache-to=type=gha,scope=base-devel-${{ matrix.cpu }}
-                        build-php.cache-from=type=gha,scope=build-${{ matrix.cpu }}-php-${{ matrix.php_version }}
-                        build-php.cache-to=type=gha,scope=build-${{ matrix.cpu }}-php-${{ matrix.php_version }}
-                        fpm-internal-src.cache-from=type=gha,scope=fpm-internal-src
-                        fpm-internal-src.cache-to=type=gha,scope=fpm-internal-src
-                        console.cache-from=type=gha,scope=${{ matrix.cpu }}-console-${{ matrix.php_version }}
-                        console.cache-to=type=gha,scope=${{ matrix.cpu }}-console-${{ matrix.php_version }}
-                        php-fpm-dev.cache-from=type=gha,scope=${{ matrix.cpu }}-php-fpm-dev-${{ matrix.php_version }}
-                        php-fpm-dev.cache-to=type=gha,scope=${{ matrix.cpu }}-php-fpm-dev-${{ matrix.php_version }}
 
             -   name: Test that layers can be exported
                 run: |

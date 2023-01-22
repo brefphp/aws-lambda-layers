@@ -12,10 +12,60 @@ default: docker-images layers
 
 
 # Build Docker images *locally*
-docker-images:
-	PHP_VERSION=80 docker buildx bake --load
-	PHP_VERSION=81 docker buildx bake --load
-	PHP_VERSION=82 docker buildx bake --load
+docker-images: docker-images-php-80 docker-images-php-81 docker-images-php-82
+docker-image-base-devel:
+	depot build \
+		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
+		--load \
+		--tag=bref/base-devel-${CPU} \
+		base-devel
+docker-image-fpm-internal-src:
+	depot build \
+		--load \
+		--tag=bref/fpm-internal-src \
+		layers/fpm
+docker-images-php-%: docker-image-base-devel docker-image-fpm-internal-src
+	# build
+	depot build \
+		--build-arg=CPU=${CPU} \
+		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
+		--load \
+		--tag=bref/${CPU_PREFIX}build-php-$* \
+		--file=php-$*/Dockerfile \
+		--target=build-environment \
+		.
+	# php
+	depot build \
+		--build-arg=CPU=${CPU} \
+		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
+		--load \
+		--tag=bref/${CPU_PREFIX}php-$* \
+		--file=php-$*/Dockerfile \
+		--target=function \
+		.
+	# php-fpm
+	depot build \
+		--build-arg=CPU=${CPU} \
+		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
+		--load \
+		--tag=bref/${CPU_PREFIX}php-$*-fpm \
+		--file=php-$*/Dockerfile \
+		--target=fpm \
+		.
+	# console
+	depot build \
+		--build-arg=PHP_VERSION=$* \
+		--build-arg=CPU_PREFIX=${CPU_PREFIX} \
+		--load \
+		--tag=bref/${CPU_PREFIX}php-$*-console \
+		layers/console
+	# php-fpm-dev
+	depot build \
+		--build-arg=PHP_VERSION=$* \
+		--build-arg=CPU_PREFIX=${CPU_PREFIX} \
+		--load \
+		--tag=bref/${CPU_PREFIX}php-$*-fpm-dev \
+		layers/fpm-dev
 
 
 # Build Lambda layers (zip files) *locally*
