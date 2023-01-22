@@ -40,6 +40,7 @@ jobs:
                     PHP_VERSION: ${{ matrix.php_version }}
                     CPU: ${{ matrix.cpu }}
                     CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
+                    IMAGE_VERSION_SUFFIX: ${{ (matrix.cpu == 'arm') && 'arm64' || 'x86_64' }}
                 with:
                     # This is needed to make the built images available in later steps
                     # https://docs.docker.com/engine/reference/commandline/buildx_build/#load

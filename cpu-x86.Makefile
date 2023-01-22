@@ -3,6 +3,7 @@
 export # export all variables defined in .env
 export CPU = x86
 export CPU_PREFIX =
+export IMAGE_VERSION_SUFFIX = x86_64
 
 
 # Build all Docker images and layers *locally*

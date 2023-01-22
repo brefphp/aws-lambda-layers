@@ -3,11 +3,15 @@
 # recompile them every time we change PHP.
 
 
+# Can be "x86_64" or "arm64"
+ARG IMAGE_VERSION_SUFFIX
+
+
 # Lambda uses a custom AMI named Amazon Linux 2
 # https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
 # AWS provides a Docker image that we use here:
 # https://github.com/amazonlinux/container-images/tree/amzn2
-FROM public.ecr.aws/lambda/provided:al2-arm64
+FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX}
 
 
 # Temp directory in which all compilation happens

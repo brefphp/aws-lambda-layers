@@ -11,10 +11,16 @@ variable "CPU_PREFIX" {
 variable "PHP_VERSION" {
   default = "80"
 }
+variable "IMAGE_VERSION_SUFFIX" {
+  default = "x86_64"
+}
 
 target "base-devel" {
-  dockerfile = "base-devel/cpu-${CPU}.Dockerfile"
+  context = "base-devel"
   tags = ["bref/base-devel-${CPU}"]
+  args = {
+    "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
+  }
 }
 
 target "build-php" {
