@@ -1,5 +1,11 @@
 # syntax = docker/dockerfile:1.4
-FROM bref/base-devel-x86 as build-environment
+
+# Can be "x86" or "arm"
+ARG CPU
+# Can be "x86_64" or "arm64"
+ARG IMAGE_VERSION_SUFFIX
+
+FROM bref/base-devel-${CPU} as build-environment
 
 ENV VERSION_PHP=8.0.25
 
@@ -37,7 +43,6 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
     ./configure \
-        --build=x86_64-pc-linux-gnu \
         --prefix=${INSTALL_DIR} \
         --enable-option-checking=fatal \
         --enable-sockets \
@@ -109,7 +114,7 @@ RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/pdo_pgsql.so /
 
 # ---------------------------------------------------------------
 # Start from a clean image to copy only the files we need
-FROM public.ecr.aws/lambda/provided:al2-x86_64 as isolation
+FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as isolation
 
 COPY --link --from=build-environment /opt /opt
 

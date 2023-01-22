@@ -1,7 +1,13 @@
 # syntax = docker/dockerfile:1.4
-FROM bref/base-devel-arm as build-environment
 
-ENV VERSION_PHP=8.1.14
+# Can be "x86" or "arm"
+ARG CPU
+# Can be "x86_64" or "arm64"
+ARG IMAGE_VERSION_SUFFIX
+
+FROM bref/base-devel-${CPU} as build-environment
+
+ENV VERSION_PHP=8.2.0
 
 RUN mkdir -p /tmp/php
 WORKDIR /tmp/php
@@ -108,7 +114,7 @@ RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/pdo_pgsql.so /
 
 # ---------------------------------------------------------------
 # Start from a clean image to copy only the files we need
-FROM public.ecr.aws/lambda/provided:al2-arm64 as isolation
+FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as isolation
 
 COPY --link --from=build-environment /opt /opt
 

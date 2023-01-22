@@ -24,9 +24,13 @@ target "base-devel" {
 }
 
 target "build-php" {
-  dockerfile = "php-${PHP_VERSION}/cpu-${CPU}.Dockerfile"
+  dockerfile = "php-${PHP_VERSION}/Dockerfile"
   target = "build-environment"
   tags = ["bref/${CPU_PREFIX}build-php-${PHP_VERSION}"]
+  args = {
+    "CPU" = "${CPU}"
+    "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
+  }
   contexts = {
     // Dependency to the base image
     "bref/base-devel-${CPU}" = "target:base-devel"
@@ -34,9 +38,13 @@ target "build-php" {
 }
 
 target "php" {
-  dockerfile = "php-${PHP_VERSION}/cpu-${CPU}.Dockerfile"
+  dockerfile = "php-${PHP_VERSION}/Dockerfile"
   target = "function"
   tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}"]
+  args = {
+    "CPU" = "${CPU}"
+    "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
+  }
   contexts = {
     "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
@@ -49,9 +57,13 @@ target "fpm-internal-src" {
 }
 
 target "php-fpm" {
-  dockerfile = "php-${PHP_VERSION}/cpu-${CPU}.Dockerfile"
+  dockerfile = "php-${PHP_VERSION}/Dockerfile"
   target = "fpm"
   tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm"]
+  args = {
+    "CPU" = "${CPU}"
+    "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
+  }
   contexts = {
     "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
