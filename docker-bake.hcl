@@ -15,14 +15,6 @@ variable "IMAGE_VERSION_SUFFIX" {
   default = "x86_64"
 }
 
-target "base-devel" {
-  context = "base-devel"
-  tags = ["bref/base-devel-${CPU}"]
-  args = {
-    "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-  }
-}
-
 target "build-php" {
   dockerfile = "php-${PHP_VERSION}/Dockerfile"
   target = "build-environment"
@@ -30,10 +22,6 @@ target "build-php" {
   args = {
     "CPU" = "${CPU}"
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-  }
-  contexts = {
-    // Dependency to the base image
-    "bref/base-devel-${CPU}" = "target:base-devel"
   }
 }
 
@@ -46,7 +34,6 @@ target "php" {
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
   }
 }
@@ -65,7 +52,6 @@ target "php-fpm" {
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
     "bref/fpm-internal-src" = "target:fpm-internal-src"
@@ -81,7 +67,6 @@ target "console" {
     CPU_PREFIX = "${CPU_PREFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
   }
@@ -95,7 +80,6 @@ target "php-fpm-dev" {
     CPU_PREFIX = "${CPU_PREFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm" = "target:php-fpm"

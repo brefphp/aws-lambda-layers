@@ -13,20 +13,15 @@ default: docker-images layers
 
 # Build Docker images *locally*
 docker-images: docker-images-php-80 docker-images-php-81 docker-images-php-82
-docker-image-base-devel:
-	depot build \
-		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
-		--load \
-		--tag=bref/base-devel-${CPU} \
-		base-devel
 docker-image-fpm-internal-src:
 	depot build \
 		--load \
 		--tag=bref/fpm-internal-src \
 		layers/fpm
-docker-images-php-%: docker-image-base-devel docker-image-fpm-internal-src
+docker-images-php-%: docker-image-fpm-internal-src
 	# build
 	depot build \
+		--platform=linux/amd64 \
 		--build-arg=CPU=${CPU} \
 		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
 		--load \
@@ -36,6 +31,7 @@ docker-images-php-%: docker-image-base-devel docker-image-fpm-internal-src
 		.
 	# php
 	depot build \
+		--platform=linux/amd64 \
 		--build-arg=CPU=${CPU} \
 		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
 		--load \
@@ -45,6 +41,7 @@ docker-images-php-%: docker-image-base-devel docker-image-fpm-internal-src
 		.
 	# php-fpm
 	depot build \
+		--platform=linux/amd64 \
 		--build-arg=CPU=${CPU} \
 		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
 		--load \
@@ -54,6 +51,7 @@ docker-images-php-%: docker-image-base-devel docker-image-fpm-internal-src
 		.
 	# console
 	depot build \
+		--platform=linux/amd64 \
 		--build-arg=PHP_VERSION=$* \
 		--build-arg=CPU_PREFIX=${CPU_PREFIX} \
 		--load \
@@ -61,6 +59,7 @@ docker-images-php-%: docker-image-base-devel docker-image-fpm-internal-src
 		layers/console
 	# php-fpm-dev
 	depot build \
+		--platform=linux/amd64 \
 		--build-arg=PHP_VERSION=$* \
 		--build-arg=CPU_PREFIX=${CPU_PREFIX} \
 		--load \
