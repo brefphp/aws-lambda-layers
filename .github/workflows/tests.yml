@@ -27,13 +27,14 @@ jobs:
             -   uses: depot/setup-action@v1
 
             -   name: Build Docker images
-                run: make -f cpu-${{ matrix.cpu }}.Makefile docker-images
+                run: depot bake --load
                 env:
                     DEPOT_TOKEN: ${{ secrets.DEPOT_TOKEN }}
                     PHP_VERSION: ${{ matrix.php_version }}
                     CPU: ${{ matrix.cpu }}
                     CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
                     IMAGE_VERSION_SUFFIX: ${{ (matrix.cpu == 'arm') && 'arm64' || 'x86_64' }}
+                    DOCKER_PLATFORM: ${{ (matrix.cpu == 'arm') && 'arm64' || 'amd64' }}
 
             -   name: Test that layers can be exported
                 run: |

@@ -4,6 +4,7 @@ export # export all variables defined in .env
 export CPU = arm
 export CPU_PREFIX = arm-
 export IMAGE_VERSION_SUFFIX = arm64
+export DOCKER_PLATFORM = arm64
 
 
 # Build all Docker images and layers *locally*
@@ -14,52 +15,7 @@ default: docker-images layers
 # Build Docker images *locally*
 docker-images: docker-images-php-80 docker-images-php-81 docker-images-php-82
 docker-images-php-%:
-	# build
-	depot build \
-		--platform=linux/arm64 \
-		--build-arg=CPU=${CPU} \
-		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
-		--load \
-		--tag=bref/${CPU_PREFIX}build-php-$* \
-		--file=php-$*/Dockerfile \
-		--target=build-environment \
-		.
-	# php
-	depot build \
-		--platform=linux/arm64 \
-		--build-arg=CPU=${CPU} \
-		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
-		--load \
-		--tag=bref/${CPU_PREFIX}php-$* \
-		--file=php-$*/Dockerfile \
-		--target=function \
-		.
-	# php-fpm
-	depot build \
-		--platform=linux/arm64 \
-		--build-arg=CPU=${CPU} \
-		--build-arg=IMAGE_VERSION_SUFFIX=${IMAGE_VERSION_SUFFIX} \
-		--load \
-		--tag=bref/${CPU_PREFIX}php-$*-fpm \
-		--file=php-$*/Dockerfile \
-		--target=fpm \
-		.
-	# console
-	depot build \
-		--platform=linux/arm64 \
-		--build-arg=PHP_VERSION=$* \
-		--build-arg=CPU_PREFIX=${CPU_PREFIX} \
-		--load \
-		--tag=bref/${CPU_PREFIX}php-$*-console \
-		layers/console
-	# php-fpm-dev
-	depot build \
-		--platform=linux/arm64 \
-		--build-arg=PHP_VERSION=$* \
-		--build-arg=CPU_PREFIX=${CPU_PREFIX} \
-		--load \
-		--tag=bref/${CPU_PREFIX}php-$*-fpm-dev \
-		layers/fpm-dev
+	PHP_VERSION=$* depot bake
 
 
 # Build Lambda layers (zip files) *locally*
