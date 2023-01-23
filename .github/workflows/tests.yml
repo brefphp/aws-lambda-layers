@@ -21,24 +21,19 @@ jobs:
                     - 81
                     - 82
         steps:
-
             -   uses: actions/checkout@v3
 
             -   uses: depot/setup-action@v1
 
             -   name: Build Docker images
-                run: depot bake --load
+                run: make -f cpu-${{ matrix.cpu }}.Makefile docker-images-php-${{ matrix.php_version }}
                 env:
                     DEPOT_TOKEN: ${{ secrets.DEPOT_TOKEN }}
-                    PHP_VERSION: ${{ matrix.php_version }}
-                    CPU: ${{ matrix.cpu }}
-                    CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
-                    IMAGE_VERSION_SUFFIX: ${{ (matrix.cpu == 'arm') && 'arm64' || 'x86_64' }}
-                    DOCKER_PLATFORM: ${{ (matrix.cpu == 'arm') && 'linux/arm64' || 'linux/amd64' }}
 
             -   name: Test that layers can be exported
                 run: |
                     make -f cpu-${{ matrix.cpu }}.Makefile layer-php-${{ matrix.php_version }}
                     make -f cpu-${{ matrix.cpu }}.Makefile layer-php-${{ matrix.php_version }}-fpm
 
-            -   run: make -f cpu-${{ matrix.cpu }}.Makefile test-${{ matrix.php_version }}
+            -   name: Run tests
+                run: make -f cpu-${{ matrix.cpu }}.Makefile test-${{ matrix.php_version }}
