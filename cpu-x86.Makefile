@@ -4,7 +4,7 @@ export # export all variables defined in .env
 export CPU = x86
 export CPU_PREFIX =
 export IMAGE_VERSION_SUFFIX = x86_64
-export DOCKER_PLATFORM = amd64
+export DOCKER_PLATFORM = linux/amd64
 
 
 # Build all Docker images and layers *locally*

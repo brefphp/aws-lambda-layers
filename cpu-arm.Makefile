@@ -4,7 +4,7 @@ export # export all variables defined in .env
 export CPU = arm
 export CPU_PREFIX = arm-
 export IMAGE_VERSION_SUFFIX = arm64
-export DOCKER_PLATFORM = arm64
+export DOCKER_PLATFORM = linux/arm64
 
 
 # Build all Docker images and layers *locally*
