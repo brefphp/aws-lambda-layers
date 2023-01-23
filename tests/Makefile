@@ -1,7 +1,5 @@
 export CPU_PREFIX ?=
 
-.SILENT: test test-80 test-81 test-82 vendor
-
 test: test-80 test-81 test-82
 
 # This rule matches with a wildcard, for example `test-80`.
