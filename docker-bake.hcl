@@ -15,7 +15,7 @@ variable "IMAGE_VERSION_SUFFIX" {
   default = "x86_64"
 }
 variable "DOCKER_PLATFORM" {
-  default = "amd64"
+  default = "linux/amd64"
 }
 
 target "build-php" {
@@ -26,7 +26,7 @@ target "build-php" {
     "CPU" = "${CPU}"
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
-  platforms = ["linux/${DOCKER_PLATFORM}"]
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "php" {
@@ -40,7 +40,7 @@ target "php" {
   contexts = {
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
   }
-  platforms = ["linux/${DOCKER_PLATFORM}"]
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "php-fpm" {
@@ -55,7 +55,7 @@ target "php-fpm" {
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
   }
-  platforms = ["linux/${DOCKER_PLATFORM}"]
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "console" {
@@ -70,7 +70,7 @@ target "console" {
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
   }
-  platforms = ["linux/${DOCKER_PLATFORM}"]
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "php-fpm-dev" {
@@ -86,5 +86,5 @@ target "php-fpm-dev" {
     "bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm" = "target:php-fpm"
     "bref/local-api-gateway" = "docker-image://bref/local-api-gateway:latest"
   }
-  platforms = ["linux/${DOCKER_PLATFORM}"]
+  platforms = ["${DOCKER_PLATFORM}"]
 }
