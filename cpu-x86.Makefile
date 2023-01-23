@@ -13,12 +13,7 @@ default: docker-images layers
 
 # Build Docker images *locally*
 docker-images: docker-images-php-80 docker-images-php-81 docker-images-php-82
-docker-image-fpm-internal-src:
-	depot build \
-		--load \
-		--tag=bref/fpm-internal-src \
-		layers/fpm
-docker-images-php-%: docker-image-fpm-internal-src
+docker-images-php-%:
 	# build
 	depot build \
 		--platform=linux/amd64 \
@@ -119,7 +114,6 @@ clean:
 	# Remove zip files
 	rm -f output/*.zip
 	# Clean Docker images to force rebuilding them
-	docker image rm --force bref/fpm-internal-src
 	docker image rm --force bref/build-php-80
 	docker image rm --force bref/build-php-81
 	docker image rm --force bref/build-php-82

@@ -465,6 +465,16 @@ RUN cp ${INSTALL_DIR}/sbin/php-fpm /opt/bin/php-fpm
 RUN php /bref/lib-copy/copy-dependencies.php /opt/bin/php-fpm /opt/lib
 
 
+# Embed the https://github.com/brefphp/php-fpm-runtime in the layer
+FROM composer:2 as fpm-runtime
+
+RUN mkdir -p /opt/bref/php-fpm-runtime
+WORKDIR /opt/bref/php-fpm-runtime
+
+COPY --link layers/fpm/composer.json composer.json
+RUN composer install --ignore-platform-req=ext-posix --ignore-platform-req=ext-simplexml
+
+
 FROM isolation as fpm
 
 COPY --link --from=fpm-extension /opt /opt
@@ -478,4 +488,4 @@ RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 COPY --link layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --link --from=bref/fpm-internal-src /opt/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
+COPY --link --from=fpm-runtime /opt/bref/php-fpm-runtime /opt/bref/php-fpm-runtime

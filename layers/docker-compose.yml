@@ -1,6 +1,0 @@
-version: '3.8'
-
-services:
-  fpm-pkg:
-    image: bref/fpm-internal-src
-    build: ./fpm

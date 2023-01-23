@@ -38,11 +38,6 @@ target "php" {
   }
 }
 
-target "fpm-internal-src" {
-  context = "layers/fpm"
-  tags = ["bref/fpm-internal-src"]
-}
-
 target "php-fpm" {
   dockerfile = "php-${PHP_VERSION}/Dockerfile"
   target = "fpm"
@@ -54,7 +49,6 @@ target "php-fpm" {
   contexts = {
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
-    "bref/fpm-internal-src" = "target:fpm-internal-src"
   }
 }
 

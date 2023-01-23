@@ -174,8 +174,6 @@ The 2nd layer is the `isolation` layer where we'll start from the standard AWS-p
 copied here as well.
 
 The 3rd layer is the `function` layer where everything is packet together and the `bootstrap` file is loaded.
-The `bref-internal-src` images (see layers/fpm) are used to load Bref
-classes into the layer.
 
 The 4th layer is `zip-function`, where we get a small and fast Linux (Alpine) just to install and zip the entire
 `/opt` content. We use docker compose volumes to map `/tmp/bref-zip` from host to the container so that we can
