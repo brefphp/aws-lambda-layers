@@ -30,14 +30,20 @@ jobs:
             -   uses: depot/setup-action@v1
 
             -   name: Build Docker images
-                run: make -f cpu-${{ matrix.cpu }}.Makefile docker-images-php-${{ matrix.php_version }}
+                run: make docker-images-php-${{ matrix.php_version }}
                 env:
+                    CPU: ${{ matrix.cpu }}
+                    USE_DEPOT: 1
                     DEPOT_TOKEN: ${{ secrets.DEPOT_TOKEN }}
 
             -   name: Test that layers can be exported
                 run: |
-                    make -f cpu-${{ matrix.cpu }}.Makefile layer-php-${{ matrix.php_version }}
-                    make -f cpu-${{ matrix.cpu }}.Makefile layer-php-${{ matrix.php_version }}-fpm
+                    make layer-php-${{ matrix.php_version }}
+                    make layer-php-${{ matrix.php_version }}-fpm
+                env:
+                    CPU: ${{ matrix.cpu }}
 
             -   name: Run tests
-                run: make -f cpu-${{ matrix.cpu }}.Makefile test-${{ matrix.php_version }}
+                run: make test-${{ matrix.php_version }}
+                env:
+                    CPU: ${{ matrix.cpu }}
