@@ -14,13 +14,8 @@ variable "PHP_VERSION" {
 variable "IMAGE_VERSION_SUFFIX" {
   default = "x86_64"
 }
-
-target "base-devel" {
-  context = "base-devel"
-  tags = ["bref/base-devel-${CPU}"]
-  args = {
-    "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-  }
+variable "DOCKER_PLATFORM" {
+  default = "linux/amd64"
 }
 
 target "build-php" {
@@ -31,10 +26,7 @@ target "build-php" {
     "CPU" = "${CPU}"
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
-  contexts = {
-    // Dependency to the base image
-    "bref/base-devel-${CPU}" = "target:base-devel"
-  }
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "php" {
@@ -46,14 +38,9 @@ target "php" {
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
   }
-}
-
-target "fpm-internal-src" {
-  context = "layers/fpm"
-  tags = ["bref/fpm-internal-src"]
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "php-fpm" {
@@ -65,11 +52,10 @@ target "php-fpm" {
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
-    "bref/fpm-internal-src" = "target:fpm-internal-src"
   }
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "console" {
@@ -81,10 +67,10 @@ target "console" {
     CPU_PREFIX = "${CPU_PREFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
   }
+  platforms = ["${DOCKER_PLATFORM}"]
 }
 
 target "php-fpm-dev" {
@@ -95,10 +81,10 @@ target "php-fpm-dev" {
     CPU_PREFIX = "${CPU_PREFIX}"
   }
   contexts = {
-    "bref/base-devel-${CPU}" = "target:base-devel"
     "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
     "bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm" = "target:php-fpm"
     "bref/local-api-gateway" = "docker-image://bref/local-api-gateway:latest"
   }
+  platforms = ["${DOCKER_PLATFORM}"]
 }
