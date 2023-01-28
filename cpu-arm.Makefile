@@ -15,7 +15,7 @@ default: docker-images layers
 # Build Docker images *locally*
 docker-images: docker-images-php-80 docker-images-php-81 docker-images-php-82
 docker-images-php-%:
-	PHP_VERSION=$* depot bake --load
+	PHP_VERSION=$* depot bake --build-platform=${DOCKER_PLATFORM} --load
 
 
 # Build Lambda layers (zip files) *locally*
