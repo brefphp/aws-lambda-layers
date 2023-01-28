@@ -5,7 +5,8 @@ ARG CPU
 # Can be "x86_64" or "arm64"
 ARG IMAGE_VERSION_SUFFIX
 
-ARG VERSION_PHP=8.2.0
+# https://www.php.net/downloads
+ARG VERSION_PHP=8.2.1
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
