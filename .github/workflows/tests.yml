@@ -8,7 +8,7 @@ on:
 
 jobs:
     tests:
-        name: Build and tests layers
+        name: Build and tests ${{ matrix.cpu }} PHP ${{ matrix.php_version }} layers
         runs-on: ubuntu-latest
         strategy:
             fail-fast: false
