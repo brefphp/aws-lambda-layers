@@ -44,7 +44,7 @@ docker-images-php-%:
 layers: layer-php-80 layer-php-81 layer-php-82 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm
 	# Build the console layer only once (x86 and single PHP version)
 	@if [ ${CPU} = "x86" ]; then \
-		./utils/docker-zip-dir.sh bref/php-80-console-zip console; \
+		./utils/docker-zip-dir.sh bref/console-zip console; \
 	fi
 # This rule matches with a wildcard, for example `layer-php-80`.
 # The `$*` variable will contained the matched part, in this case `php-80`.

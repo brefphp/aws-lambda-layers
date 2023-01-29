@@ -58,6 +58,13 @@ target "php-fpm" {
   platforms = ["${DOCKER_PLATFORM}"]
 }
 
+target "console-zip" {
+  context = "layers/console"
+  target = "console-zip"
+  tags = ["bref/console-zip"]
+  platforms = ["${DOCKER_PLATFORM}"]
+}
+
 target "console" {
   context = "layers/console"
   target = "console"
