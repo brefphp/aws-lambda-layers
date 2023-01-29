@@ -2,8 +2,10 @@
 
 /********************************************************
  *
+ * Copies the system dependencies used by a binary/extension.
+ *
  * Usage:
- *    php copy-dependencies.php <path-to-lib-check.php> <target-directory>
+ *    php copy-dependencies.php <file-to-analyze> <target-directory>
  *
  * For example:
  *    php copy-dependencies.php /opt/bin/php /opt/lib
@@ -18,15 +20,14 @@ if (! ($argv[2] ?? false)) {
     echo 'Missing the second argument, check the file to see how to use it' . PHP_EOL;
     exit(1);
 }
-$pathToCheck = $argv[1];
-$targetDirectory = $argv[2];
+[$pathToCheck, $targetDirectory] = $argv;
 
 // All the paths where shared libraries can be found
 const LIB_PATHS = [
-    // System
+    // System libraries
     '/lib64',
     '/usr/lib64',
-    // Libraries we compiled from source go here by default
+    // Libraries we compiled from source are installed here
     '/tmp/bref/lib',
     '/tmp/bref/lib64',
 ];

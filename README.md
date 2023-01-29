@@ -103,8 +103,6 @@ docker run --rm -it --entrypoint=bash bref/php-80
 > 
 > However, `ldd` fails when running on another CPU architecture. So instead of `ldd`, we can use `objdump -p /usr/bin/bash | grep NEEDED` (that needs to be installed with `yum install binutils`).
 
-Related: `utils/lib-check` is a small utility-tool to check whether we're copying unnecessary `.so` files into the layer (i.e. `.so` files that already exist in Lambda).
-
 ### Supporting a new PHP version
 
 The general idea is to copy `php-82` into `php-83`. Search/replace `php-82` with `php-83`, update the PHP version, update the `Makefile`, and adapt anything else if needed.
@@ -163,6 +161,14 @@ Anything we want to make available in AWS Lambda is possible by preparing the ri
 /var/task # the code of the Lambda function
     php/conf.d/ # also automatically loaded php.ini files
 ```
+
+In the "build" Docker images (used by example to build extra extensions), there is a `/bref/lib-copy/copy-dependencies.php` script that helps automatically copying the system dependencies of a binary or PHP extension. It can be used like so:
+
+```sh
+php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/apcu.so /opt/lib
+```
+
+In Bref v1, we used to manually identify (via `ldd`) and copy these system libraries, but this new script automates everything. It is recommended to use it.
 
 ### The php-xx folders
 

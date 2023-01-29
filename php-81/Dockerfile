@@ -428,7 +428,7 @@ RUN cp $(php -r 'echo ini_get("extension_dir");')/* /opt/bref/extensions/
 # - /lib | /lib64 (system libraries installed with `yum`)
 # - /tmp/bref/bin | /tmp/bref/lib | /tmp/bref/lib64 (libraries compiled from source)
 # into `/opt` (the directory of Lambda layers)
-COPY --link utils/lib-check /bref/lib-copy
+COPY --link utils/lib-copy /bref/lib-copy
 RUN php /bref/lib-copy/copy-dependencies.php /opt/bin/php /opt/lib
 RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/apcu.so /opt/lib
 RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/intl.so /opt/lib
