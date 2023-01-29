@@ -2,7 +2,6 @@
 aws/
 output/
 tests/
-utils/
 .env
 .env.example
 .gitignore

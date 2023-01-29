@@ -61,7 +61,7 @@ $coreExtensions = [
     'openssl' => strlen(openssl_random_pseudo_bytes(1)) === 1,
     'pntcl' => function_exists('pcntl_fork'),
     'pcre' => preg_match('/abc/', 'abcde', $matches) && $matches[0] === 'abc',
-    'readline' => READLINE_LIB === 'libedit',
+    'readline' => READLINE_LIB === 'readline',
     'reflection' => class_exists(\ReflectionClass::class),
     'session' => session_status() === PHP_SESSION_NONE,
     'zip' => class_exists(\ZipArchive::class),
@@ -79,6 +79,8 @@ $extensions = [
     'json' => function_exists('json_encode'),
     'bcmath' => function_exists('bcadd'),
     'ctype' => function_exists('ctype_digit'),
+    // https://github.com/brefphp/aws-lambda-layers/issues/42
+    'curl-with-http2' => defined('CURL_HTTP_VERSION_2'),
     'dom' => class_exists(\DOMDocument::class),
     'exif' => function_exists('exif_imagetype'),
     'fileinfo' => function_exists('finfo_file'),
