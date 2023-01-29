@@ -20,7 +20,7 @@ if (! ($argv[2] ?? false)) {
     echo 'Missing the second argument, check the file to see how to use it' . PHP_EOL;
     exit(1);
 }
-[$pathToCheck, $targetDirectory] = $argv;
+[$_, $pathToCheck, $targetDirectory] = $argv;
 
 // All the paths where shared libraries can be found
 const LIB_PATHS = [
