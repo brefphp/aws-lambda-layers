@@ -15,7 +15,7 @@ RUN composer install --ignore-platform-req=ext-posix --ignore-platform-req=ext-s
 # This image only contains what's going in the layer zip file,
 # i.e. the files specific to the console layer.
 # It's used to create the layer zip file.
-FROM scratch as console-zip
+FROM alpine:3.14 as console-zip
 
 RUN mkdir -p /opt/bref
 
