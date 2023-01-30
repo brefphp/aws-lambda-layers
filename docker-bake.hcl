@@ -62,6 +62,10 @@ target "console-zip" {
   context = "layers/console"
   target = "console-zip"
   tags = ["bref/console-zip"]
+  args = {
+    PHP_VERSION = "${PHP_VERSION}"
+    CPU_PREFIX = "${CPU_PREFIX}"
+  }
   platforms = ["${DOCKER_PLATFORM}"]
 }
 
