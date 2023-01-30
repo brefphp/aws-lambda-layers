@@ -43,6 +43,11 @@ jobs:
                 env:
                     CPU: ${{ matrix.cpu }}
 
+            -   run: depot bake --load console-zip
+                if: ${{ matrix.php_version == 80 }}
+                env:
+                    CPU: ${{ matrix.cpu }}
+
             -   run: make layer-console
                 if: ${{ matrix.php_version == 80 }}
                 env:
