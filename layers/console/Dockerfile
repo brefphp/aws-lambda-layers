@@ -2,7 +2,7 @@
 ARG PHP_VERSION
 ARG CPU_PREFIX
 
-FROM alpine:3.14 as composer
+FROM alpine:3.14 as console-runtime
 
 RUN apk add composer
 
@@ -15,14 +15,13 @@ RUN composer install --ignore-platform-req=ext-posix --ignore-platform-req=ext-s
 # This image only contains what's going in the layer zip file,
 # i.e. the files specific to the console layer.
 # It's used to create the layer zip file.
-FROM alpine:3.14 as console-zip
+FROM scratch as console-zip
 
-RUN mkdir -p /opt/bref
+# Copy the /opt/bref/console-runtime directory
+COPY --link --from=console-runtime /opt/bref /opt/bref
 
 # Overwrite the "function" bootstrap file
 COPY --link bref/bootstrap.php /opt/bref/bootstrap.php
-
-COPY --link --from=composer /opt/bref/console-runtime /opt/bref/console-runtime
 
 
 # This image is published to Docker Hub and replicates Lambda

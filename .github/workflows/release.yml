@@ -46,8 +46,7 @@ jobs:
                     username: ${{ secrets.DOCKER_USERNAME }}
                     password: ${{ secrets.DOCKER_PASSWORD }}
 
-            -   name: Build Docker images
-                run: make docker-images
+            -   run: make docker-images
                 env:
                     CPU: ${{ matrix.cpu }}
                     USE_DEPOT: 1
