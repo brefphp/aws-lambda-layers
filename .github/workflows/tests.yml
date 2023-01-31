@@ -43,6 +43,12 @@ jobs:
                 env:
                     CPU: ${{ matrix.cpu }}
 
+            -   name: Test that the "console" layer can be exported
+                run: make layer-console
+                if: ${{ matrix.php_version == 80 }}
+                env:
+                    CPU: ${{ matrix.cpu }}
+
             -   name: Run tests
                 run: make test-${{ matrix.php_version }}
                 env:
