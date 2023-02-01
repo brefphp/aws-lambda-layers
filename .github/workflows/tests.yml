@@ -13,21 +13,38 @@ permissions:
     contents: read
 
 jobs:
+    matrix-prep:
+        name: Prepare matrix
+        runs-on: ubuntu-latest
+        outputs:
+            matrix: ${{ steps.set-matrix.outputs.result }}
+        steps:
+            -   uses: actions/github-script@v6
+                id: set-matrix
+                with:
+                    script: |
+                        const matrix = {
+                            cpu: ['x86', 'arm'],
+                            php_version: ['80', '81', '82'],
+                        }
+                        
+                        // If this is a third-party pull request, skip ARM builds
+                        if (context.eventName === 'pull_request') {
+                            const pr = context.payload.pull_request
+                            if (pr.head.repo.full_name !== pr.base.repo.full_name) {
+                                matrix.cpu = ['x86']
+                            }
+                        }
+                        
+                        return matrix
+
     tests:
         name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.cpu }}
         runs-on: ubuntu-latest
-        # Skip ARM builds on third-party pull requests, because they don't have access to Depot
-        if: matrix.cpu != 'arm' || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        needs: matrix-prep
         strategy:
             fail-fast: false
-            matrix:
-                cpu:
-                    - x86
-                    - arm
-                php_version:
-                    - 80
-                    - 81
-                    - 82
+            matrix: ${{ fromJson(needs.matrix-prep.outputs.matrix) }}
         steps:
             -   uses: actions/checkout@v3
 
