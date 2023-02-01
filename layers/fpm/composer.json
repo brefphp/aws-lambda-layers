@@ -1,8 +1,8 @@
 {
     "require": {
-        "bref/php-fpm-runtime": "2.0.0"
+        "bref/php-fpm-runtime": "^2.1.0"
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "beta",
     "prefer-stable" : true,
     "config": {
         "platform": {
