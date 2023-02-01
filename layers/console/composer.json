@@ -1,8 +1,8 @@
 {
     "require": {
-        "bref/bref": "v2.x-dev"
+        "bref/bref": "^2.0@beta"
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "beta",
     "prefer-stable" : true,
     "config": {
         "platform": {
