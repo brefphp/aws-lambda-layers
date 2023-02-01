@@ -6,6 +6,12 @@ on:
     pull_request:
         branches: [ '*' ]
 
+permissions:
+    # allow issuing OIDC tokens, needed for the depot.dev auth
+    id-token: write
+    # allow at least reading the repo contents, add other permissions if necessary
+    contents: read
+
 jobs:
     tests:
         name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.cpu }}
@@ -29,12 +35,18 @@ jobs:
 
             -   uses: depot/setup-action@v1
 
+            # We use this action instead of running `make docker-images-php-XX` directly because it lets us
+            # use OIDC authentication instead of a secret. Secrets can't be used in pull request builds.
             -   name: Build Docker images
-                run: make docker-images-php-${{ matrix.php_version }}
+                uses: depot/bake-action@v1
+                with:
+                    load: true
                 env:
                     CPU: ${{ matrix.cpu }}
-                    USE_DEPOT: 1
-                    DEPOT_TOKEN: ${{ secrets.DEPOT_TOKEN }}
+                    CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
+                    PHP_VERSION: ${{ matrix.php_version }}
+                    IMAGE_VERSION_SUFFIX: ${{ (matrix.cpu == 'arm') && 'arm64' || 'x86_64' }}
+                    DOCKER_PLATFORM: ${{ (matrix.cpu == 'arm') && 'linux/arm64' || 'linux/amd64' }}
 
             -   name: Test that layers can be exported
                 run: |
