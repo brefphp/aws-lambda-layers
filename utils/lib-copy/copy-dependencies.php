@@ -22,16 +22,6 @@ if (! ($argv[2] ?? false)) {
 }
 [$_, $pathToCheck, $targetDirectory] = $argv;
 
-// All the paths where shared libraries can be found
-const LIB_PATHS = [
-    // System libraries
-    '/lib64',
-    '/usr/lib64',
-    // Libraries we compiled from source are installed here
-    '/tmp/bref/lib',
-    '/tmp/bref/lib64',
-];
-
 $arch = 'x86';
 if (php_uname('m') !== 'x86_64') {
     $arch = 'arm';
@@ -44,10 +34,14 @@ $librariesThatExistOnLambda = array_filter($librariesThatExistOnLambda, function
     return ! str_contains($library, 'libgcrypt.so') && ! str_contains($library, 'libgpg-error.so');
 });
 
-$requiredLibraries = listAllDependenciesRecursively($pathToCheck);
+$requiredLibraries = listDependencies($pathToCheck);
 // Exclude existing system libraries
 $requiredLibraries = array_filter($requiredLibraries, function (string $lib) use ($librariesThatExistOnLambda) {
-    $keep = ! in_array(basename($lib), $librariesThatExistOnLambda, true);
+    // Libraries that we compiled are in /opt/lib or /opt/lib64, we compiled them because they are more
+    // recent than the ones in Lambda so we definitely want to use them
+    $isALibraryWeCompiled = str_starts_with($lib, '/opt/lib');
+    $doesNotExistInLambda = !in_array(basename($lib), $librariesThatExistOnLambda, true);
+    $keep = $isALibraryWeCompiled || $doesNotExistInLambda;
     if (! $keep) {
         echo "Skipping $lib because it's already in Lambda" . PHP_EOL;
     }
@@ -58,46 +52,33 @@ $requiredLibraries = array_filter($requiredLibraries, function (string $lib) use
 foreach ($requiredLibraries as $libraryPath) {
     $targetPath = $targetDirectory . '/' . basename($libraryPath);
     echo "Copying $libraryPath to $targetPath" . PHP_EOL;
-    copy($libraryPath, $targetPath);
+    $success = copy($libraryPath, $targetPath);
+    if (! $success) {
+        throw new RuntimeException("Could not copy $libraryPath to $targetPath");
+    }
 }
 
 
 function listDependencies(string $path): array
 {
-    static $cache = [];
-    if (!isset($cache[$path])) {
-        echo $path . PHP_EOL;
-        $asString = shell_exec("objdump -p '$path' | grep NEEDED | awk '{ print $2 }'");
-        if (!$asString) {
-            $dependencies = [];
-        } else {
-            $dependencies = array_filter(explode(PHP_EOL, $asString));
+    // ldd lists the dependencies of a binary or library/extension (.so file)
+    exec("ldd $path 2>&1", $lines);
+    if (str_contains(end($lines), 'exited with unknown exit code (139)')) {
+        // We can't use `ldd` on binaries (like /opt/bin/php) because it fails on cross-platform builds
+        // so we fall back to `LD_TRACE_LOADED_OBJECTS` (which doesn't work for .so files, that's why we also try `ldd`)
+        // See https://stackoverflow.com/a/35905007/245552
+        $output = shell_exec("LD_TRACE_LOADED_OBJECTS=1 $path 2>&1");
+        if (!$output) {
+            throw new RuntimeException("Could not list dependencies for $path");
         }
-        $cache[$path] = array_map(fn(string $dependency) => findFullPath($dependency), $dependencies);
+        $lines = explode(PHP_EOL, $output);
     }
-    return $cache[$path];
-}
-
-function findFullPath(string $lib): string {
-    static $cache = [];
-    if (isset($cache[$lib])) {
-        return $cache[$lib];
-    }
-    foreach (LIB_PATHS as $libPath) {
-        if (file_exists("$libPath/$lib")) {
-            $cache[$lib] = "$libPath/$lib";
-            return "$libPath/$lib";
+    $dependencies = [];
+    foreach ($lines as $line) {
+        $matches = [];
+        if (preg_match('/=> (.*) \(0x[0-9a-f]+\)/', $line, $matches)) {
+            $dependencies[] = $matches[1];
         }
     }
-    throw new RuntimeException("Dependency '$lib' not found");
-}
-
-function listAllDependenciesRecursively(string $path): array
-{
-    $dependencies = listDependencies($path);
-    $allDependencies = [];
-    foreach ($dependencies as $dependency) {
-        $allDependencies = array_merge($allDependencies, listAllDependenciesRecursively($dependency));
-    }
-    return array_unique(array_merge($dependencies, $allDependencies));
+    return $dependencies;
 }
