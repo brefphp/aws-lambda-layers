@@ -16,14 +16,10 @@ ARG VERSION_PHP=8.2.2
 FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as build-environment
 
 
-# Temp directory in which all compilation happens
-WORKDIR /tmp
-
-
 RUN set -xe \
     # Download yum repository data to cache
  && yum makecache \
-    # Default Development Tools
+    # Install default development tools (gcc, make, etc)
  && yum groupinstall -y "Development Tools" --setopt=group_package_types=mandatory,default
 
 
@@ -35,6 +31,7 @@ RUN LD_LIBRARY_PATH= yum install -y cmake3
 # Override the default `cmake`
 RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 
+
 # Use the bash shell, instead of /bin/sh
 # Why? We need to document this.
 SHELL ["/bin/bash", "-c"]
@@ -42,8 +39,15 @@ SHELL ["/bin/bash", "-c"]
 # We need a base path for all the sourcecode we will build from.
 ENV BUILD_DIR="/tmp/build"
 
-# Target installation path for all the packages we will compile
-ENV INSTALL_DIR="/tmp/bref"
+# Target installation path for all the binaries and libraries we will compile.
+# We need to use /opt because that's where AWS Lambda layers are unzipped,
+# and we need binaries (e.g. /opt/bin/php) to look for libraries in /opt/lib.
+# Indeed, `/opt/lib` is a path Lambda looks for libraries by default (it is in `LD_LIBRARY_PATH`)
+# AND the `/opt/lib` path will be hardcoded in the compiled binaries and libraries (called "rpath").
+#
+# Note: the /opt directory will be completely recreated from scratch in the final images,
+# so it's ok at this stage if we "pollute" it with plenty of extra libs/build artifacts.
+ENV INSTALL_DIR="/opt"
 
 # We need some default compiler variables setup
 ENV PKG_CONFIG_PATH="${INSTALL_DIR}/lib64/pkgconfig:${INSTALL_DIR}/lib/pkgconfig" \
@@ -413,35 +417,36 @@ RUN pecl install APCu
 
 
 # ---------------------------------------------------------------
-# Now we copy everything we need for the layers into /opt (location of the layers)
-RUN mkdir /opt/bin \
-&&  mkdir /opt/lib \
-&&  mkdir -p /opt/bref/extensions
+# Now we copy everything we need for the layers into /bref-layer (which will be used for the real /opt later)
+RUN mkdir -p /bref-layer/bin \
+&&  mkdir -p /bref-layer/lib \
+&&  mkdir -p /bref-layer/bref/extensions
 
-# Copy the PHP binary into /opt/bin
-RUN cp ${INSTALL_DIR}/bin/php /opt/bin/php && chmod +x /opt/bin/php
+# Copy the PHP binary
+RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/php
 
 # Copy all the external PHP extensions
-RUN cp $(php -r 'echo ini_get("extension_dir");')/* /opt/bref/extensions/
+RUN cp $(php -r 'echo ini_get("extension_dir");')/* /bref-layer/bref/extensions/
 
 # Copy all the required system libraries from:
 # - /lib | /lib64 (system libraries installed with `yum`)
-# - /tmp/bref/bin | /tmp/bref/lib | /tmp/bref/lib64 (libraries compiled from source)
-# into `/opt` (the directory of Lambda layers)
+# - /opt/bin | /opt/lib | /opt/lib64 (libraries compiled from source)
+# into `/bref-layer` (the temp directory for the future Lambda layer)
 COPY --link utils/lib-copy /bref/lib-copy
-RUN php /bref/lib-copy/copy-dependencies.php /opt/bin/php /opt/lib
-RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/apcu.so /opt/lib
-RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/intl.so /opt/lib
-RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/opcache.so /opt/lib
-RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/pdo_mysql.so /opt/lib
-RUN php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/pdo_pgsql.so /opt/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/apcu.so /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/intl.so /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache.so /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mysql.so /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
 
 
 # ---------------------------------------------------------------
 # Start from a clean image to copy only the files we need
 FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as isolation
 
-COPY --link --from=build-environment /opt /opt
+# We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
+COPY --link --from=build-environment /bref-layer /opt
 
 FROM isolation as function
 
@@ -462,15 +467,15 @@ COPY --link layers/function/bootstrap.php /opt/bref/bootstrap.php
 
 FROM build-environment as fpm-extension
 
-RUN cp ${INSTALL_DIR}/sbin/php-fpm /opt/bin/php-fpm
-RUN php /bref/lib-copy/copy-dependencies.php /opt/bin/php-fpm /opt/lib
+RUN cp ${INSTALL_DIR}/sbin/php-fpm /bref-layer/bin/php-fpm
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php-fpm /bref-layer/lib
 
 
 # Embed the https://github.com/brefphp/php-fpm-runtime in the layer
 FROM composer:2 as fpm-runtime
 
-RUN mkdir -p /opt/bref/php-fpm-runtime
-WORKDIR /opt/bref/php-fpm-runtime
+RUN mkdir -p /bref-layer/bref/php-fpm-runtime
+WORKDIR /bref-layer/bref/php-fpm-runtime
 
 COPY --link layers/fpm/composer.json composer.json
 RUN composer install --ignore-platform-req=ext-posix --ignore-platform-req=ext-simplexml
@@ -478,7 +483,7 @@ RUN composer install --ignore-platform-req=ext-posix --ignore-platform-req=ext-s
 
 FROM isolation as fpm
 
-COPY --link --from=fpm-extension /opt /opt
+COPY --link --from=fpm-extension /bref-layer /opt
 
 COPY --link layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
 
@@ -489,4 +494,4 @@ RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 COPY --link layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --link --from=fpm-runtime /opt/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
+COPY --link --from=fpm-runtime /bref-layer/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
