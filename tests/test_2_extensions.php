@@ -77,7 +77,7 @@ foreach ($coreExtensions as $extension => $test) {
 $extensions = [
     'curl' => function_exists('curl_init')
         // Make sure we are not using the default AL2 cURL version (7.79)
-        && version_compare(curl_version()['version'], '7.85.0', '>='),
+        && version_compare(curl_version()['version'], '7.84.0', '>='),
     // https://github.com/brefphp/aws-lambda-layers/issues/42
     'curl-http2' => defined('CURL_HTTP_VERSION_2'),
     // Make sure we are not using the default AL2 OpenSSL version (7.79)
