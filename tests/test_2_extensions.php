@@ -75,12 +75,18 @@ foreach ($coreExtensions as $extension => $test) {
 }
 
 $extensions = [
-    'cURL' => function_exists('curl_init'),
+    'curl' => function_exists('curl_init')
+        // Make sure we are not using the default AL2 cURL version (7.79)
+        && version_compare(curl_version()['version'], '7.85.0', '>='),
+    // https://github.com/brefphp/aws-lambda-layers/issues/42
+    'curl-http2' => defined('CURL_HTTP_VERSION_2'),
+    // Make sure we are not using the default AL2 OpenSSL version (7.79)
+    'curl-openssl' => str_starts_with(curl_version()['ssl_version'], 'OpenSSL/1.1.1'),
+    // Make sure we are using curl with our compiled libssh
+    'curl-libssh' => version_compare(str_replace('libssh2/', '', curl_version()['libssh_version']), '1.10.0', '>='),
     'json' => function_exists('json_encode'),
     'bcmath' => function_exists('bcadd'),
     'ctype' => function_exists('ctype_digit'),
-    // https://github.com/brefphp/aws-lambda-layers/issues/42
-    'curl-with-http2' => defined('CURL_HTTP_VERSION_2'),
     'dom' => class_exists(\DOMDocument::class),
     'exif' => function_exists('exif_imagetype'),
     'fileinfo' => function_exists('finfo_file'),
@@ -102,16 +108,21 @@ $extensions = [
     'spl' => class_exists(\SplQueue::class),
     'sqlite3' => class_exists(\SQLite3::class),
     'tokenizer' => function_exists('token_get_all'),
+    'libxml' => function_exists('libxml_get_errors'),
     'xml' => function_exists('xml_parse'),
     'xmlreader' => class_exists(\XMLReader::class),
     'xmlwriter' => class_exists(\XMLWriter::class),
     'xsl' => class_exists(\XSLTProcessor::class),
 ];
+$errors = [];
 foreach ($extensions as $extension => $test) {
     if (! $test) {
-        error($extension . ' extension was not loaded');
+        $errors[] = "[Extension] $extension extension was not loaded or failed the test";
     }
     success("[Extension] $extension");
+}
+if ($errors) {
+    errors($errors);
 }
 
 $extensionsDisabledByDefault = [
