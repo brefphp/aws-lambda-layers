@@ -32,10 +32,6 @@ RUN LD_LIBRARY_PATH= yum install -y cmake3
 RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 
 
-# Use the bash shell, instead of /bin/sh
-# Why? We need to document this.
-SHELL ["/bin/bash", "-c"]
-
 # We need a base path for all the sourcecode we will build from.
 ENV BUILD_DIR="/tmp/build"
 
