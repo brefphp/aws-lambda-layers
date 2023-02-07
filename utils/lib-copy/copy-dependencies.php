@@ -37,7 +37,9 @@ $librariesThatExistOnLambda = array_filter($librariesThatExistOnLambda, function
 $requiredLibraries = listDependencies($pathToCheck);
 // Exclude existing system libraries
 $requiredLibraries = array_filter($requiredLibraries, function (string $lib) use ($librariesThatExistOnLambda) {
-    $isALibraryWeCompiled = str_starts_with($lib, '/tmp/bref/lib');
+    // Libraries that we compiled are in /opt/lib or /opt/lib64, we compiled them because they are more
+    // recent than the ones in Lambda so we definitely want to use them
+    $isALibraryWeCompiled = str_starts_with($lib, '/opt/lib');
     $doesNotExistInLambda = !in_array(basename($lib), $librariesThatExistOnLambda, true);
     $keep = $isALibraryWeCompiled || $doesNotExistInLambda;
     if (! $keep) {
