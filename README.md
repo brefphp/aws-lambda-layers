@@ -101,7 +101,7 @@ docker run --rm -it --entrypoint=bash bref/php-80
 > 
 > `ldd` is a linux utility that will show libraries (`.so` files) used by a binary/library. For example: `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`. That helps to make sure we include all the libraries needed by PHP extensions in the layers.
 > 
-> However, `ldd` fails when running on another CPU architecture. So instead of `ldd`, we can use `objdump -p /usr/bin/bash | grep NEEDED` (that needs to be installed with `yum install binutils`).
+> However, `ldd` fails when running on another CPU architecture. So instead of `ldd`, we can use `LD_TRACE_LOADED_OBJECTS=1 /opt/bin/php` (see https://stackoverflow.com/a/35905007/245552).
 
 ### Supporting a new PHP version
 
