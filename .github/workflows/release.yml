@@ -3,10 +3,9 @@ name: Release
 on:
     # This workflow can be manually triggered
     workflow_dispatch:
-    # But the main use case is to release new layers when a tag/release is created
-    push:
-        tags:
-            - '*' # On all tags
+    # But the main use case is to release new layers when a release is created
+    release:
+        types: [published]
 
 # Necessary to deploy to AWS using OIDC
 # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
@@ -79,10 +78,15 @@ jobs:
                     github-token: ${{ secrets.GH_TOKEN_TRIGGER }}
                     script: |
                         await github.rest.actions.createWorkflowDispatch({
-                          owner: 'brefphp',
-                          repo: 'bref',
-                          workflow_id: 'update-layer-versions.yml',
-                          ref: 'v2'
+                            owner: 'brefphp',
+                            repo: 'bref',
+                            workflow_id: 'update-layer-versions.yml',
+                            ref: 'v2',
+                            inputs: {
+                                'release_url': '${{ github.event.release.url }}'
+                                'release_html_url': '${{ github.event.release.html_url }}'
+                                'release_name': '${{ github.event.release.name }}'
+                            }
                         })
 
     update-layer-js-versions:
