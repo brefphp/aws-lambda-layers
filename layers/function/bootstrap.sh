@@ -3,6 +3,8 @@
 # Fail on error
 set -e
 
+export RUNTIME_CLASS="Bref\FunctionRuntime\Main"
+
 while true
 do
     if [ -z "${EXPERIMENTAL_AWS_LAMBDA_EXEC_WRAPPER}" ]; then

@@ -3,7 +3,7 @@
 # Fail on error
 set -e
 
-export RUNTIME_CLASS="Bref\FpmRuntime\Main"
+export RUNTIME_CLASS="Bref\ConsoleRuntime\Main"
 
 while true
 do
