@@ -416,7 +416,8 @@ RUN pecl install APCu
 # Now we copy everything we need for the layers into /bref-layer (which will be used for the real /opt later)
 RUN mkdir -p /bref-layer/bin \
 &&  mkdir -p /bref-layer/lib \
-&&  mkdir -p /bref-layer/bref/extensions
+&&  mkdir -p /bref-layer/bref/extensions \
+&&  mkdir -p /bref-layer/ssl
 
 # Copy the PHP binary
 RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/php
@@ -435,6 +436,9 @@ RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/intl.so
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mysql.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
+
+# Copy the OpenSSL certificates file
+RUN cp ${CA_BUNDLE} /bref-layer/ssl/cert.pem
 
 
 # ---------------------------------------------------------------
