@@ -448,6 +448,9 @@ FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as isolation
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt
 
+COPY --link layers/bootstrap.php /opt/bref/bootstrap.php
+
+
 FROM isolation as function
 
 COPY --link layers/function/bref.ini /opt/bref/etc/php/conf.d/
@@ -456,8 +459,6 @@ COPY --link layers/function/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
 COPY --link layers/function/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
-
-COPY --link layers/function/bootstrap.php /opt/bref/bootstrap.php
 
 
 # Up until here the entire file has been designed as a top-down reading/execution.
@@ -469,16 +470,6 @@ FROM build-environment as fpm-extension
 
 RUN cp ${INSTALL_DIR}/sbin/php-fpm /bref-layer/bin/php-fpm
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php-fpm /bref-layer/lib
-
-
-# Embed the https://github.com/brefphp/php-fpm-runtime in the layer
-FROM composer:2 as fpm-runtime
-
-RUN mkdir -p /bref-layer/bref/php-fpm-runtime
-WORKDIR /bref-layer/bref/php-fpm-runtime
-
-COPY --link layers/fpm/composer.json composer.json
-RUN composer install --ignore-platform-req=ext-posix --ignore-platform-req=ext-simplexml
 
 
 FROM isolation as fpm
@@ -493,5 +484,3 @@ COPY --link layers/fpm/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 COPY --link layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
-
-COPY --link --from=fpm-runtime /bref-layer/bref/php-fpm-runtime /opt/bref/php-fpm-runtime
