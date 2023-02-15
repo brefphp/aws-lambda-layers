@@ -1,6 +1,6 @@
 {
     "require": {
-        "bref/bref": "dev-import-fpm-runtime"
+        "bref/bref": "v2.x-dev"
     },
     "config": {
         "platform": {
