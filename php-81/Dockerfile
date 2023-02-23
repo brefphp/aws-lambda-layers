@@ -172,7 +172,7 @@ RUN make install
 # #   - libssh2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=7.85.0
+ENV VERSION_CURL=7.88.1
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
