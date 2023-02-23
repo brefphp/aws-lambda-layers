@@ -80,6 +80,9 @@ function listDependencies(string $path): array
     }
     $dependencies = [];
     foreach ($lines as $line) {
+        if (str_ends_with($line, ' => not found')) {
+            throw new RuntimeException("This library is a dependency for $path but cannot be found by 'ldd':\n$line\n");
+        }
         $matches = [];
         if (preg_match('/=> (.*) \(0x[0-9a-f]+\)/', $line, $matches)) {
             $dependencies[] = $matches[1];
