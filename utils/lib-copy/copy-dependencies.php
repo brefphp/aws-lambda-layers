@@ -22,6 +22,11 @@ if (! ($argv[2] ?? false)) {
 }
 [$_, $pathToCheck, $targetDirectory] = $argv;
 
+// Create the target directory if it doesn't exist
+if (! is_dir($targetDirectory)) {
+    mkdir($targetDirectory, 0777, true);
+}
+
 $arch = 'x86';
 if (php_uname('m') !== 'x86_64') {
     $arch = 'arm';
