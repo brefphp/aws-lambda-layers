@@ -334,6 +334,9 @@ RUN make && make install
 RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel sqlite-devel
 
 
+# Note: this variable is used when building extra/custom extensions, do not remove
+ENV PHP_BUILD_DIR=/tmp/php
+
 # PHP Build
 # https://github.com/php/php-src/releases
 # Needs:
