@@ -28,6 +28,13 @@ else
   export BAKE_COMMAND = docker buildx bake
 endif
 
+# Define ZTS build flag
+ifeq ($(ENABLE_ZTS), 1) # is $ENABLE_ZTS=="1"
+  $(info "⚠️  Building with ZTS enabled")
+  export ENABLE_ZTS = "--enable-zts"
+else
+  export ENABLE_ZTS =
+endif
 
 # Build all Docker images and layers *locally*
 # Use this to test your changes

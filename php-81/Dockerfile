@@ -364,6 +364,7 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
 # --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
 # --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
+ARG ENABLE_ZTS
 RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
@@ -396,6 +397,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --with-pdo-pgsql=shared,${INSTALL_DIR} \
         --enable-intl=shared \
         --enable-soap \
+        ${ENABLE_ZTS} \
         --with-xsl=${INSTALL_DIR} \
         # necessary for `pecl` to work (to install PHP extensions)
         --with-pear
