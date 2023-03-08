@@ -17,6 +17,9 @@ variable "IMAGE_VERSION_SUFFIX" {
 variable "DOCKER_PLATFORM" {
     default = "linux/amd64"
 }
+variable "ENABLE_ZTS" {
+  default = ""
+}
 
 target "build-php" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
@@ -34,6 +37,7 @@ target "php" {
     tags       = ["bref/${CPU_PREFIX}php-${PHP_VERSION}"]
     args       = {
         "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
+        "ENABLE_ZTS" = "${ENABLE_ZTS}"
     }
     contexts = {
         "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"

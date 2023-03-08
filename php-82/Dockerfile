@@ -378,6 +378,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --enable-fpm \
         --disable-cgi \
         --enable-cli \
+        ${ENABLE_ZTS} \
         --disable-phpdbg \
         --with-sodium \
         --with-readline \
@@ -397,7 +398,6 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --with-pdo-pgsql=shared,${INSTALL_DIR} \
         --enable-intl=shared \
         --enable-soap \
-        ${ENABLE_ZTS} \
         --with-xsl=${INSTALL_DIR} \
         # necessary for `pecl` to work (to install PHP extensions)
         --with-pear
