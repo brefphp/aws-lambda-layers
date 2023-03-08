@@ -31,7 +31,7 @@ endif
 # Define ZTS build flag
 ifeq ($(ENABLE_ZTS), 1) # is $ENABLE_ZTS=="1"
   $(info "⚠️  Building with ZTS enabled")
-  export ENABLE_ZTS = "--enable-zts"
+  export ENABLE_ZTS = --enable-zts
 else
   export ENABLE_ZTS =
 endif
