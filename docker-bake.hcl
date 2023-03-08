@@ -27,6 +27,7 @@ target "build-php" {
     tags       = ["bref/${CPU_PREFIX}build-php-${PHP_VERSION}"]
     args       = {
         "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
+        "ENABLE_ZTS" = "${ENABLE_ZTS}"
     }
     platforms = ["${DOCKER_PLATFORM}"]
 }
