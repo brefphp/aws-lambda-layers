@@ -51,7 +51,7 @@ layer-console:
 # This rule matches with a wildcard, for example `layer-php-80`.
 # The `$*` variable will contained the matched part, in this case `php-80`.
 layer-%:
-	./utils/docker-zip-dir.sh bref/${CPU_PREFIX}$* ${CPU_PREFIX}$*
+	./utils/docker-zip-dir.sh bref/$* $*
 
 
 # Upload the layers to AWS Lambda
@@ -74,8 +74,8 @@ upload-to-docker-hub: upload-to-docker-hub-php-80 upload-to-docker-hub-php-81 up
 upload-to-docker-hub-php-%:
 	# While in beta we tag and push the `:2` version, later we'll push `:latest` as well
 	for image in \
-	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}php-$*-fpm" "bref/${CPU_PREFIX}php-$*-console" \
-	  "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-fpm-dev"; \
+	  "bref/php-$*" "bref/php-$*-fpm" "bref/php-$*-console" \
+	  "bref/build-php-$*" "bref/php-$*-fpm-dev"; \
 	do \
 		docker tag $$image $$image:2 ; \
 		docker push $$image:2 ; \
@@ -96,10 +96,10 @@ clean: clean-80 clean-81 clean-82
 	rm -f output/${CPU_PREFIX}*.zip
 clean-%:
 	# Clean Docker images to force rebuilding them
-	docker image rm --force bref/${CPU_PREFIX}build-php-$* \
-		bref/${CPU_PREFIX}php-$* \
-		bref/${CPU_PREFIX}php-$*-zip \
-		bref/${CPU_PREFIX}php-$*-fpm \
-		bref/${CPU_PREFIX}php-$*-fpm-zip \
-		bref/${CPU_PREFIX}php-$*-fpm-dev \
-		bref/${CPU_PREFIX}php-$*-console
+	docker image rm --force bref/build-php-$* \
+		bref/php-$* \
+		bref/php-$*-zip \
+		bref/php-$*-fpm \
+		bref/php-$*-fpm-zip \
+		bref/php-$*-fpm-dev \
+		bref/php-$*-console
