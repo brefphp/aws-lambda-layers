@@ -51,7 +51,7 @@ layer-console:
 # This rule matches with a wildcard, for example `layer-php-80`.
 # The `$*` variable will contained the matched part, in this case `php-80`.
 layer-%:
-	./utils/docker-zip-dir.sh bref/$* $*
+	./utils/docker-zip-dir.sh bref/$* ${CPU_PREFIX}$*
 
 
 # Upload the layers to AWS Lambda
