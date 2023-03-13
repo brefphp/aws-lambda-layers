@@ -3,19 +3,22 @@
 # Fail on error
 set -e
 
-rm -f "output/$2.zip"
-rm -rf "output/$2"
-mkdir "output/$2"
+IMAGE_NAME="$1"
+LAYER_NAME="$2"
+
+rm -f "output/$LAYER_NAME.zip"
+rm -rf "output/$LAYER_NAME"
+mkdir "output/$LAYER_NAME"
 
 # Remove any previously failed container if it exists
 docker rm -f bref-export-zip 2>/dev/null || true
 
-docker create --name bref-export-zip "$1"
+docker create --name bref-export-zip --platform "$DOCKER_PLATFORM" "$IMAGE_NAME"
 
-docker cp bref-export-zip:/opt/. "output/$2"
+docker cp bref-export-zip:/opt/. "output/$LAYER_NAME"
 
-cd "output/$2"
+cd "output/$LAYER_NAME"
 
-zip --quiet --recurse-paths "../$2.zip" .
+zip --quiet --recurse-paths "../$LAYER_NAME.zip" .
 
 docker rm -f bref-export-zip
