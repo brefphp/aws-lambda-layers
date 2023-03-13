@@ -67,7 +67,6 @@ jobs:
                     CPU: ${{ matrix.cpu }}
                     CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
                     PHP_VERSION: ${{ matrix.php_version }}
-                    IMAGE_VERSION_SUFFIX: ${{ (matrix.cpu == 'arm') && 'arm64' || 'x86_64' }}
                     DOCKER_PLATFORM: ${{ (matrix.cpu == 'arm') && 'linux/arm64' || 'linux/amd64' }}
 
             -   name: Test that layers can be exported

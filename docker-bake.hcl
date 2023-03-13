@@ -8,20 +8,11 @@ variable "CPU" {
 variable "PHP_VERSION" {
     default = "80"
 }
-variable "IMAGE_VERSION_SUFFIX" {
-    default = "x86_64"
-}
-variable "DOCKER_PLATFORM" {
-    default = "linux/amd64"
-}
 
 target "build-php" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "build-environment"
     tags       = ["bref/build-php-${PHP_VERSION}"]
-    args       = {
-        "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-    }
     platforms = ["${DOCKER_PLATFORM}"]
 }
 
@@ -29,9 +20,6 @@ target "php" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "function"
     tags       = ["bref/php-${PHP_VERSION}"]
-    args       = {
-        "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-    }
     contexts = {
         "bref/build-php-${PHP_VERSION}" = "target:build-php"
     }
@@ -42,9 +30,6 @@ target "php-fpm" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "fpm"
     tags       = ["bref/php-${PHP_VERSION}-fpm"]
-    args       = {
-        "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-    }
     contexts = {
         "bref/build-php-${PHP_VERSION}" = "target:build-php"
         "bref/php-${PHP_VERSION}"       = "target:php"

@@ -1,8 +1,5 @@
 # syntax = docker/dockerfile:1.4
 
-# Can be "x86_64" or "arm64"
-ARG IMAGE_VERSION_SUFFIX
-
 # https://www.php.net/downloads
 ARG VERSION_PHP=8.1.15
 
@@ -11,7 +8,7 @@ ARG VERSION_PHP=8.1.15
 # https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
 # AWS provides a Docker image that we use here:
 # https://github.com/amazonlinux/container-images/tree/amzn2
-FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as build-environment
+FROM public.ecr.aws/lambda/provided:al2 as build-environment
 
 
 RUN set -xe \
@@ -444,7 +441,7 @@ RUN cp ${CA_BUNDLE} /bref-layer/ssl/cert.pem
 
 # ---------------------------------------------------------------
 # Start from a clean image to copy only the files we need
-FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as isolation
+FROM public.ecr.aws/lambda/provided:al2 as isolation
 
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt

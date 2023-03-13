@@ -9,13 +9,11 @@ ifeq ($(CPU), arm) # if $CPU=="arm"
   $(info "⚠️  Building for ARM") # Print a message
   export CPU = arm
   export CPU_PREFIX = arm-
-  export IMAGE_VERSION_SUFFIX = arm64
   export DOCKER_PLATFORM = linux/arm64
 else
   $(info "⚠️  Building for x86") # Print a message
   export CPU = x86
   export CPU_PREFIX =
-  export IMAGE_VERSION_SUFFIX = x86_64
   export DOCKER_PLATFORM = linux/amd64
 endif
 
