@@ -343,8 +343,8 @@ ENV PHP_BUILD_DIR=/tmp/php
 #   - openssl
 #   - readline
 #   - sodium
-RUN mkdir -p /tmp/php
-WORKDIR /tmp/php
+RUN mkdir -p ${PHP_BUILD_DIR}
+WORKDIR ${PHP_BUILD_DIR}
 
 # Download and unpack the source code
 # --location will follow redirects
