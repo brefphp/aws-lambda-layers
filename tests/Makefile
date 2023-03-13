@@ -1,5 +1,3 @@
-export CPU_PREFIX ?=
-
 test: test-80 test-81 test-82
 
 # This rule matches with a wildcard, for example `test-80`.
@@ -16,37 +14,37 @@ test-%: vendor
  		   test_3_manual_enabling_extensions.php
 
 	# Test function handler
-	docker stop test-${CPU_PREFIX}php-$* 2> /dev/null || true # silence errors
-	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-${CPU_PREFIX}php-$* \
+	docker stop test-php-$* 2> /dev/null || true # silence errors
+	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-php-$* \
 		   bref/php-$* test_4_function_handler.php
-	docker exec test-${CPU_PREFIX}php-$* php test_4_function_invocation.php \
-        || (docker logs test-${CPU_PREFIX}php-$* && exit 1)
-	docker stop test-${CPU_PREFIX}php-$*
+	docker exec test-php-$* php test_4_function_invocation.php \
+        || (docker logs test-php-$* && exit 1)
+	docker stop test-php-$*
 
 	# Test FPM handler
-	docker stop test-${CPU_PREFIX}php-$*-fpm 2> /dev/null || true # silence errors
-	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-${CPU_PREFIX}php-$*-fpm \
+	docker stop test-php-$*-fpm 2> /dev/null || true # silence errors
+	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-php-$*-fpm \
 		   bref/php-$*-fpm test_5_fpm_handler.php
-	docker exec test-${CPU_PREFIX}php-$*-fpm php test_5_fpm_invocation.php \
-		|| (docker logs test-${CPU_PREFIX}php-$*-fpm && exit 1) # print logs in case of failure
-	docker stop test-${CPU_PREFIX}php-$*-fpm
+	docker exec test-php-$*-fpm php test_5_fpm_invocation.php \
+		|| (docker logs test-php-$*-fpm && exit 1) # print logs in case of failure
+	docker stop test-php-$*-fpm
 
 	# Test console handler
-	docker stop test-${CPU_PREFIX}php-$*-console 2> /dev/null || true # silence errors
-	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-${CPU_PREFIX}php-$*-console \
+	docker stop test-php-$*-console 2> /dev/null || true # silence errors
+	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-php-$*-console \
 		   bref/php-$*-console test_6_console_handler.php
-	docker exec test-${CPU_PREFIX}php-$*-console php test_6_console_invocation.php \
-		|| (docker logs test-${CPU_PREFIX}php-$*-console && exit 1) # print logs in case of failure
-	docker stop test-${CPU_PREFIX}php-$*-console
+	docker exec test-php-$*-console php test_6_console_invocation.php \
+		|| (docker logs test-php-$*-console && exit 1) # print logs in case of failure
+	docker stop test-php-$*-console
 
 	# Test that we can override PHP_INI_SCAN_DIR
-	docker stop test-${CPU_PREFIX}php-$*-test7 2> /dev/null || true # silence errors
-	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-${CPU_PREFIX}php-$*-test7 \
+	docker stop test-php-$*-test7 2> /dev/null || true # silence errors
+	docker run --platform=${DOCKER_PLATFORM} --rm --detach -v=$(PWD):/var/task:ro --name test-php-$*-test7 \
 		   -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/var/task/" \
 		   bref/php-$* test_4_function_handler.php
-	docker exec test-${CPU_PREFIX}php-$*-test7 php test_7_custom_ini_scan_dir.php \
-		|| (docker logs test-${CPU_PREFIX}php-$*-test7 && exit 1) # print logs in case of failure
-	docker stop test-${CPU_PREFIX}php-$*-test7
+	docker exec test-php-$*-test7 php test_7_custom_ini_scan_dir.php \
+		|| (docker logs test-php-$*-test7 && exit 1) # print logs in case of failure
+	docker stop test-php-$*-test7
 
 	echo "\033[1;32m✓ Tests succeeded\033[0m"
 

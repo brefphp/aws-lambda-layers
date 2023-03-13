@@ -5,16 +5,24 @@ export # export all variables defined in .env
 # Define all the environment variables depending on the CPU
 # Set CPU= (empty) to build for x86
 # Set CPU=arm to build for ARM
-ifeq ($(CPU), arm) # if $CPU=="arm"
-  $(info "⚠️  Building for ARM") # Print a message
-  export CPU = arm
-  export CPU_PREFIX = arm-
-  export DOCKER_PLATFORM = linux/arm64
-else
+ifeq ($(CPU), x86) # if $CPU=="x86"
   $(info "⚠️  Building for x86") # Print a message
   export CPU = x86
   export CPU_PREFIX =
   export DOCKER_PLATFORM = linux/amd64
+  export BAKE_OPTIONS = "--set *.platform=${DOCKER_PLATFORM}"
+else ifeq ($(CPU), arm) # if $CPU=="arm"
+  $(info "⚠️  Building for ARM") # Print a message
+  export CPU = arm
+  export CPU_PREFIX = arm-
+  export DOCKER_PLATFORM = linux/arm64
+  export BAKE_OPTIONS = "--set *.platform=${DOCKER_PLATFORM}"
+else
+  $(info "⚠️  Building for x86 and ARM") # Print a message
+  export CPU =
+  export CPU_PREFIX =
+  export DOCKER_PLATFORM =
+  export BAKE_OPTIONS =
 endif
 
 # By default, Docker images are built using `docker buildx bake`
@@ -35,21 +43,18 @@ default: docker-images layers
 # Build Docker images *locally*
 docker-images: docker-images-php-80 docker-images-php-81 docker-images-php-82
 docker-images-php-%:
-	PHP_VERSION=$* ${BAKE_COMMAND} --load
+	PHP_VERSION=$* ${BAKE_COMMAND} --load ${BAKE_OPTIONS}
 
 
 # Build Lambda layers (zip files) *locally*
-layers: layer-php-80 layer-php-81 layer-php-82 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm
-	# Build the console layer only once (x86 and single PHP version)
-	@if [ ${CPU} = "x86" ]; then \
-		$(MAKE) layer-console; \
-	fi
+layers: layer-php-80 layer-php-81 layer-php-82 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm layer-console
 layer-console:
-	./utils/docker-zip-dir.sh bref/console-zip console
+	DOCKER_PLATFORM=linux/amd64 ./utils/docker-zip-dir.sh bref/console-zip console
 # This rule matches with a wildcard, for example `layer-php-80`.
 # The `$*` variable will contained the matched part, in this case `php-80`.
 layer-%:
-	./utils/docker-zip-dir.sh bref/$* ${CPU_PREFIX}$*
+	DOCKER_PLATFORM=linux/amd64 ./utils/docker-zip-dir.sh bref/$* $*
+	DOCKER_PLATFORM=linux/arm64 ./utils/docker-zip-dir.sh bref/$* arm-$*
 
 
 # Upload the layers to AWS Lambda
@@ -84,20 +89,19 @@ upload-to-docker-hub-php-%:
 
 test: test-80 test-81 test-82
 test-%:
-	cd tests && $(MAKE) test-$*
+	cd tests && DOCKER_PLATFORM=linux/amd64 $(MAKE) test-$*
+	cd tests && DOCKER_PLATFORM=linux/arm64 $(MAKE) test-$*
 
 
 clean: clean-80 clean-81 clean-82
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
 	# Remove zip files
-	rm -f output/${CPU_PREFIX}*.zip
+	rm -f output/*.zip
 clean-%:
 	# Clean Docker images to force rebuilding them
 	docker image rm --force bref/build-php-$* \
 		bref/php-$* \
-		bref/php-$*-zip \
 		bref/php-$*-fpm \
-		bref/php-$*-fpm-zip \
 		bref/php-$*-fpm-dev \
 		bref/php-$*-console

@@ -13,38 +13,14 @@ permissions:
     contents: read
 
 jobs:
-    matrix-prep:
-        name: Prepare matrix
-        runs-on: ubuntu-latest
-        outputs:
-            matrix: ${{ steps.set-matrix.outputs.result }}
-        steps:
-            -   uses: actions/github-script@v6
-                id: set-matrix
-                with:
-                    script: |
-                        const matrix = {
-                            cpu: ['x86', 'arm'],
-                            php_version: ['80', '81', '82'],
-                        }
-                        
-                        // If this is a third-party pull request, skip ARM builds
-                        if (context.eventName === 'pull_request') {
-                            const pr = context.payload.pull_request
-                            if (pr.head.repo.full_name !== pr.base.repo.full_name) {
-                                matrix.cpu = ['x86']
-                            }
-                        }
-                        
-                        return matrix
 
     tests:
-        name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.cpu }}
+        name: Build and tests PHP ${{ matrix.php_version }}
         runs-on: ubuntu-latest
-        needs: matrix-prep
         strategy:
             fail-fast: false
-            matrix: ${{ fromJson(needs.matrix-prep.outputs.matrix) }}
+            matrix:
+                php_version: ['80', '81', '82']
         steps:
             -   uses: actions/checkout@v3
 
@@ -64,25 +40,16 @@ jobs:
                     # If this is an third-party pull request, fall back to the local buildx builder
                     buildx-fallback: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
                 env:
-                    CPU: ${{ matrix.cpu }}
-                    CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
                     PHP_VERSION: ${{ matrix.php_version }}
-                    DOCKER_PLATFORM: ${{ (matrix.cpu == 'arm') && 'linux/arm64' || 'linux/amd64' }}
 
             -   name: Test that layers can be exported
                 run: |
                     make layer-php-${{ matrix.php_version }}
                     make layer-php-${{ matrix.php_version }}-fpm
-                env:
-                    CPU: ${{ matrix.cpu }}
 
             -   name: Test that the "console" layer can be exported
                 run: make layer-console
                 if: ${{ matrix.php_version == 80 }}
-                env:
-                    CPU: ${{ matrix.cpu }}
 
             -   name: Run tests
                 run: make test-${{ matrix.php_version }}
-                env:
-                    CPU: ${{ matrix.cpu }}

@@ -2,9 +2,6 @@ group "default" {
     targets = ["build-php", "php", "php-fpm", "console-zip", "console", "php-fpm-dev"]
 }
 
-variable "CPU" {
-    default = "x86"
-}
 variable "PHP_VERSION" {
     default = "80"
 }
@@ -13,28 +10,28 @@ target "build-php" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "build-environment"
     tags       = ["bref/build-php-${PHP_VERSION}"]
-    platforms = ["${DOCKER_PLATFORM}"]
+    platforms  = ["linux/arm64", "linux/amd64"]
 }
 
 target "php" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "function"
     tags       = ["bref/php-${PHP_VERSION}"]
-    contexts = {
+    contexts   = {
         "bref/build-php-${PHP_VERSION}" = "target:build-php"
     }
-    platforms = ["${DOCKER_PLATFORM}"]
+    platforms = ["linux/arm64", "linux/amd64"]
 }
 
 target "php-fpm" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "fpm"
     tags       = ["bref/php-${PHP_VERSION}-fpm"]
-    contexts = {
+    contexts   = {
         "bref/build-php-${PHP_VERSION}" = "target:build-php"
         "bref/php-${PHP_VERSION}"       = "target:php"
     }
-    platforms = ["${DOCKER_PLATFORM}"]
+    platforms = ["linux/arm64", "linux/amd64"]
 }
 
 target "console-zip" {
@@ -44,7 +41,7 @@ target "console-zip" {
     args    = {
         PHP_VERSION = "${PHP_VERSION}"
     }
-    platforms = ["${DOCKER_PLATFORM}"]
+    platforms = ["linux/arm64", "linux/amd64"]
 }
 
 target "console" {
@@ -58,7 +55,7 @@ target "console" {
         "bref/build-php-${PHP_VERSION}" = "target:build-php"
         "bref/php-${PHP_VERSION}"       = "target:php"
     }
-    platforms = ["${DOCKER_PLATFORM}"]
+    platforms = ["linux/arm64", "linux/amd64"]
 }
 
 target "php-fpm-dev" {
@@ -66,7 +63,6 @@ target "php-fpm-dev" {
     tags    = ["bref/php-${PHP_VERSION}-fpm-dev"]
     args    = {
         PHP_VERSION = "${PHP_VERSION}"
-        "CPU"       = "${CPU}"
     }
     contexts = {
         "bref/build-php-${PHP_VERSION}" = "target:build-php"
@@ -74,5 +70,5 @@ target "php-fpm-dev" {
         "bref/php-${PHP_VERSION}-fpm"   = "target:php-fpm"
         "bref/local-api-gateway"        = "docker-image://bref/local-api-gateway:latest"
     }
-    platforms = ["${DOCKER_PLATFORM}"]
+    platforms = ["linux/arm64", "linux/amd64"]
 }
