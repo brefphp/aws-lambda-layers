@@ -1,7 +1,5 @@
 # syntax = docker/dockerfile:1.4
 
-# Can be "x86" or "arm"
-ARG CPU
 # Can be "x86_64" or "arm64"
 ARG IMAGE_VERSION_SUFFIX
 

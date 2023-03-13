@@ -20,7 +20,6 @@ target "build-php" {
   target = "build-environment"
   tags = ["bref/build-php-${PHP_VERSION}"]
   args = {
-    "CPU" = "${CPU}"
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
   platforms = ["${DOCKER_PLATFORM}"]
@@ -31,7 +30,6 @@ target "php" {
   target = "function"
   tags = ["bref/php-${PHP_VERSION}"]
   args = {
-    "CPU" = "${CPU}"
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
   contexts = {
@@ -45,7 +43,6 @@ target "php-fpm" {
   target = "fpm"
   tags = ["bref/php-${PHP_VERSION}-fpm"]
   args = {
-    "CPU" = "${CPU}"
     "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
   }
   contexts = {
