@@ -77,8 +77,8 @@ upload-to-docker-hub-php-%:
 	  "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-fpm-dev"; \
 	do \
 		docker tag $$image $$image:2 ; \
+		docker push $$image --all-tags ; \
 	done
-	docker push --all-tags
 
 
 test: test-80 test-81 test-82
