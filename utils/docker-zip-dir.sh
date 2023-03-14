@@ -13,7 +13,7 @@ mkdir "output/$LAYER_NAME"
 # Remove any previously failed container if it exists
 docker rm -f bref-export-zip 2>/dev/null || true
 
-docker create --name bref-export-zip --platform "$DOCKER_PLATFORM" "$IMAGE_NAME"
+docker create --name bref-export-zip "$IMAGE_NAME"
 
 docker cp bref-export-zip:/opt/. "output/$LAYER_NAME"
 
