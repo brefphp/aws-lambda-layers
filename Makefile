@@ -72,16 +72,13 @@ upload-layers-php-%:
 # Publish Docker images to Docker Hub.
 upload-to-docker-hub: upload-to-docker-hub-php-80 upload-to-docker-hub-php-81 upload-to-docker-hub-php-82
 upload-to-docker-hub-php-%:
-	# While in beta we tag and push the `:2` version, later we'll push `:latest` as well
 	for image in \
 	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}php-$*-fpm" "bref/${CPU_PREFIX}php-$*-console" \
 	  "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-fpm-dev"; \
 	do \
 		docker tag $$image $$image:2 ; \
-		docker push $$image:2 ; \
 	done
-	# TODO: when v2 becomes "latest", we should also push "latest" tags
-	# We could actually use `docker push --all-tags` at the end probably?
+	docker push --all-tags
 
 
 test: test-80 test-81 test-82
