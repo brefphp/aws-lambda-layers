@@ -1,6 +1,6 @@
 {
     "require": {
-        "bref/bref": "v2.x-dev"
+        "bref/bref": "dev-master"
     },
     "config": {
         "platform": {
