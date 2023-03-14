@@ -35,7 +35,7 @@ COPY --link --from=bref/local-api-gateway /app /local-api-gateway
 EXPOSE 8000
 
 # Add `php/conf.dev.d` to the path where PHP looks for configuration files
-ENV PHP_INI_SCAN_DIR="$PHP_INI_SCAN_DIR:/var/task/php/conf.dev.d"
+ENV PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d:/var/task/php/conf.d:/var/task/php/conf.dev.d"
 
 # Originally the entrypoint is `/lambda-entrypoint.sh` and CMD contains the handler name
 # We override the entrypoint to run our own logic

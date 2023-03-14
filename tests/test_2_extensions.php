@@ -98,7 +98,7 @@ $extensions = [
     'iconv' => function_exists('iconv_strlen'),
     'mbstring' => function_exists('mb_strlen'),
     'mysqli' => function_exists('mysqli_connect'),
-    'opcache' => ini_get('opcache.enable') == 1 && ini_get('opcache.enable_cli') == 1,
+    'opcache' => ini_get('opcache.enable') == 1,
     'pdo' => class_exists(\PDO::class),
     'pdo_mysql' => extension_loaded('pdo_mysql'),
     'pdo_sqlite' => extension_loaded('pdo_sqlite'),
