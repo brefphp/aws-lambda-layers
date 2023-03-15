@@ -80,7 +80,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 ENV VERSION_OPENSSL=1.1.1t
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
-ENV CA_BUNDLE="${INSTALL_DIR}/ssl/cert.pem"
+ENV CA_BUNDLE="${INSTALL_DIR}/bref/ssl/cert.pem"
 RUN set -xe; \
     mkdir -p ${OPENSSL_BUILD_DIR}; \
     curl -Ls  https://github.com/openssl/openssl/archive/OpenSSL_${VERSION_OPENSSL//./_}.tar.gz \
@@ -439,7 +439,7 @@ RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mys
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
 
 # Copy the OpenSSL certificates file
-RUN cp ${CA_BUNDLE} /bref-layer/ssl/cert.pem
+RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
 
 
 # ---------------------------------------------------------------
