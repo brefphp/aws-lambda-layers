@@ -91,7 +91,7 @@ RUN CFLAGS="" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./config \
         --prefix=${INSTALL_DIR} \
-        --openssldir=${INSTALL_DIR}/ssl \
+        --openssldir=${INSTALL_DIR}/bref/ssl \
         --release \
         no-tests \
         shared \
