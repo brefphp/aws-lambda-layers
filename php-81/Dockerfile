@@ -80,7 +80,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 ENV VERSION_OPENSSL=1.1.1t
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
-ENV CA_BUNDLE="${INSTALL_DIR}/ssl/cert.pem"
+ENV CA_BUNDLE="${INSTALL_DIR}/bref/ssl/cert.pem"
 RUN set -xe; \
     mkdir -p ${OPENSSL_BUILD_DIR}; \
     curl -Ls  https://github.com/openssl/openssl/archive/OpenSSL_${VERSION_OPENSSL//./_}.tar.gz \
@@ -91,7 +91,7 @@ RUN CFLAGS="" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./config \
         --prefix=${INSTALL_DIR} \
-        --openssldir=${INSTALL_DIR}/ssl \
+        --openssldir=${INSTALL_DIR}/bref/ssl \
         --release \
         no-tests \
         shared \
@@ -102,7 +102,7 @@ RUN CFLAGS="" \
 # https://stackoverflow.com/questions/28639207/why-cant-i-compile-openssl-with-multiple-threads-make-j3
 # Run `make install_sw install_ssldirs` instead of `make install` to skip installing man pages https://github.com/openssl/openssl/issues/8170
 RUN make -j1 install_sw install_ssldirs
-RUN curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
+RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
 
 
 ###############################################################################
@@ -418,7 +418,7 @@ RUN pecl install APCu
 RUN mkdir -p /bref-layer/bin \
 &&  mkdir -p /bref-layer/lib \
 &&  mkdir -p /bref-layer/bref/extensions \
-&&  mkdir -p /bref-layer/ssl
+&&  mkdir -p /bref-layer/bref/ssl
 
 # Copy the PHP binary
 RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/php
@@ -439,7 +439,7 @@ RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mys
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
 
 # Copy the OpenSSL certificates file
-RUN cp ${CA_BUNDLE} /bref-layer/ssl/cert.pem
+RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
 
 
 # ---------------------------------------------------------------
