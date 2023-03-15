@@ -102,7 +102,7 @@ RUN CFLAGS="" \
 # https://stackoverflow.com/questions/28639207/why-cant-i-compile-openssl-with-multiple-threads-make-j3
 # Run `make install_sw install_ssldirs` instead of `make install` to skip installing man pages https://github.com/openssl/openssl/issues/8170
 RUN make -j1 install_sw install_ssldirs
-RUN curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
+RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
 
 
 ###############################################################################
@@ -418,7 +418,7 @@ RUN pecl install APCu
 RUN mkdir -p /bref-layer/bin \
 &&  mkdir -p /bref-layer/lib \
 &&  mkdir -p /bref-layer/bref/extensions \
-&&  mkdir -p /bref-layer/ssl
+&&  mkdir -p /bref-layer/bref/ssl
 
 # Copy the PHP binary
 RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/php
