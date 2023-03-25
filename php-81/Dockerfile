@@ -77,6 +77,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Needed by:
 #   - curl
 #   - php
+RUN yum install -y perl-IPC-Cmd
 ENV VERSION_OPENSSL=3.0.8
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
@@ -87,7 +88,7 @@ RUN set -xe; \
   | tar xzC ${OPENSSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${OPENSSL_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./config \
         --prefix=${INSTALL_DIR} \
@@ -121,7 +122,7 @@ RUN set -xe; \
   | tar xzC ${LIBSSH2_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSSH2_BUILD_DIR}/bin/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
         # Build as a shared library (.so) instead of a static one
@@ -153,7 +154,7 @@ RUN set -xe; \
     | tar xzC ${NGHTTP2_BUILD_DIR} --strip-components=1
 WORKDIR  ${NGHTTP2_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --enable-lib-only \
@@ -179,7 +180,7 @@ RUN set -xe; \
 WORKDIR  ${CURL_BUILD_DIR}/
 RUN ./buildconf \
  && CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --prefix=${INSTALL_DIR} \
@@ -220,7 +221,7 @@ RUN set -xe; \
   | tar xJC ${XML2_BUILD_DIR} --strip-components=1
 WORKDIR  ${XML2_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --prefix=${INSTALL_DIR} \
@@ -250,7 +251,7 @@ RUN set -xe; \
   | tar xzC ${ZIP_BUILD_DIR} --strip-components=1
 WORKDIR  ${ZIP_BUILD_DIR}/bin/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
@@ -271,7 +272,7 @@ RUN set -xe; \
   | tar xzC ${LIBSODIUM_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSODIUM_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./autogen.sh \
 && ./configure --prefix=${INSTALL_DIR}
@@ -293,7 +294,7 @@ RUN set -xe; \
     | tar xzC ${POSTGRES_BUILD_DIR} --strip-components=1
 WORKDIR  ${POSTGRES_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure --prefix=${INSTALL_DIR} --with-openssl --without-readline
 RUN cd ${POSTGRES_BUILD_DIR}/src/interfaces/libpq && make && make install
