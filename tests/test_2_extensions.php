@@ -81,7 +81,7 @@ $extensions = [
     // https://github.com/brefphp/aws-lambda-layers/issues/42
     'curl-http2' => defined('CURL_HTTP_VERSION_2'),
     // Make sure we are not using the default AL2 OpenSSL version (7.79)
-    'curl-openssl' => str_starts_with(curl_version()['ssl_version'], 'OpenSSL/3.0'),
+    'curl-openssl' => str_starts_with(curl_version()['ssl_version'], 'OpenSSL/1.1.1') || str_starts_with(curl_version()['ssl_version'], 'OpenSSL/3.0'),
     // Check that the default certificate file exists
     // https://github.com/brefphp/aws-lambda-layers/issues/53
     'curl-openssl-certificates' => file_exists(openssl_get_cert_locations()['default_cert_file']),
