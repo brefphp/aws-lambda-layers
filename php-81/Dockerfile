@@ -77,13 +77,13 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Needed by:
 #   - curl
 #   - php
-ENV VERSION_OPENSSL=1.1.1t
+ENV VERSION_OPENSSL=3.0.8
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
 ENV CA_BUNDLE="${INSTALL_DIR}/bref/ssl/cert.pem"
 RUN set -xe; \
     mkdir -p ${OPENSSL_BUILD_DIR}; \
-    curl -Ls  https://github.com/openssl/openssl/archive/OpenSSL_${VERSION_OPENSSL//./_}.tar.gz \
+    curl -Ls https://github.com/openssl/openssl/releases/download/openssl-${VERSION_OPENSSL}/openssl-${VERSION_OPENSSL}.tar.gz \
   | tar xzC ${OPENSSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${OPENSSL_BUILD_DIR}/
 RUN CFLAGS="" \
