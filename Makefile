@@ -28,6 +28,7 @@ else
   export BAKE_COMMAND = docker buildx bake
 endif
 
+
 # Build all Docker images and layers *locally*
 # Use this to test your changes
 default: docker-images layers
