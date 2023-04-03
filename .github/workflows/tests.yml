@@ -61,7 +61,7 @@ jobs:
                 uses: depot/bake-action@v1
                 with:
                     load: true
-                    # If this is an third-party pull request, fall back to the local buildx builder
+                    # If this is a third-party pull request, fall back to the local buildx builder
                     buildx-fallback: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
                 env:
                     CPU: ${{ matrix.cpu }}
