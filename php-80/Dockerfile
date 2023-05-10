@@ -212,7 +212,7 @@ RUN make install
 #   - zlib
 # Needed by:
 #   - php
-ENV VERSION_XML2=2.10.4
+ENV VERSION_XML2=2.11.2
 ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
 RUN set -xe; \
     mkdir -p ${XML2_BUILD_DIR}; \
