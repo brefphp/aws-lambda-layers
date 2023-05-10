@@ -145,7 +145,7 @@ RUN cmake  --build . --target install
 #   - OpenSSL
 # Needed by:
 #   - curl
-ENV VERSION_NGHTTP2=1.52.0
+ENV VERSION_NGHTTP2=1.53.0
 ENV NGHTTP2_BUILD_DIR=${BUILD_DIR}/nghttp2
 RUN set -xe; \
     mkdir -p ${NGHTTP2_BUILD_DIR}; \
