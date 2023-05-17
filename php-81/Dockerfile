@@ -107,6 +107,39 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 
 
 ###############################################################################
+# LIBXML2
+# https://github.com/GNOME/libxml2/releases
+# Uses:
+#   - zlib
+# Needed by:
+#   - php
+#   - libnghttp2
+ENV VERSION_XML2=2.11.2
+ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
+RUN set -xe; \
+    mkdir -p ${XML2_BUILD_DIR}; \
+    curl -Ls https://download.gnome.org/sources/libxml2/${VERSION_XML2%.*}/libxml2-${VERSION_XML2}.tar.xz \
+  | tar xJC ${XML2_BUILD_DIR} --strip-components=1
+WORKDIR  ${XML2_BUILD_DIR}/
+RUN CFLAGS="" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
+    ./configure \
+    --prefix=${INSTALL_DIR} \
+    --with-sysroot=${INSTALL_DIR} \
+    --enable-shared \
+    --disable-static \
+    --with-html \
+    --with-history \
+    --enable-ipv6=no \
+    --with-icu \
+    --with-zlib \
+    --without-python
+RUN make install \
+ && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
+
+
+###############################################################################
 # LIBSSH2
 # https://github.com/libssh2/libssh2/releases
 # Needs:
@@ -144,6 +177,7 @@ RUN cmake  --build . --target install
 # Needs:
 #   - zlib
 #   - OpenSSL
+#   - libxml2
 # Needed by:
 #   - curl
 ENV VERSION_NGHTTP2=1.53.0
@@ -169,6 +203,7 @@ RUN make install
 # #   - zlib
 # #   - OpenSSL
 # #   - libssh2
+# #   - libnghttp2
 # # Needed by:
 # #   - php
 ENV VERSION_CURL=7.85.0
@@ -204,38 +239,6 @@ RUN ./buildconf \
     --with-libssh2 \
     --with-nghttp2
 RUN make install
-
-
-###############################################################################
-# LIBXML2
-# https://github.com/GNOME/libxml2/releases
-# Uses:
-#   - zlib
-# Needed by:
-#   - php
-ENV VERSION_XML2=2.11.2
-ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
-RUN set -xe; \
-    mkdir -p ${XML2_BUILD_DIR}; \
-    curl -Ls https://download.gnome.org/sources/libxml2/${VERSION_XML2%.*}/libxml2-${VERSION_XML2}.tar.xz \
-  | tar xJC ${XML2_BUILD_DIR} --strip-components=1
-WORKDIR  ${XML2_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
-    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    ./configure \
-    --prefix=${INSTALL_DIR} \
-    --with-sysroot=${INSTALL_DIR} \
-    --enable-shared \
-    --disable-static \
-    --with-html \
-    --with-history \
-    --enable-ipv6=no \
-    --with-icu \
-    --with-zlib \
-    --without-python
-RUN make install \
- && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
 
 
 ###############################################################################
