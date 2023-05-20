@@ -15,7 +15,8 @@ RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 # Install Blackfire
 # https://blackfire.io/docs/up-and-running/installation?action=install&mode=full&version=latest&mode=full&location=server&os=manual&language=php#install-the-php-probe
 ARG BLACKFIRE_VERSION=1.86.1
-RUN curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_$TARGETARCH-php-"$PHP_VERSION".so"
+RUN if [[ $CPU == "x86" ]]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_amd64-php-"$PHP_VERSION".so"; fi
+RUN if [[ $CPU == "arm" ]]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_arm64-php-"$PHP_VERSION".so"; fi
 
 
 FROM bref/php-${PHP_VERSION}-fpm
@@ -33,7 +34,7 @@ COPY --link --from=bref/local-api-gateway /app /local-api-gateway
 EXPOSE 8000
 
 # Add `php/conf.dev.d` to the path where PHP looks for configuration files
-ENV PHP_INI_SCAN_DIR="$PHP_INI_SCAN_DIR:/var/task/php/conf.dev.d"
+ENV PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d:/var/task/php/conf.d:/var/task/php/conf.dev.d"
 
 # Originally the entrypoint is `/lambda-entrypoint.sh` and CMD contains the handler name
 # We override the entrypoint to run our own logic

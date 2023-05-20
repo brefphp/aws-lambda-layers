@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.4
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.2.2
+ARG VERSION_PHP=8.2.6
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -74,22 +74,24 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Needed by:
 #   - curl
 #   - php
-ENV VERSION_OPENSSL=1.1.1t
+RUN yum install -y perl-IPC-Cmd
+ENV VERSION_OPENSSL=3.0.8
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
-ENV CA_BUNDLE="${INSTALL_DIR}/ssl/cert.pem"
+ENV CA_BUNDLE="${INSTALL_DIR}/bref/ssl/cert.pem"
 RUN set -xe; \
     mkdir -p ${OPENSSL_BUILD_DIR}; \
-    curl -Ls  https://github.com/openssl/openssl/archive/OpenSSL_${VERSION_OPENSSL//./_}.tar.gz \
+    curl -Ls https://github.com/openssl/openssl/releases/download/openssl-${VERSION_OPENSSL}/openssl-${VERSION_OPENSSL}.tar.gz \
   | tar xzC ${OPENSSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${OPENSSL_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./config \
         --prefix=${INSTALL_DIR} \
-        --openssldir=${INSTALL_DIR}/ssl \
+        --openssldir=${INSTALL_DIR}/bref/ssl \
         --release \
+        enable-tls1_3 \
         no-tests \
         shared \
         zlib
@@ -99,7 +101,40 @@ RUN CFLAGS="" \
 # https://stackoverflow.com/questions/28639207/why-cant-i-compile-openssl-with-multiple-threads-make-j3
 # Run `make install_sw install_ssldirs` instead of `make install` to skip installing man pages https://github.com/openssl/openssl/issues/8170
 RUN make -j1 install_sw install_ssldirs
-RUN curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
+RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOURCE}
+
+
+###############################################################################
+# LIBXML2
+# https://github.com/GNOME/libxml2/releases
+# Uses:
+#   - zlib
+# Needed by:
+#   - php
+#   - libnghttp2
+ENV VERSION_XML2=2.11.4
+ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
+RUN set -xe; \
+    mkdir -p ${XML2_BUILD_DIR}; \
+    curl -Ls https://download.gnome.org/sources/libxml2/${VERSION_XML2%.*}/libxml2-${VERSION_XML2}.tar.xz \
+  | tar xJC ${XML2_BUILD_DIR} --strip-components=1
+WORKDIR  ${XML2_BUILD_DIR}/
+RUN CFLAGS="" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
+    ./configure \
+    --prefix=${INSTALL_DIR} \
+    --with-sysroot=${INSTALL_DIR} \
+    --enable-shared \
+    --disable-static \
+    --with-html \
+    --with-history \
+    --enable-ipv6=no \
+    --with-icu \
+    --with-zlib \
+    --without-python
+RUN make install \
+ && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
 
 
 ###############################################################################
@@ -118,7 +153,7 @@ RUN set -xe; \
   | tar xzC ${LIBSSH2_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSSH2_BUILD_DIR}/bin/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
         # Build as a shared library (.so) instead of a static one
@@ -140,9 +175,10 @@ RUN cmake  --build . --target install
 # Needs:
 #   - zlib
 #   - OpenSSL
+#   - libxml2
 # Needed by:
 #   - curl
-ENV VERSION_NGHTTP2=1.51.0
+ENV VERSION_NGHTTP2=1.53.0
 ENV NGHTTP2_BUILD_DIR=${BUILD_DIR}/nghttp2
 RUN set -xe; \
     mkdir -p ${NGHTTP2_BUILD_DIR}; \
@@ -150,7 +186,7 @@ RUN set -xe; \
     | tar xzC ${NGHTTP2_BUILD_DIR} --strip-components=1
 WORKDIR  ${NGHTTP2_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --enable-lib-only \
@@ -165,9 +201,10 @@ RUN make install
 # #   - zlib
 # #   - OpenSSL
 # #   - libssh2
+# #   - libnghttp2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=7.85.0
+ENV VERSION_CURL=8.1.0
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
@@ -176,7 +213,7 @@ RUN set -xe; \
 WORKDIR  ${CURL_BUILD_DIR}/
 RUN ./buildconf \
  && CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --prefix=${INSTALL_DIR} \
@@ -203,38 +240,6 @@ RUN make install
 
 
 ###############################################################################
-# LIBXML2
-# https://github.com/GNOME/libxml2/releases
-# Uses:
-#   - zlib
-# Needed by:
-#   - php
-ENV VERSION_XML2=2.10.3
-ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
-RUN set -xe; \
-    mkdir -p ${XML2_BUILD_DIR}; \
-    curl -Ls https://download.gnome.org/sources/libxml2/${VERSION_XML2%.*}/libxml2-${VERSION_XML2}.tar.xz \
-  | tar xJC ${XML2_BUILD_DIR} --strip-components=1
-WORKDIR  ${XML2_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
-    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    ./configure \
-    --prefix=${INSTALL_DIR} \
-    --with-sysroot=${INSTALL_DIR} \
-    --enable-shared \
-    --disable-static \
-    --with-html \
-    --with-history \
-    --enable-ipv6=no \
-    --with-icu \
-    --with-zlib \
-    --without-python
-RUN make install \
- && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
-
-
-###############################################################################
 # LIBZIP
 # https://github.com/nih-at/libzip/releases
 # Needed by:
@@ -247,7 +252,7 @@ RUN set -xe; \
   | tar xzC ${ZIP_BUILD_DIR} --strip-components=1
 WORKDIR  ${ZIP_BUILD_DIR}/bin/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
@@ -268,7 +273,7 @@ RUN set -xe; \
   | tar xzC ${LIBSODIUM_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSODIUM_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./autogen.sh \
 && ./configure --prefix=${INSTALL_DIR}
@@ -282,7 +287,7 @@ RUN make install
 #   - OpenSSL
 # Needed by:
 #   - php
-ENV VERSION_POSTGRES=15.2
+ENV VERSION_POSTGRES=15.3
 ENV POSTGRES_BUILD_DIR=${BUILD_DIR}/postgres
 RUN set -xe; \
     mkdir -p ${POSTGRES_BUILD_DIR}/bin; \
@@ -290,7 +295,7 @@ RUN set -xe; \
     | tar xzC ${POSTGRES_BUILD_DIR} --strip-components=1
 WORKDIR  ${POSTGRES_BUILD_DIR}/
 RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure --prefix=${INSTALL_DIR} --with-openssl --without-readline
 RUN cd ${POSTGRES_BUILD_DIR}/src/interfaces/libpq && make && make install
@@ -361,6 +366,7 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
 # --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
 # --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
+ARG PHP_COMPILATION_FLAGS
 RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
@@ -395,7 +401,9 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --enable-soap \
         --with-xsl=${INSTALL_DIR} \
         # necessary for `pecl` to work (to install PHP extensions)
-        --with-pear
+        --with-pear \
+        # extra compilation flags
+        ${PHP_COMPILATION_FLAGS}
 RUN make -j $(nproc)
 # Run `make install` and override PEAR's PHAR URL because pear.php.net is down
 RUN set -xe; \
@@ -415,7 +423,7 @@ RUN pecl install APCu
 RUN mkdir -p /bref-layer/bin \
 &&  mkdir -p /bref-layer/lib \
 &&  mkdir -p /bref-layer/bref/extensions \
-&&  mkdir -p /bref-layer/ssl
+&&  mkdir -p /bref-layer/bref/ssl
 
 # Copy the PHP binary
 RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/php
@@ -436,7 +444,7 @@ RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mys
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
 
 # Copy the OpenSSL certificates file
-RUN cp ${CA_BUNDLE} /bref-layer/ssl/cert.pem
+RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
 
 
 # ---------------------------------------------------------------

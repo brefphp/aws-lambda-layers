@@ -5,11 +5,17 @@ group "default" {
 variable "PHP_VERSION" {
     default = "80"
 }
+variable "PHP_COMPILATION_FLAGS" {
+    default = ""
+}
 
 target "build-php" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "build-environment"
     tags       = ["bref/build-php-${PHP_VERSION}"]
+    args       = {
+        "PHP_COMPILATION_FLAGS" = "${PHP_COMPILATION_FLAGS}"
+    }
     platforms  = ["linux/arm64", "linux/amd64"]
 }
 
@@ -17,6 +23,9 @@ target "php" {
     dockerfile = "php-${PHP_VERSION}/Dockerfile"
     target     = "function"
     tags       = ["bref/php-${PHP_VERSION}"]
+    args       = {
+        "PHP_COMPILATION_FLAGS" = "${PHP_COMPILATION_FLAGS}"
+    }
     contexts   = {
         "bref/build-php-${PHP_VERSION}" = "target:build-php"
     }

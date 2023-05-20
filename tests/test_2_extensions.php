@@ -81,10 +81,12 @@ $extensions = [
     // https://github.com/brefphp/aws-lambda-layers/issues/42
     'curl-http2' => defined('CURL_HTTP_VERSION_2'),
     // Make sure we are not using the default AL2 OpenSSL version (7.79)
-    'curl-openssl' => str_starts_with(curl_version()['ssl_version'], 'OpenSSL/1.1.1'),
+    'curl-openssl' => str_starts_with(curl_version()['ssl_version'], 'OpenSSL/1.1.1') || str_starts_with(curl_version()['ssl_version'], 'OpenSSL/3.0'),
     // Check that the default certificate file exists
     // https://github.com/brefphp/aws-lambda-layers/issues/53
     'curl-openssl-certificates' => file_exists(openssl_get_cert_locations()['default_cert_file']),
+    // Check its location has not changed (would be a breaking change)
+    'curl-openssl-certificates-location' => openssl_get_cert_locations()['default_cert_file'] === '/opt/bref/ssl/cert.pem',
     // Make sure we are using curl with our compiled libssh
     'curl-libssh' => version_compare(str_replace('libssh2/', '', curl_version()['libssh_version']), '1.10.0', '>='),
     'json' => function_exists('json_encode'),
@@ -98,7 +100,7 @@ $extensions = [
     'iconv' => function_exists('iconv_strlen'),
     'mbstring' => function_exists('mb_strlen'),
     'mysqli' => function_exists('mysqli_connect'),
-    'opcache' => ini_get('opcache.enable') == 1 && ini_get('opcache.enable_cli') == 1,
+    'opcache' => ini_get('opcache.enable') == 1,
     'pdo' => class_exists(\PDO::class),
     'pdo_mysql' => extension_loaded('pdo_mysql'),
     'pdo_sqlite' => extension_loaded('pdo_sqlite'),

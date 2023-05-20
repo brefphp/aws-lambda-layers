@@ -3,11 +3,13 @@ test: test-80 test-81 test-82
 # This rule matches with a wildcard, for example `test-80`.
 # The `$*` variable will contained the matched part, in this case `80`.
 test-%: vendor
-	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$* \
-		   test_1_binary.php $*
+	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$* test_1_binary.php $*
+	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$*-fpm test_1_binary.php $*
+	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$*-fpm-dev test_1_binary.php $*
 
-	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$* \
-		   test_2_extensions.php
+	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$* test_2_extensions.php
+	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$*-fpm test_2_extensions.php
+	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$*-fpm-dev test_2_extensions.php
 
 	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php \
 		   -e PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d/:/var/task/" bref/php-$* \
