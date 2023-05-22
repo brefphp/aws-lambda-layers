@@ -10,13 +10,13 @@ ifeq ($(CPU), x86) # if $CPU=="x86"
   export CPU = x86
   export CPU_PREFIX =
   export DOCKER_PLATFORM = linux/amd64
-  export BAKE_OPTIONS = "--set *.platform=${DOCKER_PLATFORM}"
+  export BAKE_OPTIONS = --set *.platform=${DOCKER_PLATFORM}
 else ifeq ($(CPU), arm) # if $CPU=="arm"
   $(info "⚠️  Building for ARM") # Print a message
   export CPU = arm
   export CPU_PREFIX = arm-
   export DOCKER_PLATFORM = linux/arm64
-  export BAKE_OPTIONS = "--set *.platform=${DOCKER_PLATFORM}"
+  export BAKE_OPTIONS = --set *.platform=${DOCKER_PLATFORM}
 else
   $(info "⚠️  Building for x86 and ARM") # Print a message
   export CPU =
