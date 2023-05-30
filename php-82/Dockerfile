@@ -207,7 +207,7 @@ RUN make install
 # #   - libnghttp2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=8.1.1
+ENV VERSION_CURL=8.1.2
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
