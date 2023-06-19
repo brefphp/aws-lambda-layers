@@ -16,13 +16,8 @@ permissions:
 jobs:
 
     release:
-        name: Publish ${{ matrix.cpu }} layers
+        name: Publish layers
         runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                cpu:
-                    - x86
-                    - arm
         steps:
             -   uses: actions/checkout@v3
 
@@ -47,25 +42,13 @@ jobs:
 
             -   run: make docker-images
                 env:
-                    CPU: ${{ matrix.cpu }}
                     USE_DEPOT: 1
                     DEPOT_TOKEN: ${{ secrets.DEPOT_TOKEN }}
 
             -   run: make layers
-                env:
-                    CPU: ${{ matrix.cpu }}
-
             -   run: make test
-                env:
-                    CPU: ${{ matrix.cpu }}
-
             -   run: make upload-layers
-                env:
-                    CPU: ${{ matrix.cpu }}
-
             -   run: make upload-to-docker-hub
-                env:
-                    CPU: ${{ matrix.cpu }}
 
     update-layer-versions:
         name: Update layer versions in brefphp/bref
