@@ -15,7 +15,7 @@ RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 # Install Blackfire
 # https://blackfire.io/docs/up-and-running/installation?action=install&mode=full&version=latest&mode=full&location=server&os=manual&language=php#install-the-php-probe
-ARG BLACKFIRE_VERSION=1.86.1
+ARG BLACKFIRE_VERSION=1.87.2
 RUN if [[ $CPU_PREFIX == "" ]]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_amd64-php-"$PHP_VERSION".so"; fi
 RUN if [[ $CPU_PREFIX == "arm-" ]]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_arm64-php-"$PHP_VERSION".so"; fi
 
