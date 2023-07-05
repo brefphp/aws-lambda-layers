@@ -3,7 +3,10 @@
 # Fail on error
 set -e
 
-export RUNTIME_CLASS="Bref\FpmRuntime\Main"
+# check if the RUNTIME_CLASS is already set
+if [ -z "${RUNTIME_CLASS}" ]; then
+  export RUNTIME_CLASS="Bref\FpmRuntime\Main"
+fi
 
 while true
 do
