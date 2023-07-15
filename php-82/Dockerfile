@@ -181,7 +181,7 @@ RUN cmake  --build . --target install
 #   - libxml2
 # Needed by:
 #   - curl
-ENV VERSION_NGHTTP2=1.53.0
+ENV VERSION_NGHTTP2=1.55.1
 ENV NGHTTP2_BUILD_DIR=${BUILD_DIR}/nghttp2
 RUN set -xe; \
     mkdir -p ${NGHTTP2_BUILD_DIR}; \
@@ -207,7 +207,7 @@ RUN make install
 # #   - libnghttp2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=8.1.2
+ENV VERSION_CURL=8.2.0
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
