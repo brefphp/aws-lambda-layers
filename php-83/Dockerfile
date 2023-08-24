@@ -248,7 +248,7 @@ RUN make install
 # https://github.com/nih-at/libzip/releases
 # Needed by:
 #   - php
-ENV VERSION_ZIP=1.10.0
+ENV VERSION_ZIP=1.10.1
 ENV ZIP_BUILD_DIR=${BUILD_DIR}/zip
 RUN set -xe; \
     mkdir -p ${ZIP_BUILD_DIR}/bin/; \
