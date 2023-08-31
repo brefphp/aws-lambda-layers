@@ -81,7 +81,7 @@ ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
 RUN set -xe; \
     mkdir -p ${ZLIB_BUILD_DIR}; \
     curl -Ls https://github.com/madler/zlib/releases/download/v${VERSION_ZLIB}/zlib-${VERSION_ZLIB}.tar.gz \
-  | tar xJC ${ZLIB_BUILD_DIR} --strip-components=1
+  | tar xzC ${ZLIB_BUILD_DIR} --strip-components=1
 WORKDIR ${ZLIB_BUILD_DIR}/
 RUN set -xe; \
     make distclean \
