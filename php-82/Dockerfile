@@ -71,6 +71,10 @@ RUN mkdir -p ${BUILD_DIR}  \
 
 ###############################################################################
 # ZLIB Build
+# We compile a newer version because Lambda uses an old version (1.2.7) that
+# has a security vulnerability (CVE-2022-37434).
+# See https://github.com/brefphp/aws-lambda-layers/pull/110
+# Can be removed once Lambda updates their version.
 # https://github.com/madler/zlib/releases
 # Needed for:
 #   - openssl
