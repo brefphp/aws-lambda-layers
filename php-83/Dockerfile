@@ -72,26 +72,18 @@ RUN mkdir -p ${BUILD_DIR}  \
 
 ###############################################################################
 # ZLIB Build
+# We compile a newer version because Lambda uses an old version (1.2.7) that
+# has a security vulnerability (CVE-2022-37434).
+# See https://github.com/brefphp/aws-lambda-layers/pull/110
+# Can be removed once Lambda updates their version.
 # https://github.com/madler/zlib/releases
-# Needed for:
-#   - openssl
-#   - curl
-#   - php
-# Used By:
-#   - xml2
 ENV VERSION_ZLIB=1.3
-ENV ZLIB_BUILD_DIR=${BUILD_DIR}/xml2
-
+ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
 RUN set -xe; \
     mkdir -p ${ZLIB_BUILD_DIR}; \
-# Download and upack the source code
-    curl -Ls http://zlib.net/zlib-${VERSION_ZLIB}.tar.xz \
+    curl -Ls https://zlib.net/zlib-${VERSION_ZLIB}.tar.xz \
   | tar xJC ${ZLIB_BUILD_DIR} --strip-components=1
-
-# Move into the unpackaged code directory
 WORKDIR ${ZLIB_BUILD_DIR}/
-
-# Configure the build
 RUN set -xe; \
     make distclean \
  && CFLAGS="" \
