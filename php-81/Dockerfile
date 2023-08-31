@@ -84,17 +84,11 @@ RUN mkdir -p ${BUILD_DIR}  \
 #   - xml2
 ENV VERSION_ZLIB=1.3
 ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
-
 RUN set -xe; \
     mkdir -p ${ZLIB_BUILD_DIR}; \
-# Download and upack the source code
     curl -Ls https://zlib.net/zlib-${VERSION_ZLIB}.tar.xz \
   | tar xJC ${ZLIB_BUILD_DIR} --strip-components=1
-
-# Move into the unpackaged code directory
 WORKDIR ${ZLIB_BUILD_DIR}/
-
-# Configure the build
 RUN set -xe; \
     make distclean \
  && CFLAGS="" \
@@ -103,7 +97,6 @@ RUN set -xe; \
     ./configure \
     --prefix=${INSTALL_DIR} \
     --64
-
 RUN set -xe; \
     make install \
  && rm ${INSTALL_DIR}/lib/libz.a
