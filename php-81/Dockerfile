@@ -83,7 +83,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Used By:
 #   - xml2
 ENV VERSION_ZLIB=1.3
-ENV ZLIB_BUILD_DIR=${BUILD_DIR}/xml2
+ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
 
 RUN set -xe; \
     mkdir -p ${ZLIB_BUILD_DIR}; \
