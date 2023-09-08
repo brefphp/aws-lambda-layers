@@ -15,7 +15,7 @@ permissions:
 jobs:
     matrix-prep:
         name: Prepare matrix
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         outputs:
             matrix: ${{ steps.set-matrix.outputs.result }}
         steps:
@@ -40,13 +40,13 @@ jobs:
 
     tests:
         name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.cpu }}
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         needs: matrix-prep
         strategy:
             fail-fast: false
             matrix: ${{ fromJson(needs.matrix-prep.outputs.matrix) }}
         steps:
-            -   uses: actions/checkout@v3
+            -   uses: actions/checkout@v4
 
             # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
             -   name: Set up QEMU to run ARM images (that were built with Depot)

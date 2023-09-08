@@ -17,14 +17,14 @@ jobs:
 
     release:
         name: Publish ${{ matrix.cpu }} layers
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         strategy:
             matrix:
                 cpu:
                     - x86
                     - arm
         steps:
-            -   uses: actions/checkout@v3
+            -   uses: actions/checkout@v4
 
             # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
             -   name: Set up QEMU to run ARM images (that were built with Depot)
@@ -33,7 +33,7 @@ jobs:
             -   uses: depot/setup-action@v1
 
             -   name: Configure AWS credentials
-                uses: aws-actions/configure-aws-credentials@v1
+                uses: aws-actions/configure-aws-credentials@v3
                 with:
                     role-to-assume: arn:aws:iam::534081306603:role/bref-layer-publisher-github-actions
                     role-session-name: bref-layer-publisher-github-actions
@@ -69,7 +69,7 @@ jobs:
 
     update-layer-versions:
         name: Update layer versions in brefphp/bref
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         needs: [ release ]
         steps:
             -   name: Trigger layer update in brefphp/bref
@@ -91,7 +91,7 @@ jobs:
 
     update-layer-js-versions:
         name: Update layer versions in brefphp/layers.js
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         needs: [ release ]
         steps:
             -   name: Trigger release in brefphp/layers.js
