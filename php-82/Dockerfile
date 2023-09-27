@@ -11,14 +11,14 @@ ARG VERSION_PHP=8.2.10
 # https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
 # AWS provides a Docker image that we use here:
 # https://github.com/amazonlinux/container-images/tree/amzn2
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023 as build-environment
+FROM public.ecr.aws/lambda/provided:al2023-preview-${IMAGE_VERSION_SUFFIX} as build-environment
 
 
 RUN set -xe \
-    # Download yum repository data to cache
- && yum makecache \
+    # Download dnf repository data to cache
+ && dnf makecache \
     # Install default development tools (gcc, make, etc)
- && yum groupinstall -y "Development Tools" --setopt=group_package_types=mandatory,default
+ && dnf install -y make gcc gcc-c++ autoconf automake libtool
 
 
 # We need a base path for all the sourcecode we will build from.
@@ -107,7 +107,7 @@ RUN make install
 
 
 ###############################################################################
-RUN LD_LIBRARY_PATH= yum install -y --allowerasing libcurl-devel
+RUN LD_LIBRARY_PATH= dnf install -y libcurl-devel
 
 
 ###############################################################################
@@ -117,7 +117,7 @@ RUN LD_LIBRARY_PATH= yum install -y --allowerasing libcurl-devel
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
 # sqlite-devel : Since PHP 7.4 this must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
-RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel sqlite-devel libzip-devel oniguruma-devel libpq-devel openssl-devel
+RUN LD_LIBRARY_PATH= dnf install -y readline-devel gettext-devel libicu-devel libxslt-devel sqlite-devel libzip-devel oniguruma-devel libpq-devel openssl-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
@@ -218,7 +218,7 @@ RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/ph
 RUN cp $(php -r 'echo ini_get("extension_dir");')/* /bref-layer/bref/extensions/
 
 # Copy all the required system libraries from:
-# - /lib | /lib64 (system libraries installed with `yum`)
+# - /lib | /lib64 (system libraries installed with `dnf`)
 # - /opt/bin | /opt/lib | /opt/lib64 (libraries compiled from source)
 # into `/bref-layer` (the temp directory for the future Lambda layer)
 COPY --link utils/lib-copy /bref/lib-copy
