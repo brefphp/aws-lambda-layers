@@ -235,7 +235,7 @@ RUN cp /etc/ssl/cert.pem /bref-layer/bref/ssl/cert.pem
 
 # ---------------------------------------------------------------
 # Start from a clean image to copy only the files we need
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023 as isolation
+FROM public.ecr.aws/lambda/provided:al2023-preview-${IMAGE_VERSION_SUFFIX} as isolation
 
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt
