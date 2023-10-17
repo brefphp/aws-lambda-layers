@@ -182,8 +182,8 @@ RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mysql.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
 
-# Copy the OpenSSL certificates file
-RUN cp /etc/ssl/cert.pem /bref-layer/bref/ssl/cert.pem
+# Create a symbolic link to the OpenSSL certificates file for BC purposes
+RUN ln -s /etc/ssl/cert.pem /bref-layer/bref/ssl/cert.pem
 
 
 # ---------------------------------------------------------------

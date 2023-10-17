@@ -85,8 +85,10 @@ $extensions = [
     // Check that the default certificate file exists
     // https://github.com/brefphp/aws-lambda-layers/issues/53
     'curl-openssl-certificates' => file_exists(openssl_get_cert_locations()['default_cert_file']),
-    // Check its location has not changed (would be a breaking change)
-    'curl-openssl-certificates-location' => openssl_get_cert_locations()['default_cert_file'] === '/opt/bref/ssl/cert.pem',
+    // Check its location
+    'curl-openssl-certificates-location' => openssl_get_cert_locations()['default_cert_file'] === '/etc/pki/tls/cert.pem',
+    // Check the file in previous Bref versions is still here (would be a breaking change)
+    'curl-openssl-certificates-backwards-compatibility' => file_exists('/opt/bref/ssl/cert.pem'),
     'json' => function_exists('json_encode'),
     'bcmath' => function_exists('bcadd'),
     'ctype' => function_exists('ctype_digit'),
