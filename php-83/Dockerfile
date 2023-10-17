@@ -62,63 +62,16 @@ RUN mkdir -p ${BUILD_DIR}  \
 
 
 ###############################################################################
-# ZLIB Build
-# We compile a newer version because Lambda uses an old version (1.2.7) that
-# has a security vulnerability (CVE-2022-37434).
-# See https://github.com/brefphp/aws-lambda-layers/pull/110
-# Can be removed once Lambda updates their version.
-# https://github.com/madler/zlib/releases
-ENV VERSION_ZLIB=1.3
-ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
-RUN set -xe; \
-    mkdir -p ${ZLIB_BUILD_DIR}; \
-    curl -Ls https://github.com/madler/zlib/releases/download/v${VERSION_ZLIB}/zlib-${VERSION_ZLIB}.tar.gz \
-  | tar xzC ${ZLIB_BUILD_DIR} --strip-components=1
-WORKDIR ${ZLIB_BUILD_DIR}/
-RUN set -xe; \
-    make distclean \
- && CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
-    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    ./configure \
-    --prefix=${INSTALL_DIR}
-RUN set -xe; \
-    make install \
- && rm ${INSTALL_DIR}/lib/libz.a
-
-
-###############################################################################
-# LIBSODIUM
-# https://github.com/jedisct1/libsodium/releases
-# Needed by:
-#   - php
-ENV VERSION_LIBSODIUM=1.0.19
-ENV LIBSODIUM_BUILD_DIR=${BUILD_DIR}/libsodium
-RUN set -xe; \
-    mkdir -p ${LIBSODIUM_BUILD_DIR}; \
-    curl -Ls https://github.com/jedisct1/libsodium/archive/${VERSION_LIBSODIUM}.tar.gz \
-  | tar xzC ${LIBSODIUM_BUILD_DIR} --strip-components=1
-WORKDIR  ${LIBSODIUM_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
-    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    ./autogen.sh \
-&& ./configure --prefix=${INSTALL_DIR}
-RUN make install
-
-
-###############################################################################
-RUN LD_LIBRARY_PATH= dnf install -y libcurl-devel
-
-
-###############################################################################
 # Install some dev files for using old libraries already on the system
+# libcurl-devel : needed for the curl extension
+# zlib-devel : needed for zlib/gz in PHP
 # readline-devel : needed for the readline extension
 # gettext-devel : needed for the --with-gettext flag
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
 # sqlite-devel : Since PHP 7.4 this must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
-RUN LD_LIBRARY_PATH= dnf install -y readline-devel gettext-devel libicu-devel libxslt-devel sqlite-devel libzip-devel oniguruma-devel libpq-devel openssl-devel
+# libsodium-devel : needed for the sodium extension
+RUN LD_LIBRARY_PATH= dnf install -y libcurl-devel zlib-devel readline-devel gettext-devel libicu-devel libxslt-devel sqlite-devel libzip-devel oniguruma-devel libpq-devel openssl-devel libsodium-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
