@@ -27,7 +27,8 @@ COPY --link bref-entrypoint.sh /
 RUN chmod +x /bref-entrypoint.sh
 
 # Install node to run the JS app below
-RUN yum install --setopt=skip_missing_names_on_install=False -y nodejs
+RUN yum install https://rpm.nodesource.com/pub_16.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y
+RUN yum install --setopt=nodesource-nodejs.module_hotfixes=1 --setopt=skip_missing_names_on_install=False -y nodejs
 
 # Install the bref/local-api-gateway app in our container (avoids running 2 containers)
 COPY --link --from=bref/local-api-gateway /app /local-api-gateway
