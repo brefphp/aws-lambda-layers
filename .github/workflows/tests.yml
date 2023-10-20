@@ -50,10 +50,10 @@ jobs:
 
             # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
             -   name: Set up QEMU to run ARM images (that were built with Depot)
-                uses: docker/setup-qemu-action@v2
+                uses: docker/setup-qemu-action@v3
 
             -   uses: depot/setup-action@v1
-            -   uses: docker/setup-buildx-action@v2
+            -   uses: docker/setup-buildx-action@v3
 
             # We use this action instead of running `make docker-images-php-XX` directly because it lets us
             # use OIDC authentication instead of a secret. Secrets can't be used in pull request builds.
