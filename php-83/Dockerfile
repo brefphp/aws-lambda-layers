@@ -5,7 +5,7 @@ ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
 ARG DOWNLOAD_USER=jakub
-ARG VERSION_PHP=8.3.0RC5
+ARG VERSION_PHP=8.3.0RC6
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
