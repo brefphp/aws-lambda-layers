@@ -317,7 +317,7 @@ RUN make install
 #   - OpenSSL
 # Needed by:
 #   - php
-ENV VERSION_POSTGRES=15.4
+ENV VERSION_POSTGRES=15.5
 ENV POSTGRES_BUILD_DIR=${BUILD_DIR}/postgres
 RUN set -xe; \
     mkdir -p ${POSTGRES_BUILD_DIR}/bin; \
