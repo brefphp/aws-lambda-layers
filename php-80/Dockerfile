@@ -385,10 +385,6 @@ ARG VERSION_PHP
 RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
   | tar xzC . --strip-components=1
 
-COPY layers/openssl3.patch ${PHP_BUILD_DIR}
-RUN patch -N -p1 -s < openssl3.patch
-RUN rm openssl3.patch
-
 # Configure the build
 # -fstack-protector-strong : Be paranoid about stack overflows
 # -fpic : Make PHP's main executable position-independent (improves ASLR security mechanism, and has no performance impact on x86_64)
