@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
+$appRoot = getenv('LAMBDA_TASK_ROOT');
+
 if (getenv('BREF_AUTOLOAD_PATH')) {
     require getenv('BREF_AUTOLOAD_PATH');
-} else {
-    $appRoot = getenv('LAMBDA_TASK_ROOT');
-
+} elseif (file_exists($appRoot . '/vendor/autoload.php')) {
     require $appRoot . '/vendor/autoload.php';
 }
 
