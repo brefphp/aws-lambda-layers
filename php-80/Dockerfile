@@ -103,13 +103,14 @@ RUN set -xe; \
 # Needed by:
 #   - curl
 #   - php
-ENV VERSION_OPENSSL=1.1.1w
+RUN yum install -y perl-IPC-Cmd
+ENV VERSION_OPENSSL=3.2.0
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
 ENV CA_BUNDLE="${INSTALL_DIR}/bref/ssl/cert.pem"
 RUN set -xe; \
     mkdir -p ${OPENSSL_BUILD_DIR}; \
-    curl -Ls https://github.com/openssl/openssl/archive/OpenSSL_${VERSION_OPENSSL//./_}.tar.gz \
+    curl -Ls https://github.com/openssl/openssl/releases/download/openssl-${VERSION_OPENSSL}/openssl-${VERSION_OPENSSL}.tar.gz \
   | tar xzC ${OPENSSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${OPENSSL_BUILD_DIR}/
 RUN CFLAGS="" \
@@ -383,6 +384,10 @@ WORKDIR ${PHP_BUILD_DIR}
 ARG VERSION_PHP
 RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
   | tar xzC . --strip-components=1
+
+COPY layers/openssl3.patch ${PHP_BUILD_DIR}
+RUN patch -N -p1 -s < openssl3.patch
+RUN rm openssl3.patch
 
 # Configure the build
 # -fstack-protector-strong : Be paranoid about stack overflows

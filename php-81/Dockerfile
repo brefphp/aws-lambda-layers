@@ -104,7 +104,7 @@ RUN set -xe; \
 #   - curl
 #   - php
 RUN yum install -y perl-IPC-Cmd
-ENV VERSION_OPENSSL=3.0.12
+ENV VERSION_OPENSSL=3.2.0
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
 ENV CA_BUNDLE="${INSTALL_DIR}/bref/ssl/cert.pem"
