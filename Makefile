@@ -72,11 +72,16 @@ upload-layers-php-%:
 # Publish Docker images to Docker Hub.
 upload-to-docker-hub: upload-to-docker-hub-php-80 upload-to-docker-hub-php-81 upload-to-docker-hub-php-82 upload-to-docker-hub-php-83
 upload-to-docker-hub-php-%:
+    # Make sure we have defined the docker tag
+	(test $(DOCKER_TAG)) && echo "Tagging images with \"${DOCKER_TAG}\"" || echo "You have to define environment variable DOCKER_TAG"
+	test $(DOCKER_TAG)
+
 	for image in \
 	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}php-$*-fpm" "bref/${CPU_PREFIX}php-$*-console" \
 	  "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-fpm-dev"; \
 	do \
 		docker tag $$image $$image:2 ; \
+		docker tag $$image $$image:${DOCKER_TAG} ; \
 		docker push $$image --all-tags ; \
 	done
 

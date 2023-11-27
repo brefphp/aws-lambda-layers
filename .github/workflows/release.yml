@@ -5,7 +5,7 @@ on:
     workflow_dispatch:
     # But the main use case is to release new layers when a release is created
     release:
-        types: [published]
+        types: [ published ]
 
 # Necessary to deploy to AWS using OIDC
 # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
@@ -25,6 +25,10 @@ jobs:
                     - arm
         steps:
             -   uses: actions/checkout@v4
+
+            -   name: Get the version
+                id: get_version
+                run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
             # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
             -   name: Set up QEMU to run ARM images (that were built with Depot)
@@ -66,6 +70,7 @@ jobs:
             -   run: make upload-to-docker-hub
                 env:
                     CPU: ${{ matrix.cpu }}
+                    DOCKER_TAG: ${{ steps.get_version.outputs.VERSION }}
 
     update-layer-versions:
         name: Update layer versions in brefphp/bref
