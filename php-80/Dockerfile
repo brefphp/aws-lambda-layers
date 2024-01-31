@@ -228,7 +228,7 @@ RUN make install
 # https://github.com/rockdaboot/libpsl/releases
 # Needed by:
 #   - curl
-RUN yum install -y autoconf autoconf-archive
+RUN yum install -y autoconf
 ENV VERSION_LIBPSL=0.21.5
 ENV LIBPSL_BUILD_DIR=${BUILD_DIR}/libpsl
 RUN set -xe; \
