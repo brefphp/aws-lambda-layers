@@ -236,7 +236,6 @@ RUN set -xe; \
     curl -Ls https://github.com/rockdaboot/libpsl/archive/refs/tags/${VERSION_LIBPSL}.tar.gz \
     | tar xzC ${LIBPSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBPSL_BUILD_DIR}/
-RUN ./autogen.sh && autoconf
 RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
