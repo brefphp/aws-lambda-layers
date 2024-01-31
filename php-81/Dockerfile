@@ -233,7 +233,7 @@ ENV VERSION_LIBPSL=0.21.5
 ENV LIBPSL_BUILD_DIR=${BUILD_DIR}/libpsl
 RUN set -xe; \
     mkdir -p ${LIBPSL_BUILD_DIR}; \
-    curl -Ls https://github.com/rockdaboot/libpsl/archive/refs/tags/${VERSION_LIBPSL}.tar.gz \
+    curl -Ls https://github.com/rockdaboot/libpsl/releases/download/${VERSION_LIBPSL}/libpsl-${VERSION_LIBPSL}.tar.gz \
     | tar xzC ${LIBPSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBPSL_BUILD_DIR}/
 RUN CFLAGS="" \
