@@ -76,7 +76,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 # See https://github.com/brefphp/aws-lambda-layers/pull/110
 # Can be removed once Lambda updates their version.
 # https://github.com/madler/zlib/releases
-ENV VERSION_ZLIB=1.3
+ENV VERSION_ZLIB=1.3.1
 ENV ZLIB_BUILD_DIR=${BUILD_DIR}/zlib
 RUN set -xe; \
     mkdir -p ${ZLIB_BUILD_DIR}; \
