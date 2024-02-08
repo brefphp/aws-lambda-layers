@@ -347,7 +347,7 @@ WORKDIR  ${POSTGRES_BUILD_DIR}/
 RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    ./configure --prefix=${INSTALL_DIR} --with-openssl --without-readline
+    ./configure --prefix=${INSTALL_DIR} --with-openssl --without-icu --without-readline
 RUN cd ${POSTGRES_BUILD_DIR}/src/interfaces/libpq && make && make install
 RUN cd ${POSTGRES_BUILD_DIR}/src/bin/pg_config && make && make install
 RUN cd ${POSTGRES_BUILD_DIR}/src/backend && make generated-headers
