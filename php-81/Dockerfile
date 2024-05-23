@@ -332,12 +332,12 @@ RUN make install
 
 ###############################################################################
 # Postgres
-# https://github.com/postgres/postgres/releases
+# https://github.com/postgres/postgres/tags
 # Needs:
 #   - OpenSSL
 # Needed by:
 #   - php
-ENV VERSION_POSTGRES=16.2
+ENV VERSION_POSTGRES=16.3
 ENV POSTGRES_BUILD_DIR=${BUILD_DIR}/postgres
 RUN set -xe; \
     mkdir -p ${POSTGRES_BUILD_DIR}/bin; \
