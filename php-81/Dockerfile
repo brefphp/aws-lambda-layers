@@ -135,13 +135,13 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 
 ###############################################################################
 # LIBXML2
-# https://github.com/GNOME/libxml2/releases
+# https://gitlab.gnome.org/GNOME/libxml2/-/releases
 # Uses:
 #   - zlib
 # Needed by:
 #   - php
 #   - libnghttp2
-ENV VERSION_XML2=2.12.6
+ENV VERSION_XML2=2.12.7
 ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
 RUN set -xe; \
     mkdir -p ${XML2_BUILD_DIR}; \
