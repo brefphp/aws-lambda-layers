@@ -319,7 +319,7 @@ ENV VERSION_LIBSODIUM=1.0.20
 ENV LIBSODIUM_BUILD_DIR=${BUILD_DIR}/libsodium
 RUN set -xe; \
     mkdir -p ${LIBSODIUM_BUILD_DIR}; \
-    curl -Ls https://github.com/jedisct1/libsodium/archive/${VERSION_LIBSODIUM}.tar.gz \
+    curl -Ls https://github.com/jedisct1/libsodium/archive/${VERSION_LIBSODIUM}-RELEASE.tar.gz \
   | tar xzC ${LIBSODIUM_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSODIUM_BUILD_DIR}/
 RUN CFLAGS="" \
