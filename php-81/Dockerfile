@@ -315,7 +315,7 @@ RUN cmake  --build . --target install
 # https://github.com/jedisct1/libsodium/releases
 # Needed by:
 #   - php
-ENV VERSION_LIBSODIUM=1.0.19
+ENV VERSION_LIBSODIUM=1.0.20
 ENV LIBSODIUM_BUILD_DIR=${BUILD_DIR}/libsodium
 RUN set -xe; \
     mkdir -p ${LIBSODIUM_BUILD_DIR}; \
