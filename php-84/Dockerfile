@@ -434,8 +434,8 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --with-sodium \
         --with-readline \
         --with-openssl \
-        --with-zlib \
-        --with-zlib-dir \
+        # --with-zlib \
+        # --with-zlib-dir \
         --with-curl \
         --enable-exif \
         --enable-ftp \
