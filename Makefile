@@ -41,7 +41,7 @@ docker-images-php-%:
 
 
 # Build Lambda layers (zip files) *locally*
-layers: layer-php-80 layer-php-81 layer-php-82 layer-php-83 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm layer-php-83-fpm layer-php-84-fpm
+layers: layer-php-80 layer-php-81 layer-php-82 layer-php-83 layer-php-84 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm layer-php-83-fpm layer-php-84-fpm
 	# Build the console layer only once (x86 and single PHP version)
 	@if [ ${CPU} = "x86" ]; then \
 		$(MAKE) layer-console; \
