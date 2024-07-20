@@ -4,7 +4,8 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.4.0alpha1
+ARG RELEASE_USER_PHP=calvinb
+ARG VERSION_PHP=8.4.0alpha2
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -422,8 +423,9 @@ WORKDIR ${PHP_BUILD_DIR}
 # --location will follow redirects
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
+ARG RELEASE_USER_PHP
 ARG VERSION_PHP
-RUN curl --location --silent --show-error --fail https://downloads.php.net/~saki/php-${VERSION_PHP}.tar.gz \
+RUN curl --location --silent --show-error --fail https://downloads.php.net/~${RELEASE_USER_PHP}/php-${VERSION_PHP}.tar.gz \
   | tar xzC . --strip-components=1
 
 # Configure the build
