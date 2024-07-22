@@ -378,7 +378,7 @@ RUN make && make install
 # SQLite
 # Since PHP 7.4, libsqlite must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
 # Laravel 11 requires SQLite 3.35.0 or higher. The system version is 3.7.17.
-# See https://github.com/brefphp/aws-lambda-layers/pull/185
+# https://laravel.com/docs/11.x/upgrade#sqlite-minimum-version
 # https://www.sqlite.org/changes.html
 # Needed by:
 #   - php
@@ -400,7 +400,6 @@ RUN make && make install
 # gettext-devel : needed for the --with-gettext flag
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
-# sqlite-devel : Since PHP 7.4 this must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
 RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel
 
 
