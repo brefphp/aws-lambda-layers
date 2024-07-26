@@ -254,7 +254,7 @@ RUN make -j $(nproc) && make install
 # #   - libnghttp2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=8.8.0
+ENV VERSION_CURL=8.9.0
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
