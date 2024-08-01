@@ -4,8 +4,8 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG RELEASE_USER_PHP=calvinb
-ARG VERSION_PHP=8.4.0alpha2
+ARG RELEASE_USER_PHP=saki
+ARG VERSION_PHP=8.4.0alpha4
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -142,7 +142,7 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 # Needed by:
 #   - php
 #   - libnghttp2
-ENV VERSION_XML2=2.12.9
+ENV VERSION_XML2=2.13.3
 ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
 RUN set -xe; \
     mkdir -p ${XML2_BUILD_DIR}; \
