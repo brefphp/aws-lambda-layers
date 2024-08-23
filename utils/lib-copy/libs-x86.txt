@@ -29,7 +29,7 @@ libcrypto.so.1.0.2k
 libcrypt.so.1
 libc.so.6
 libcurl.so.4
-libcurl.so.4.7.0
+libcurl.so.4.8.0
 libdb-5.3.so
 libdb-5.so
 libdl-2.26.so
@@ -184,6 +184,8 @@ libpng15.so.15
 libpng15.so.15.13.0
 libpopt.so.0
 libpopt.so.0.0.0
+libpsl.so.5
+libpsl.so.5.3.5
 libpsx.so.2
 libpsx.so.2.54
 libpthread-2.26.so
