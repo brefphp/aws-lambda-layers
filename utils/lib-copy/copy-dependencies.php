@@ -37,6 +37,7 @@ $librariesThatExistOnLambda = array_map('trim', $librariesThatExistOnLambda);
 // For some reason some libraries are actually not in Lambda, despite being in the docker image 🤷
 $librariesThatExistOnLambda = array_filter($librariesThatExistOnLambda, function ($library) {
     return ! str_contains($library, 'libgcrypt.so')
+        && ! str_contains($library, 'libassuan.so')
         && ! str_contains($library, 'libgobject-2.0.so')
         && ! str_contains($library, 'libgpg-error.so')
         && ! str_contains($library, 'libgpgme-pthread.so')
