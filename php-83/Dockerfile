@@ -483,9 +483,8 @@ RUN set -xe; \
 
 
 # Install extensions
-RUN git clone https://github.com/krakjoe/apcu.git \
-  && cd apcu && git reset --hard 3299efc0987499d468693a3aa5c7e9d5548c4525 \
-  && phpize && ./configure && make && make install && cd ../ && rm -rf apcu
+# We can install extensions manually or using `pecl`
+RUN pecl install APCu
 
 
 # ---------------------------------------------------------------
