@@ -487,7 +487,8 @@ RUN set -xe; \
 
 # Install extensions
 # We can install extensions manually or using `pecl`
-RUN pecl install APCu
+ENV VERSION_APCU=5.1.24
+RUN pecl install apcu-${VERSION_APCU}
 
 
 # ---------------------------------------------------------------
