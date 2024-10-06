@@ -2,11 +2,15 @@
 
 $appRoot = getenv('LAMBDA_TASK_ROOT');
 
-if (getenv('BREF_AUTOLOAD_PATH')) {
-    require getenv('BREF_AUTOLOAD_PATH');
-} elseif (file_exists($appRoot . '/vendor/autoload.php')) {
-    require $appRoot . '/vendor/autoload.php';
+$autoloadPath = $_SERVER['BREF_AUTOLOAD_PATH'] ?? null;
+if (! $autoloadPath) {
+    $autoloadPath = $appRoot . '/vendor/autoload.php';
 }
+if (! file_exists($autoloadPath)) {
+    throw new RuntimeException('Could not find the Composer vendor directory. Did you run "composer require bref/bref"? Read https://bref.sh/docs/environment/php#custom-vendor-path if your Composer vendor directory is in a custom path.');
+}
+
+require $autoloadPath;
 
 $runtimeClass = getenv('RUNTIME_CLASS');
 
