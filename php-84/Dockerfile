@@ -175,7 +175,7 @@ RUN make install \
 #   - OpenSSL
 # Needed by:
 #   - curl
-ENV VERSION_LIBSSH2=1.11.0
+ENV VERSION_LIBSSH2=1.11.1
 ENV LIBSSH2_BUILD_DIR=${BUILD_DIR}/libssh2
 RUN set -xe; \
     mkdir -p ${LIBSSH2_BUILD_DIR}/bin; \
