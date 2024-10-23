@@ -4,7 +4,8 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.2.24
+ARG RELEASE_USER_PHP=calvinb
+ARG VERSION_PHP=8.4.0RC2
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -377,7 +378,10 @@ RUN make && make install
 ###############################################################################
 # SQLite
 # Since PHP 7.4, libsqlite must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
-# Laravel 11 requires SQLite 3.35.0 or higher. The system version is 3.7.17.
+# PHP 8.4 requires SQLite 3.13.0 or higher because the build uses the
+# `SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION` constant.
+# See https://github.com/brefphp/aws-lambda-layers/pull/185
+# Moreover, Laravel 11 requires SQLite 3.35.0 or higher. The system version is 3.7.17.
 # https://laravel.com/docs/11.x/upgrade#sqlite-minimum-version
 # https://www.sqlite.org/changes.html
 # Needed by:
@@ -421,8 +425,9 @@ WORKDIR ${PHP_BUILD_DIR}
 # --location will follow redirects
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
+ARG RELEASE_USER_PHP
 ARG VERSION_PHP
-RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
+RUN curl --location --silent --show-error --fail https://downloads.php.net/~${RELEASE_USER_PHP}/php-${VERSION_PHP}.tar.gz \
   | tar xzC . --strip-components=1
 
 # Configure the build
@@ -434,7 +439,6 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --enable-option-checking=fatal: make sure invalid --configure-flags are fatal errors instead of just warnings
 # --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
 # --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
-# --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
 ARG PHP_COMPILATION_FLAGS
 RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
@@ -454,7 +458,6 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --with-readline \
         --with-openssl \
         --with-zlib \
-        --with-zlib-dir \
         --with-curl \
         --enable-exif \
         --enable-ftp \

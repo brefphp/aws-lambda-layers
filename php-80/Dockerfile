@@ -134,13 +134,13 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 
 ###############################################################################
 # LIBXML2
-# https://github.com/GNOME/libxml2/releases
+# https://gitlab.gnome.org/GNOME/libxml2/-/releases
 # Uses:
 #   - zlib
 # Needed by:
 #   - php
 #   - libnghttp2
-ENV VERSION_XML2=2.11.7
+ENV VERSION_XML2=2.11.9
 ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
 RUN set -xe; \
     mkdir -p ${XML2_BUILD_DIR}; \
@@ -173,7 +173,7 @@ RUN make install \
 #   - OpenSSL
 # Needed by:
 #   - curl
-ENV VERSION_LIBSSH2=1.11.0
+ENV VERSION_LIBSSH2=1.11.1
 ENV LIBSSH2_BUILD_DIR=${BUILD_DIR}/libssh2
 RUN set -xe; \
     mkdir -p ${LIBSSH2_BUILD_DIR}/bin; \
@@ -206,7 +206,7 @@ RUN cmake  --build . --target install
 #   - libxml2
 # Needed by:
 #   - curl
-ENV VERSION_NGHTTP2=1.61.0
+ENV VERSION_NGHTTP2=1.64.0
 ENV NGHTTP2_BUILD_DIR=${BUILD_DIR}/nghttp2
 RUN set -xe; \
     mkdir -p ${NGHTTP2_BUILD_DIR}; \
@@ -253,7 +253,7 @@ RUN make -j $(nproc) && make install
 # #   - libnghttp2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=8.6.0
+ENV VERSION_CURL=8.10.1
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
@@ -293,7 +293,7 @@ RUN make install
 # https://github.com/nih-at/libzip/releases
 # Needed by:
 #   - php
-ENV VERSION_ZIP=1.10.1
+ENV VERSION_ZIP=1.11.1
 ENV ZIP_BUILD_DIR=${BUILD_DIR}/zip
 RUN set -xe; \
     mkdir -p ${ZIP_BUILD_DIR}/bin/; \
@@ -314,11 +314,11 @@ RUN cmake  --build . --target install
 # https://github.com/jedisct1/libsodium/releases
 # Needed by:
 #   - php
-ENV VERSION_LIBSODIUM=1.0.19
+ENV VERSION_LIBSODIUM=1.0.20
 ENV LIBSODIUM_BUILD_DIR=${BUILD_DIR}/libsodium
 RUN set -xe; \
     mkdir -p ${LIBSODIUM_BUILD_DIR}; \
-    curl -Ls https://github.com/jedisct1/libsodium/archive/${VERSION_LIBSODIUM}.tar.gz \
+    curl -Ls https://github.com/jedisct1/libsodium/archive/${VERSION_LIBSODIUM}-RELEASE.tar.gz \
   | tar xzC ${LIBSODIUM_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSODIUM_BUILD_DIR}/
 RUN CFLAGS="" \
@@ -331,12 +331,12 @@ RUN make install
 
 ###############################################################################
 # Postgres
-# https://github.com/postgres/postgres/releases
+# https://github.com/postgres/postgres/tags
 # Needs:
 #   - OpenSSL
 # Needed by:
 #   - php
-ENV VERSION_POSTGRES=16.2
+ENV VERSION_POSTGRES=16.4
 ENV POSTGRES_BUILD_DIR=${BUILD_DIR}/postgres
 RUN set -xe; \
     mkdir -p ${POSTGRES_BUILD_DIR}/bin; \
@@ -464,7 +464,8 @@ RUN set -xe; \
 
 # Install extensions
 # We can install extensions manually or using `pecl`
-RUN pecl install APCu
+ENV VERSION_APCU=5.1.24
+RUN pecl install apcu-${VERSION_APCU}
 
 
 # ---------------------------------------------------------------
@@ -494,6 +495,9 @@ RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgs
 
 # Copy the OpenSSL certificates file
 RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
+
+# Copy the OpenSSL config
+RUN cp ${INSTALL_DIR}/bref/ssl/openssl.cnf /bref-layer/bref/ssl/openssl.cnf
 
 
 # ---------------------------------------------------------------

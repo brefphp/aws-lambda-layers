@@ -10,14 +10,14 @@ ARG PHP_VERSION
 RUN mkdir -p /opt/bref/extensions
 
 # Install xdebug
-RUN pecl install xdebug
+run if [[ $PHP_VERSION != "84" ]]; then pecl install xdebug-3.3.2; else pecl install xdebug-3.4.0beta1; fi
 RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 # Install Blackfire
 # https://blackfire.io/docs/up-and-running/installation?action=install&mode=full&version=latest&mode=full&location=server&os=manual&language=php#install-the-php-probe
 ARG BLACKFIRE_VERSION=1.87.2
-RUN if [ $PHP_VERSION != "83" ] && [ $CPU_PREFIX == "" ]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_amd64-php-"$PHP_VERSION".so"; fi
-RUN if [ $PHP_VERSION != "83" ] && [ $CPU_PREFIX == "arm-" ]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_arm64-php-"$PHP_VERSION".so"; fi
+RUN if [ $PHP_VERSION != "83" ] && [ $PHP_VERSION != "84" ] && [ $CPU_PREFIX == "" ]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_amd64-php-"$PHP_VERSION".so"; fi
+RUN if [ $PHP_VERSION != "83" ] && [ $PHP_VERSION != "84" ] && [ $CPU_PREFIX == "arm-" ]; then curl -A "Docker" -o /opt/bref/extensions/blackfire.so -L -s "https://packages.blackfire.io/binaries/blackfire-php/$BLACKFIRE_VERSION/blackfire-php-linux_arm64-php-"$PHP_VERSION".so"; fi
 
 
 FROM bref/${CPU_PREFIX}php-${PHP_VERSION}-fpm
