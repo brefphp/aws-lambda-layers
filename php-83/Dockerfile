@@ -7,7 +7,7 @@ ARG IMAGE_VERSION_SUFFIX
 ARG VERSION_PHP=8.3.12
 
 
-# Lambda uses a custom AMI named Amazon Linux 2
+# Lambda uses a custom AMI named Amazon Linux 2023
 # https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
 # AWS provides a Docker image that we use here:
 # https://github.com/amazonlinux/container-images/tree/amzn2
