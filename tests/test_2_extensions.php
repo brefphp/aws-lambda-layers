@@ -91,6 +91,16 @@ $extensions = [
     'curl-openssl-certificates-backwards-compatibility' => file_exists('/opt/bref/ssl/cert.pem'),
     // Make sure we are using curl with our compiled libssh
     'curl-libssh' => version_compare(str_replace('libssh2/', '', curl_version()['libssh_version']), '1.10.0', '>='),
+    'openssl' => (function() {
+        $private_key = openssl_pkey_new(['private_key_bits' => 2048]);
+        if ($private_key === false) {
+            return false;
+        }
+
+        $public_key_pem = openssl_pkey_get_details($private_key)['key'];
+        $details = openssl_pkey_get_details(openssl_pkey_get_public($public_key_pem));
+        return $details['bits'] === 2048;
+    })(),
     'json' => function_exists('json_encode'),
     'bcmath' => function_exists('bcadd'),
     'ctype' => function_exists('ctype_digit'),
