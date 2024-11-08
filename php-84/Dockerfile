@@ -387,7 +387,7 @@ RUN make && make install
 # Needed by:
 #   - php
 RUN LD_LIBRARY_PATH= yum install -y tcl
-ENV VERSION_SQLITE=3.46.1
+ENV VERSION_SQLITE=3.47.0
 ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
 RUN set -xe; \
     mkdir -p ${SQLITE_BUILD_DIR}; \
