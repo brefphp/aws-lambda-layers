@@ -380,13 +380,14 @@ RUN make && make install
 # PHP 8.4 requires SQLite 3.13.0 or higher because the build uses the
 # `SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION` constant.
 # See https://github.com/brefphp/aws-lambda-layers/pull/185
-# Moreover, Laravel 11 requires SQLite 3.35.0 or higher. The system version is 3.7.17.
+# Laravel 11 requires SQLite 3.35.0 or higher and Drupal 10 also requires a
+# newer version than the system version of 3.7.17.
 # https://laravel.com/docs/11.x/upgrade#sqlite-minimum-version
 # https://www.sqlite.org/changes.html
 # Needed by:
 #   - php
 RUN LD_LIBRARY_PATH= yum install -y tcl
-ENV VERSION_SQLITE=3.47.0
+ENV VERSION_SQLITE=3.47.2
 ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
 RUN set -xe; \
     mkdir -p ${SQLITE_BUILD_DIR}; \
