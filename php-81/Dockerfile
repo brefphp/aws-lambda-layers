@@ -375,13 +375,33 @@ RUN make && make install
 
 
 ###############################################################################
+# SQLite
+# Since PHP 7.4, libsqlite must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
+# Laravel 11 requires SQLite 3.35.0 or higher and Drupal 10 also requires a
+# newer version than the system version of 3.7.17.
+# https://laravel.com/docs/11.x/upgrade#sqlite-minimum-version
+# https://www.sqlite.org/changes.html
+# Needed by:
+#   - php
+RUN LD_LIBRARY_PATH= yum install -y tcl
+ENV VERSION_SQLITE=3.47.2
+ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
+RUN set -xe; \
+    mkdir -p ${SQLITE_BUILD_DIR}; \
+    curl -Ls https://github.com/sqlite/sqlite/archive/refs/tags/version-${VERSION_SQLITE}.tar.gz \
+    | tar xzC ${SQLITE_BUILD_DIR} --strip-components=1
+WORKDIR ${SQLITE_BUILD_DIR}
+RUN ./configure --prefix=${INSTALL_DIR}
+RUN make && make install
+
+
+###############################################################################
 # Install some dev files for using old libraries already on the system
 # readline-devel : needed for the readline extension
 # gettext-devel : needed for the --with-gettext flag
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
-# sqlite-devel : Since PHP 7.4 this must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
-RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel sqlite-devel
+RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
