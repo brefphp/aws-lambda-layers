@@ -363,7 +363,7 @@ RUN cd ${POSTGRES_BUILD_DIR}/src/include && make install
 # https://github.com/kkos/oniguruma/releases
 # Needed by:
 #   - php mbstring
-ENV VERSION_ONIG=6.9.9
+ENV VERSION_ONIG=6.9.10
 ENV ONIG_BUILD_DIR=${BUILD_DIR}/oniguruma
 RUN set -xe; \
     mkdir -p ${ONIG_BUILD_DIR}; \
