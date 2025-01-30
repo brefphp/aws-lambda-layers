@@ -120,6 +120,7 @@ RUN CFLAGS="" \
         --openssldir=${INSTALL_DIR}/bref/ssl \
         --release \
         enable-tls1_3 \
+        enable-legacy \
         no-tests \
         shared \
         zlib
@@ -472,6 +473,7 @@ RUN pecl install apcu-${VERSION_APCU}
 # Now we copy everything we need for the layers into /bref-layer (which will be used for the real /opt later)
 RUN mkdir -p /bref-layer/bin \
 &&  mkdir -p /bref-layer/lib \
+&&  mkdir -p /bref-layer/lib/ossl-modules \
 &&  mkdir -p /bref-layer/bref/extensions \
 &&  mkdir -p /bref-layer/bref/ssl
 
@@ -499,6 +501,8 @@ RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
 # Copy the OpenSSL config
 RUN cp ${INSTALL_DIR}/bref/ssl/openssl.cnf /bref-layer/bref/ssl/openssl.cnf
 
+# Copy the OpenSSL modules
+RUN cp /tmp/build/openssl/providers/legacy.so /bref-layer/lib/ossl-modules/legacy.so
 
 # ---------------------------------------------------------------
 # Start from a clean image to copy only the files we need
