@@ -141,7 +141,7 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 # Needed by:
 #   - php
 #   - libnghttp2
-ENV VERSION_XML2=2.12.9
+ENV VERSION_XML2=2.12.10
 ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
 RUN set -xe; \
     mkdir -p ${XML2_BUILD_DIR}; \
