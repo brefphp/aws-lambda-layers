@@ -18,7 +18,8 @@ RUN set -xe \
     # Download yum repository data to cache
  && yum makecache \
     # Install default development tools (gcc, make, etc)
- && yum groupinstall -y "Development Tools" --setopt=group_package_types=mandatory,default
+ && yum groupinstall -y "Development Tools" --setopt=group_package_types=mandatory,default \
+ && yum install -y libffi libffi-devel
 
 
 # The default version of cmake is 2.8.12. We need cmake to build a few of
@@ -471,6 +472,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --enable-intl=shared \
         --enable-soap \
         --with-xsl=${INSTALL_DIR} \
+        --with-ffi \
         # necessary for `pecl` to work (to install PHP extensions)
         --with-pear \
         # extra compilation flags
