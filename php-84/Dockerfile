@@ -18,8 +18,7 @@ RUN set -xe \
     # Download yum repository data to cache
  && yum makecache \
     # Install default development tools (gcc, make, etc)
- && yum groupinstall -y "Development Tools" --setopt=group_package_types=mandatory,default \
- && yum install -y libffi libffi-devel
+ && yum groupinstall -y "Development Tools" --setopt=group_package_types=mandatory,default
 
 
 # The default version of cmake is 2.8.12. We need cmake to build a few of
@@ -405,7 +404,8 @@ RUN make && make install
 # gettext-devel : needed for the --with-gettext flag
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
-RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel
+# libffi-devel : needed for the FFI extension
+RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel libffi-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
