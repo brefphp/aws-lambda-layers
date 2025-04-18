@@ -404,7 +404,8 @@ RUN make && make install
 # gettext-devel : needed for the --with-gettext flag
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
-RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel
+# libffi-devel : needed for the FFI extension
+RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel libffi-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
@@ -471,6 +472,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --enable-intl=shared \
         --enable-soap \
         --with-xsl=${INSTALL_DIR} \
+        --with-ffi \
         # necessary for `pecl` to work (to install PHP extensions)
         --with-pear \
         # extra compilation flags

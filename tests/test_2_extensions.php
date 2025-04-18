@@ -64,6 +64,7 @@ $coreExtensions = [
     'readline' => READLINE_LIB === 'readline',
     'reflection' => class_exists(\ReflectionClass::class),
     'session' => session_status() === PHP_SESSION_NONE,
+    'ffi' => class_exists(\FFI::class),
     'zip' => class_exists(\ZipArchive::class),
     'zlib' => md5(gzcompress('abcde')) === 'db245560922b42f1935e73e20b30980e',
 ];
@@ -94,11 +95,11 @@ $extensions = [
         if ($private_key === false) {
             return false;
         }
-    
+
         $public_key_pem = openssl_pkey_get_details($private_key)['key'];
         $details = openssl_pkey_get_details(openssl_pkey_get_public($public_key_pem));
         return $details['bits'] === 2048;
-    })(),    
+    })(),
     'json' => function_exists('json_encode'),
     'bcmath' => function_exists('bcadd'),
     'ctype' => function_exists('ctype_digit'),
