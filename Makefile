@@ -76,6 +76,7 @@ upload-to-docker-hub-php-%:
 	(test $(DOCKER_TAG)) && echo "Tagging images with \"${DOCKER_TAG}\"" || echo "You have to define environment variable DOCKER_TAG"
 	test $(DOCKER_TAG)
 
+	set -e ; \
 	for image in \
 	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}php-$*-fpm" "bref/${CPU_PREFIX}php-$*-console" \
 	  "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-fpm-dev"; \
