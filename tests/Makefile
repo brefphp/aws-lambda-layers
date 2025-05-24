@@ -1,9 +1,9 @@
 export CPU_PREFIX ?=
 
-test: test-80 test-81 test-82 test-83 test-84
+test: test-82 test-83 test-84
 
-# This rule matches with a wildcard, for example `test-80`.
-# The `$*` variable will contained the matched part, in this case `80`.
+# This rule matches with a wildcard, for example `test-84`.
+# The `$*` variable will contained the matched part, in this case `84`.
 test-%: vendor
 	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/${CPU_PREFIX}php-$* test_1_binary.php $*
 	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/${CPU_PREFIX}php-$*-dev test_1_binary.php $*
