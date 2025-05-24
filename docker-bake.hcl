@@ -9,7 +9,7 @@ variable "CPU_PREFIX" {
     default = ""
 }
 variable "PHP_VERSION" {
-    default = "80"
+    default = "84"
 }
 variable "IMAGE_VERSION_SUFFIX" {
     default = "x86_64"

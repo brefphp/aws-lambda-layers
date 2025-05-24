@@ -94,7 +94,7 @@ The published Lambda layers will be public (they are readonly anyway). You can f
 If you ever need to check out the content of a layer, you can start a `bash` terminal inside the Docker image:
 
 ```sh
-docker run --rm -it --entrypoint=bash bref/php-80
+docker run --rm -it --entrypoint=bash bref/php-84
 ```
 
 > **Note:**
