@@ -148,10 +148,8 @@ Anything we want to make available in AWS Lambda is possible by preparing the ri
     bref/ # custom Bref files
         extensions/ # PHP extensions
             ...
-        php-fpm-runtime/ # the built-in FPM runtime
         etc/php/conf.d/ # automatically loaded php.ini files
             bref.ini
-        bootstrap.php # (for the function layer only)
 
     bootstrap # entrypoint of the runtime
 
