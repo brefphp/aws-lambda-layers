@@ -557,7 +557,7 @@ RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 FROM function as dev
 
-COPY --link --from=build_extensions /opt /opt
+COPY --link --from=build_dev /opt /opt
 COPY --link layers/dev-entrypoint.sh /bref-entrypoint.sh
 RUN chmod +x /bref-entrypoint.sh
 
