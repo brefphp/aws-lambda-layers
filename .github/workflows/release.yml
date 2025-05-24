@@ -28,7 +28,15 @@ jobs:
 
             -   name: Get the version
                 id: get_version
-                run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+                run: |
+                  if [[ $GITHUB_REF == refs/tags/* ]]; then
+                    VERSION=${GITHUB_REF#refs/tags/}
+                  elif [[ $GITHUB_REF == refs/heads/* ]]; then
+                    VERSION=${GITHUB_REF#refs/heads/}
+                  else
+                    VERSION=$GITHUB_REF
+                  fi
+                  echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
             # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
             -   name: Set up QEMU to run ARM images (that were built with Depot)
@@ -39,7 +47,7 @@ jobs:
             -   name: Configure AWS credentials
                 uses: aws-actions/configure-aws-credentials@v4
                 with:
-                    role-to-assume: arn:aws:iam::534081306603:role/bref-layer-publisher-github-actions
+                    role-to-assume: arn:aws:iam::873528684822:role/bref-layer-publisher-github-actions
                     role-session-name: bref-layer-publisher-github-actions
                     aws-region: us-east-1
 
@@ -86,7 +94,7 @@ jobs:
                             owner: 'brefphp',
                             repo: 'bref',
                             workflow_id: 'update-layer-versions.yml',
-                            ref: 'master',
+                            ref: 'v3',
                             inputs: {
                                 release_url: '${{ github.event.release.url }}',
                                 release_html_url: '${{ github.event.release.html_url }}',
@@ -108,5 +116,5 @@ jobs:
                           owner: 'brefphp',
                           repo: 'layers.js',
                           workflow_id: 'release.yml',
-                          ref: 'main'
+                          ref: 'v3'
                         })

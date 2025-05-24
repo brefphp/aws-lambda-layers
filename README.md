@@ -94,7 +94,7 @@ The published Lambda layers will be public (they are readonly anyway). You can f
 If you ever need to check out the content of a layer, you can start a `bash` terminal inside the Docker image:
 
 ```sh
-docker run --rm -it --entrypoint=bash bref/php-80
+docker run --rm -it --entrypoint=bash bref/php-84
 ```
 
 > **Note:**
@@ -148,10 +148,8 @@ Anything we want to make available in AWS Lambda is possible by preparing the ri
     bref/ # custom Bref files
         extensions/ # PHP extensions
             ...
-        php-fpm-runtime/ # the built-in FPM runtime
         etc/php/conf.d/ # automatically loaded php.ini files
             bref.ini
-        bootstrap.php # (for the function layer only)
 
     bootstrap # entrypoint of the runtime
 

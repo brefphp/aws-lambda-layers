@@ -64,6 +64,7 @@ $coreExtensions = [
     'readline' => READLINE_LIB === 'readline',
     'reflection' => class_exists(\ReflectionClass::class),
     'session' => session_status() === PHP_SESSION_NONE,
+    'ffi' => class_exists(\FFI::class),
     'zip' => class_exists(\ZipArchive::class),
     'zlib' => md5(gzcompress('abcde')) === 'db245560922b42f1935e73e20b30980e',
 ];

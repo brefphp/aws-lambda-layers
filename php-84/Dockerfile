@@ -4,8 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG RELEASE_USER_PHP=calvinb
-ARG VERSION_PHP=8.4.0RC2
+ARG VERSION_PHP=8.4.7
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -105,7 +104,7 @@ RUN set -xe; \
 #   - curl
 #   - php
 RUN yum install -y perl-IPC-Cmd
-ENV VERSION_OPENSSL=3.3.1
+ENV VERSION_OPENSSL=3.3.3
 ENV OPENSSL_BUILD_DIR=${BUILD_DIR}/openssl
 ENV CA_BUNDLE_SOURCE="https://curl.se/ca/cacert.pem"
 ENV CA_BUNDLE="${INSTALL_DIR}/bref/ssl/cert.pem"
@@ -142,7 +141,7 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 # Needed by:
 #   - php
 #   - libnghttp2
-ENV VERSION_XML2=2.13.4
+ENV VERSION_XML2=2.13.8
 ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
 RUN set -xe; \
     mkdir -p ${XML2_BUILD_DIR}; \
@@ -208,7 +207,7 @@ RUN cmake  --build . --target install
 #   - libxml2
 # Needed by:
 #   - curl
-ENV VERSION_NGHTTP2=1.64.0
+ENV VERSION_NGHTTP2=1.65.0
 ENV NGHTTP2_BUILD_DIR=${BUILD_DIR}/nghttp2
 RUN set -xe; \
     mkdir -p ${NGHTTP2_BUILD_DIR}; \
@@ -255,7 +254,7 @@ RUN make -j $(nproc) && make install
 # #   - libnghttp2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=8.10.1
+ENV VERSION_CURL=8.12.1
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
@@ -295,7 +294,7 @@ RUN make install
 # https://github.com/nih-at/libzip/releases
 # Needed by:
 #   - php
-ENV VERSION_ZIP=1.11.1
+ENV VERSION_ZIP=1.11.3
 ENV ZIP_BUILD_DIR=${BUILD_DIR}/zip
 RUN set -xe; \
     mkdir -p ${ZIP_BUILD_DIR}/bin/; \
@@ -338,7 +337,7 @@ RUN make install
 #   - OpenSSL
 # Needed by:
 #   - php
-ENV VERSION_POSTGRES=16.4
+ENV VERSION_POSTGRES=17.5
 ENV POSTGRES_BUILD_DIR=${BUILD_DIR}/postgres
 RUN set -xe; \
     mkdir -p ${POSTGRES_BUILD_DIR}/bin; \
@@ -364,7 +363,7 @@ RUN cd ${POSTGRES_BUILD_DIR}/src/include && make install
 # https://github.com/kkos/oniguruma/releases
 # Needed by:
 #   - php mbstring
-ENV VERSION_ONIG=6.9.9
+ENV VERSION_ONIG=6.9.10
 ENV ONIG_BUILD_DIR=${BUILD_DIR}/oniguruma
 RUN set -xe; \
     mkdir -p ${ONIG_BUILD_DIR}; \
@@ -381,13 +380,14 @@ RUN make && make install
 # PHP 8.4 requires SQLite 3.13.0 or higher because the build uses the
 # `SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION` constant.
 # See https://github.com/brefphp/aws-lambda-layers/pull/185
-# Moreover, Laravel 11 requires SQLite 3.35.0 or higher. The system version is 3.7.17.
+# Laravel 11 requires SQLite 3.35.0 or higher and Drupal 10 also requires a
+# newer version than the system version of 3.7.17.
 # https://laravel.com/docs/11.x/upgrade#sqlite-minimum-version
 # https://www.sqlite.org/changes.html
 # Needed by:
 #   - php
 RUN LD_LIBRARY_PATH= yum install -y tcl
-ENV VERSION_SQLITE=3.46.1
+ENV VERSION_SQLITE=3.49.2
 ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
 RUN set -xe; \
     mkdir -p ${SQLITE_BUILD_DIR}; \
@@ -404,7 +404,8 @@ RUN make && make install
 # gettext-devel : needed for the --with-gettext flag
 # libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
-RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel
+# libffi-devel : needed for the FFI extension
+RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel libffi-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
@@ -425,9 +426,8 @@ WORKDIR ${PHP_BUILD_DIR}
 # --location will follow redirects
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
-ARG RELEASE_USER_PHP
 ARG VERSION_PHP
-RUN curl --location --silent --show-error --fail https://downloads.php.net/~${RELEASE_USER_PHP}/php-${VERSION_PHP}.tar.gz \
+RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
   | tar xzC . --strip-components=1
 
 # Configure the build
@@ -472,6 +472,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --enable-intl=shared \
         --enable-soap \
         --with-xsl=${INSTALL_DIR} \
+        --with-ffi \
         # necessary for `pecl` to work (to install PHP extensions)
         --with-pear \
         # extra compilation flags
@@ -501,6 +502,9 @@ RUN mkdir -p /bref-layer/bin \
 # Copy the PHP binary
 RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/php
 
+# Copy the PHP-FPM binary
+RUN cp ${INSTALL_DIR}/sbin/php-fpm /bref-layer/bin/php-fpm
+
 # Copy all the external PHP extensions
 RUN cp $(php -r 'echo ini_get("extension_dir");')/* /bref-layer/bref/extensions/
 
@@ -510,6 +514,7 @@ RUN cp $(php -r 'echo ini_get("extension_dir");')/* /bref-layer/bref/extensions/
 # into `/bref-layer` (the temp directory for the future Lambda layer)
 COPY --link utils/lib-copy /bref/lib-copy
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php-fpm /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/apcu.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/intl.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache.so /bref-layer/lib
@@ -523,46 +528,53 @@ RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
 RUN cp ${INSTALL_DIR}/bref/ssl/openssl.cnf /bref-layer/bref/ssl/openssl.cnf
 
 
-# ---------------------------------------------------------------
-# Start from a clean image to copy only the files we need
-FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as isolation
+# ----------------------------------------------------------------------------
+# Start from a clean image to copy only the files we need for the Lambda layer
+FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as function
 
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt
 
-COPY --link layers/bootstrap.php /opt/bref/bootstrap.php
+COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
+COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-
-FROM isolation as function
-
-COPY --link layers/function/bref.ini /opt/bref/etc/php/conf.d/
-
-COPY --link layers/function/bootstrap.sh /opt/bootstrap
+COPY --link src/bootstrap.php /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY --link layers/function/bootstrap.sh /var/runtime/bootstrap
+COPY --link src/bootstrap.php /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 
-# Up until here the entire file has been designed as a top-down reading/execution.
-# Everything necessary for the `function` layer has been installed, isolated and
-# packaged. Now we'll go back one step and start from the extensions so that we
-# can install fpm. Then we'll start the fpm layer and quickly isolate fpm.
+# ----------------------------------------------------------------------------
+# Build the dev image with xdebug
+FROM build-environment as build_dev
 
-FROM build-environment as fpm-extension
+RUN mkdir -p /opt/bref/extensions
 
-RUN cp ${INSTALL_DIR}/sbin/php-fpm /bref-layer/bin/php-fpm
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php-fpm /bref-layer/lib
+# Install xdebug
+RUN pecl install xdebug-3.4.2
+RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 
-FROM isolation as fpm
+FROM function as dev
 
-COPY --link --from=fpm-extension /bref-layer /opt
+COPY --link --from=build_dev /opt /opt
+COPY --link src/dev-entrypoint.sh /bref-entrypoint.sh
+RUN chmod +x /bref-entrypoint.sh
 
-COPY --link layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
+# Install node to run the JS app below
+RUN yum install https://rpm.nodesource.com/pub_16.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y
+RUN yum install --setopt=nodesource-nodejs.module_hotfixes=1 --setopt=skip_missing_names_on_install=False -y nodejs
 
-COPY --link layers/fpm/bootstrap.sh /opt/bootstrap
-# Copy files to /var/runtime to support deploying as a Docker image
-COPY --link layers/fpm/bootstrap.sh /var/runtime/bootstrap
-RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
+# Install the bref/local-api-gateway app in our container (avoids running 2 containers)
+COPY --link --from=bref/local-api-gateway /app /local-api-gateway
+EXPOSE 8000
 
-COPY --link layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
+# Add `php/conf.dev.d` to the path where PHP looks for configuration files
+ENV PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d:/var/task/php/conf.d:/var/task/php/conf.dev.d"
+
+# Add composer
+COPY --link --from=composer/composer:2-bin /composer /usr/bin/composer
+
+# Originally the entrypoint is `/lambda-entrypoint.sh` and CMD contains the handler name
+# We override the entrypoint to run our own logic
+ENTRYPOINT [ "/bref-entrypoint.sh" ]
