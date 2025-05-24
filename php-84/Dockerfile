@@ -535,12 +535,12 @@ FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as function
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt
 
-COPY --link layers/php.ini /opt/bref/etc/php/conf.d/bref.ini
-COPY --link layers/php-fpm.conf /opt/bref/etc/php-fpm.conf
+COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
+COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --link layers/bootstrap.php /opt/bootstrap
+COPY --link src/bootstrap.php /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY --link layers/bootstrap.php /var/runtime/bootstrap
+COPY --link src/bootstrap.php /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 
@@ -558,7 +558,7 @@ RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 FROM function as dev
 
 COPY --link --from=build_dev /opt /opt
-COPY --link layers/dev-entrypoint.sh /bref-entrypoint.sh
+COPY --link src/dev-entrypoint.sh /bref-entrypoint.sh
 RUN chmod +x /bref-entrypoint.sh
 
 # Install node to run the JS app below
