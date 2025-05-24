@@ -1,10 +1,10 @@
 {
     "require": {
-        "bref/bref": "dev-master"
+        "bref/bref": "dev-single-layer"
     },
     "config": {
         "platform": {
-            "php": "8.0.7"
+            "php": "8.2.0"
         }
     }
 }

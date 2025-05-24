@@ -41,13 +41,7 @@ docker-images-php-%:
 
 
 # Build Lambda layers (zip files) *locally*
-layers: layer-php-80 layer-php-81 layer-php-82 layer-php-83 layer-php-84 layer-php-80-fpm layer-php-81-fpm layer-php-82-fpm layer-php-83-fpm layer-php-84-fpm
-	# Build the console layer only once (x86 and single PHP version)
-	@if [ ${CPU} = "x86" ]; then \
-		$(MAKE) layer-console; \
-	fi
-layer-console:
-	./utils/docker-zip-dir.sh bref/console-zip console
+layers: layer-php-80 layer-php-81 layer-php-82 layer-php-83 layer-php-84
 # This rule matches with a wildcard, for example `layer-php-80`.
 # The `$*` variable will contained the matched part, in this case `php-80`.
 layer-%:
@@ -58,15 +52,8 @@ layer-%:
 # Uses the current AWS_PROFILE. Most users will not want to use this option
 # as this will publish all layers to all regions + publish all Docker images.
 upload-layers: upload-layers-php-80 upload-layers-php-81 upload-layers-php-82 upload-layers-php-83 upload-layers-php-84
-	# Upload the console layer only once (x86 and single PHP version)
-	@if [ ${CPU} = "x86" ]; then \
-		LAYER_NAME=console $(MAKE) -C ./utils/lambda-publish publish-parallel; \
-	fi
 upload-layers-php-%:
-	# Upload the function layers to AWS
 	LAYER_NAME=${CPU_PREFIX}php-$* $(MAKE) -C ./utils/lambda-publish publish-parallel
-	# Upload the FPM layers to AWS
-	LAYER_NAME=${CPU_PREFIX}php-$*-fpm $(MAKE) -C ./utils/lambda-publish publish-parallel
 
 
 # Publish Docker images to Docker Hub.
@@ -78,8 +65,7 @@ upload-to-docker-hub-php-%:
 
 	set -e ; \
 	for image in \
-	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}php-$*-fpm" "bref/${CPU_PREFIX}php-$*-console" \
-	  "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-fpm-dev"; \
+	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-dev"; \
 	do \
 		docker tag $$image $$image:2 ; \
 		docker tag $$image $$image:${DOCKER_TAG} ; \
@@ -102,7 +88,4 @@ clean-%:
 	docker image rm --force bref/${CPU_PREFIX}build-php-$* \
 		bref/${CPU_PREFIX}php-$* \
 		bref/${CPU_PREFIX}php-$*-zip \
-		bref/${CPU_PREFIX}php-$*-fpm \
-		bref/${CPU_PREFIX}php-$*-fpm-zip \
-		bref/${CPU_PREFIX}php-$*-fpm-dev \
-		bref/${CPU_PREFIX}php-$*-console
+		bref/${CPU_PREFIX}php-$*-dev

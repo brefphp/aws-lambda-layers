@@ -502,6 +502,9 @@ RUN mkdir -p /bref-layer/bin \
 # Copy the PHP binary
 RUN cp ${INSTALL_DIR}/bin/php /bref-layer/bin/php && chmod +x /bref-layer/bin/php
 
+# Copy the PHP-FPM binary
+RUN cp ${INSTALL_DIR}/sbin/php-fpm /bref-layer/bin/php-fpm
+
 # Copy all the external PHP extensions
 RUN cp $(php -r 'echo ini_get("extension_dir");')/* /bref-layer/bref/extensions/
 
@@ -511,6 +514,7 @@ RUN cp $(php -r 'echo ini_get("extension_dir");')/* /bref-layer/bref/extensions/
 # into `/bref-layer` (the temp directory for the future Lambda layer)
 COPY --link utils/lib-copy /bref/lib-copy
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php-fpm /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/apcu.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/intl.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache.so /bref-layer/lib
@@ -524,46 +528,53 @@ RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
 RUN cp ${INSTALL_DIR}/bref/ssl/openssl.cnf /bref-layer/bref/ssl/openssl.cnf
 
 
-# ---------------------------------------------------------------
-# Start from a clean image to copy only the files we need
-FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as isolation
+# ----------------------------------------------------------------------------
+# Start from a clean image to copy only the files we need for the Lambda layer
+FROM public.ecr.aws/lambda/provided:al2-${IMAGE_VERSION_SUFFIX} as function
 
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt
 
-COPY --link layers/bootstrap.php /opt/bref/bootstrap.php
+COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
+COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-
-FROM isolation as function
-
-COPY --link layers/function/bref.ini /opt/bref/etc/php/conf.d/
-
-COPY --link layers/function/bootstrap.sh /opt/bootstrap
+COPY --link src/bootstrap.php /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY --link layers/function/bootstrap.sh /var/runtime/bootstrap
+COPY --link src/bootstrap.php /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
 
 
-# Up until here the entire file has been designed as a top-down reading/execution.
-# Everything necessary for the `function` layer has been installed, isolated and
-# packaged. Now we'll go back one step and start from the extensions so that we
-# can install fpm. Then we'll start the fpm layer and quickly isolate fpm.
+# ----------------------------------------------------------------------------
+# Build the dev image with xdebug
+FROM build-environment as build_dev
 
-FROM build-environment as fpm-extension
+RUN mkdir -p /opt/bref/extensions
 
-RUN cp ${INSTALL_DIR}/sbin/php-fpm /bref-layer/bin/php-fpm
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php-fpm /bref-layer/lib
+# Install xdebug
+RUN pecl install xdebug-3.4.2
+RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 
-FROM isolation as fpm
+FROM function as dev
 
-COPY --link --from=fpm-extension /bref-layer /opt
+COPY --link --from=build_dev /opt /opt
+COPY --link src/dev-entrypoint.sh /bref-entrypoint.sh
+RUN chmod +x /bref-entrypoint.sh
 
-COPY --link layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
+# Install node to run the JS app below
+RUN yum install https://rpm.nodesource.com/pub_16.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y
+RUN yum install --setopt=nodesource-nodejs.module_hotfixes=1 --setopt=skip_missing_names_on_install=False -y nodejs
 
-COPY --link layers/fpm/bootstrap.sh /opt/bootstrap
-# Copy files to /var/runtime to support deploying as a Docker image
-COPY --link layers/fpm/bootstrap.sh /var/runtime/bootstrap
-RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
+# Install the bref/local-api-gateway app in our container (avoids running 2 containers)
+COPY --link --from=bref/local-api-gateway /app /local-api-gateway
+EXPOSE 8000
 
-COPY --link layers/fpm/php-fpm.conf /opt/bref/etc/php-fpm.conf
+# Add `php/conf.dev.d` to the path where PHP looks for configuration files
+ENV PHP_INI_SCAN_DIR="/opt/bref/etc/php/conf.d:/var/task/php/conf.d:/var/task/php/conf.dev.d"
+
+# Add composer
+COPY --link --from=composer/composer:2-bin /composer /usr/bin/composer
+
+# Originally the entrypoint is `/lambda-entrypoint.sh` and CMD contains the handler name
+# We override the entrypoint to run our own logic
+ENTRYPOINT [ "/bref-entrypoint.sh" ]
