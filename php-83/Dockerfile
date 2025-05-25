@@ -537,10 +537,11 @@ COPY --link --from=build-environment /bref-layer /opt
 COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
 COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --link src/bootstrap.php /opt/bootstrap
+COPY --link src/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY --link src/bootstrap.php /var/runtime/bootstrap
+COPY --link src/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
+COPY --link src/bootstrap.php /opt/bref/bootstrap.php
 
 
 # ----------------------------------------------------------------------------
