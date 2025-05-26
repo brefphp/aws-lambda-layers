@@ -6,6 +6,7 @@ $extensions = [
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
     'pdo_pgsql' => extension_loaded('pdo_pgsql'),
+    'soap' => class_exists(\SoapClient::class),
 ];
 
 $extensionDir = ini_get('extension_dir');
