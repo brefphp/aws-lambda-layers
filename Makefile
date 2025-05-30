@@ -69,7 +69,8 @@ upload-to-docker-hub-php-%:
 	do \
 		docker tag $$image $$image:3 ; \
 		docker tag $$image $$image:${DOCKER_TAG} ; \
-		docker push $$image --all-tags ; \
+		docker push $$image:3 ; \
+		docker push $$image:${DOCKER_TAG} ; \
 	done
 
 
