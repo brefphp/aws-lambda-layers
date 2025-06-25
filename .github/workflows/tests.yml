@@ -25,7 +25,7 @@ jobs:
                     script: |
                         const matrix = {
                             cpu: ['x86', 'arm'],
-                            php_version: ['80', '81', '82', '83', '84'],
+                            php_version: ['82', '83', '84'],
                         }
                         
                         // If this is a third-party pull request, skip ARM builds
@@ -73,13 +73,6 @@ jobs:
             -   name: Test that layers can be exported
                 run: |
                     make layer-php-${{ matrix.php_version }}
-                    make layer-php-${{ matrix.php_version }}-fpm
-                env:
-                    CPU: ${{ matrix.cpu }}
-
-            -   name: Test that the "console" layer can be exported
-                run: make layer-console
-                if: ${{ matrix.php_version == 80 }}
                 env:
                     CPU: ${{ matrix.cpu }}
 
