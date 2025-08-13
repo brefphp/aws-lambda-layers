@@ -4,7 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.5.0alpha4
+ARG VERSION_PHP=8.5.0beta1
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -134,9 +134,41 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 
 
 ###############################################################################
+# ICU
+# We need to compile ICU from source because Amazon Linux 2 only has ICU 50.2
+# but PHP 8.5 requires ICU 57.1 or higher
+# https://github.com/unicode-org/icu/releases
+# Uses:
+#   - None
+# Needed by:
+#   - libxml2
+#   - php intl extension
+ENV VERSION_ICU=77.1
+ENV ICU_BUILD_DIR=${BUILD_DIR}/icu
+RUN set -xe; \
+    mkdir -p ${ICU_BUILD_DIR}; \
+    curl -Ls https://github.com/unicode-org/icu/releases/download/release-${VERSION_ICU//./-}/icu4c-${VERSION_ICU//./_}-src.tgz \
+    | tar xzC ${ICU_BUILD_DIR} --strip-components=1
+WORKDIR ${ICU_BUILD_DIR}/source
+RUN CFLAGS="" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-rpath,${INSTALL_DIR}/lib" \
+    ./configure \
+    --prefix=${INSTALL_DIR} \
+    --enable-shared \
+    --disable-static \
+    --disable-samples \
+    --disable-tests \
+    --disable-extras \
+    --disable-layoutex
+RUN make && make install
+
+
+###############################################################################
 # LIBXML2
 # https://gitlab.gnome.org/GNOME/libxml2/-/releases
 # Uses:
+#   - icu
 #   - zlib
 # Needed by:
 #   - php
@@ -151,6 +183,9 @@ WORKDIR  ${XML2_BUILD_DIR}/
 RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
+    PATH="${INSTALL_DIR}/bin:${PATH}" \
+    ICU_CFLAGS="-I${INSTALL_DIR}/include" \
+    ICU_LIBS="-L${INSTALL_DIR}/lib -licui18n -licuuc -licudata" \
     ./configure \
     --prefix=${INSTALL_DIR} \
     --with-sysroot=${INSTALL_DIR} \
@@ -402,10 +437,9 @@ RUN make && make install
 # Install some dev files for using old libraries already on the system
 # readline-devel : needed for the readline extension
 # gettext-devel : needed for the --with-gettext flag
-# libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
 # libffi-devel : needed for the FFI extension
-RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel libffi-devel
+RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libxslt-devel libffi-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
@@ -427,7 +461,7 @@ WORKDIR ${PHP_BUILD_DIR}
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
 ARG VERSION_PHP
-RUN curl --location --silent --show-error --fail https://downloads.php.net/~daniels/php-${VERSION_PHP}.tar.gz \
+RUN curl --location --silent --show-error --fail https://downloads.php.net/~edorian/php-${VERSION_PHP}.tar.gz \
   | tar xzC . --strip-components=1
 
 # Configure the build
@@ -444,6 +478,7 @@ RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
+        PKG_CONFIG_PATH="${INSTALL_DIR}/lib/pkgconfig:${INSTALL_DIR}/lib64/pkgconfig" \
     ./configure \
         --prefix=${INSTALL_DIR} \
         --enable-option-checking=fatal \
@@ -513,7 +548,6 @@ COPY --link utils/lib-copy /bref/lib-copy
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/apcu.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/intl.so /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mysql.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
 
