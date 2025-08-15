@@ -183,7 +183,6 @@ WORKDIR  ${XML2_BUILD_DIR}/
 RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
-    PATH="${INSTALL_DIR}/bin:${PATH}" \
     ICU_CFLAGS="-I${INSTALL_DIR}/include" \
     ICU_LIBS="-L${INSTALL_DIR}/lib -licui18n -licuuc -licudata" \
     ./configure \
@@ -478,7 +477,6 @@ RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
-        PKG_CONFIG_PATH="${INSTALL_DIR}/lib/pkgconfig:${INSTALL_DIR}/lib64/pkgconfig" \
     ./configure \
         --prefix=${INSTALL_DIR} \
         --enable-option-checking=fatal \
