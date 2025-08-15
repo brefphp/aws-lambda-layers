@@ -121,8 +121,8 @@ $extensions = [
     'sockets' => function_exists('socket_connect'),
     'spl' => class_exists(\SplQueue::class),
     'sqlite3' => class_exists(\SQLite3::class),
-    // Laravel 11 requires SQLite >= 3.35.0
-    'sqlite_version' => version_compare('3.35.0', \SQLite3::version()['versionString'], '<='),
+    // Drupal 11 requires SQLite >= 3.45.0
+    'sqlite_version' => version_compare('3.45.0', \SQLite3::version()['versionString'], '<='),
     'tokenizer' => function_exists('token_get_all'),
     'libxml' => function_exists('libxml_get_errors'),
     'xml' => function_exists('xml_parse'),
