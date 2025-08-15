@@ -1,6 +1,6 @@
 {
     "require": {
-        "bref/bref": "dev-single-layer"
+        "bref/bref": "v3.x-dev"
     },
     "config": {
         "platform": {

@@ -4,7 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.3.21
+ARG VERSION_PHP=8.3.22
 
 
 # Lambda uses a custom AMI named Amazon Linux 2023
@@ -108,8 +108,8 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
 ARG PHP_COMPILATION_FLAGS
 RUN ./buildconf --force
-RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
-        CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
+RUN CFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
+        CPPFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
     ./configure \
         --prefix=${INSTALL_DIR} \
@@ -131,15 +131,18 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --enable-ftp \
         --with-gettext \
         --enable-mbstring \
-        --with-pdo-mysql=shared,mysqlnd \
+        --with-pdo-mysql=mysqlnd \
         --with-mysqli \
         --enable-pcntl \
         --with-zip \
         --enable-bcmath \
         --with-pdo-pgsql=shared \
+        # Separate .so extension so that it is not loaded by default
         --enable-intl=shared \
-        --enable-soap \
-        --with-xsl \
+        # Separate .so extension so that it is not loaded by default
+        --enable-soap=shared \
+        # Separate .so extension so that it is not loaded by default
+        --with-xsl=${INSTALL_DIR} \
         --with-ffi \
         # necessary for `pecl` to work (to install PHP extensions)
         --with-pear \
@@ -191,6 +194,10 @@ RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgs
 # Create a symbolic link to the OpenSSL certificates file for BC purposes
 RUN ln -s /etc/ssl/cert.pem /bref-layer/bref/ssl/cert.pem
 
+# Run `strip` over all libraries and extensions to reduce their size
+RUN find /bref-layer/bref/extensions -type f -exec strip --strip-all {} +
+RUN find /bref-layer/lib -type f -exec strip --strip-all {} +
+
 
 # ----------------------------------------------------------------------------
 # Start from a clean image to copy only the files we need for the Lambda layer
@@ -202,10 +209,11 @@ COPY --link --from=build-environment /bref-layer /opt
 COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
 COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --link src/bootstrap.php /opt/bootstrap
+COPY --link src/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY --link src/bootstrap.php /var/runtime/bootstrap
+COPY --link src/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
+COPY --link src/bootstrap.php /opt/bref/bootstrap.php
 
 
 # ----------------------------------------------------------------------------

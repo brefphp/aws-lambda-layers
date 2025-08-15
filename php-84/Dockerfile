@@ -4,7 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.4.7
+ARG VERSION_PHP=8.4.8
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -85,8 +85,8 @@ RUN set -xe; \
 WORKDIR ${ZLIB_BUILD_DIR}/
 RUN set -xe; \
     make distclean \
- && CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include  -I/usr/include" \
+ && CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include  -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --prefix=${INSTALL_DIR}
@@ -113,8 +113,8 @@ RUN set -xe; \
     curl -Ls https://github.com/openssl/openssl/releases/download/openssl-${VERSION_OPENSSL}/openssl-${VERSION_OPENSSL}.tar.gz \
   | tar xzC ${OPENSSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${OPENSSL_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./config \
         --prefix=${INSTALL_DIR} \
@@ -148,8 +148,8 @@ RUN set -xe; \
     curl -Ls https://download.gnome.org/sources/libxml2/${VERSION_XML2%.*}/libxml2-${VERSION_XML2}.tar.xz \
   | tar xJC ${XML2_BUILD_DIR} --strip-components=1
 WORKDIR  ${XML2_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --prefix=${INSTALL_DIR} \
@@ -181,8 +181,8 @@ RUN set -xe; \
     curl -Ls https://github.com/libssh2/libssh2/releases/download/libssh2-${VERSION_LIBSSH2}/libssh2-${VERSION_LIBSSH2}.tar.gz \
   | tar xzC ${LIBSSH2_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSSH2_BUILD_DIR}/bin/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
         # Build as a shared library (.so) instead of a static one
@@ -214,8 +214,8 @@ RUN set -xe; \
     curl -Ls https://github.com/nghttp2/nghttp2/releases/download/v${VERSION_NGHTTP2}/nghttp2-${VERSION_NGHTTP2}.tar.gz \
     | tar xzC ${NGHTTP2_BUILD_DIR} --strip-components=1
 WORKDIR  ${NGHTTP2_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --enable-lib-only \
@@ -236,8 +236,8 @@ RUN set -xe; \
     curl -Ls https://github.com/rockdaboot/libpsl/releases/download/${VERSION_LIBPSL}/libpsl-${VERSION_LIBPSL}.tar.gz \
     | tar xzC ${LIBPSL_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBPSL_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --prefix=${INSTALL_DIR}
@@ -254,7 +254,7 @@ RUN make -j $(nproc) && make install
 # #   - libnghttp2
 # # Needed by:
 # #   - php
-ENV VERSION_CURL=8.12.1
+ENV VERSION_CURL=8.14.1
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
@@ -262,8 +262,8 @@ RUN set -xe; \
     | tar xzC ${CURL_BUILD_DIR} --strip-components=1
 WORKDIR  ${CURL_BUILD_DIR}/
 RUN ./buildconf \
- && CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+ && CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
     --prefix=${INSTALL_DIR} \
@@ -294,15 +294,15 @@ RUN make install
 # https://github.com/nih-at/libzip/releases
 # Needed by:
 #   - php
-ENV VERSION_ZIP=1.11.3
+ENV VERSION_ZIP=1.11.4
 ENV ZIP_BUILD_DIR=${BUILD_DIR}/zip
 RUN set -xe; \
     mkdir -p ${ZIP_BUILD_DIR}/bin/; \
     curl -Ls https://github.com/nih-at/libzip/releases/download/v${VERSION_ZIP}/libzip-${VERSION_ZIP}.tar.gz \
   | tar xzC ${ZIP_BUILD_DIR} --strip-components=1
 WORKDIR  ${ZIP_BUILD_DIR}/bin/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
@@ -322,8 +322,8 @@ RUN set -xe; \
     curl -Ls https://github.com/jedisct1/libsodium/archive/${VERSION_LIBSODIUM}-RELEASE.tar.gz \
   | tar xzC ${LIBSODIUM_BUILD_DIR} --strip-components=1
 WORKDIR  ${LIBSODIUM_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./autogen.sh \
 && ./configure --prefix=${INSTALL_DIR}
@@ -344,8 +344,8 @@ RUN set -xe; \
     curl -Ls https://github.com/postgres/postgres/archive/REL_${VERSION_POSTGRES//./_}.tar.gz \
     | tar xzC ${POSTGRES_BUILD_DIR} --strip-components=1
 WORKDIR  ${POSTGRES_BUILD_DIR}/
-RUN CFLAGS="" \
-    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+RUN CFLAGS="-Os" \
+    CPPFLAGS="-Os -I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure --prefix=${INSTALL_DIR} --with-openssl --without-icu --without-readline
 RUN cd ${POSTGRES_BUILD_DIR}/src/interfaces/libpq && make && make install
@@ -370,7 +370,7 @@ RUN set -xe; \
     curl -Ls https://github.com/kkos/oniguruma/releases/download/v${VERSION_ONIG}/onig-${VERSION_ONIG}.tar.gz \
     | tar xzC ${ONIG_BUILD_DIR} --strip-components=1
 WORKDIR  ${ONIG_BUILD_DIR}
-RUN ./configure --prefix=${INSTALL_DIR}
+RUN CFLAGS="-Os" CPPFLAGS="-Os" ./configure --prefix=${INSTALL_DIR}
 RUN make && make install
 
 
@@ -387,14 +387,14 @@ RUN make && make install
 # Needed by:
 #   - php
 RUN LD_LIBRARY_PATH= yum install -y tcl
-ENV VERSION_SQLITE=3.49.2
+ENV VERSION_SQLITE=3.50.0
 ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
 RUN set -xe; \
     mkdir -p ${SQLITE_BUILD_DIR}; \
     curl -Ls https://github.com/sqlite/sqlite/archive/refs/tags/version-${VERSION_SQLITE}.tar.gz \
     | tar xzC ${SQLITE_BUILD_DIR} --strip-components=1
 WORKDIR ${SQLITE_BUILD_DIR}
-RUN ./configure --prefix=${INSTALL_DIR}
+RUN CFLAGS="-Os" CPPFLAGS="-Os" ./configure --prefix=${INSTALL_DIR}
 RUN make && make install
 
 
@@ -441,8 +441,8 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
 ARG PHP_COMPILATION_FLAGS
 RUN ./buildconf --force
-RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
-        CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
+RUN CFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
+        CPPFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
     ./configure \
         --prefix=${INSTALL_DIR} \
@@ -463,14 +463,17 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --enable-ftp \
         --with-gettext \
         --enable-mbstring \
-        --with-pdo-mysql=shared,mysqlnd \
+        --with-pdo-mysql=mysqlnd \
         --with-mysqli \
         --enable-pcntl \
         --with-zip \
         --enable-bcmath \
         --with-pdo-pgsql=shared,${INSTALL_DIR} \
+        # Separate .so extension so that it is not loaded by default
         --enable-intl=shared \
-        --enable-soap \
+        # Separate .so extension so that it is not loaded by default
+        --enable-soap=shared \
+        # Separate .so extension so that it is not loaded by default
         --with-xsl=${INSTALL_DIR} \
         --with-ffi \
         # necessary for `pecl` to work (to install PHP extensions)
@@ -527,6 +530,10 @@ RUN cp ${CA_BUNDLE} /bref-layer/bref/ssl/cert.pem
 # Copy the OpenSSL config
 RUN cp ${INSTALL_DIR}/bref/ssl/openssl.cnf /bref-layer/bref/ssl/openssl.cnf
 
+# Run `strip` over all libraries and extensions to reduce their size
+RUN find /bref-layer/bref/extensions -type f -exec strip --strip-all {} +
+RUN find /bref-layer/lib -type f -exec strip --strip-all {} +
+
 
 # ----------------------------------------------------------------------------
 # Start from a clean image to copy only the files we need for the Lambda layer
@@ -538,10 +545,11 @@ COPY --link --from=build-environment /bref-layer /opt
 COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
 COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
-COPY --link src/bootstrap.php /opt/bootstrap
+COPY --link src/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
-COPY --link src/bootstrap.php /var/runtime/bootstrap
+COPY --link src/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /opt/bootstrap && chmod +x /var/runtime/bootstrap
+COPY --link src/bootstrap.php /opt/bref/bootstrap.php
 
 
 # ----------------------------------------------------------------------------

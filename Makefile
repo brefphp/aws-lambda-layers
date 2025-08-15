@@ -67,9 +67,10 @@ upload-to-docker-hub-php-%:
 	for image in \
 	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-dev"; \
 	do \
-		docker tag $$image $$image:2 ; \
+		docker tag $$image $$image:3 ; \
 		docker tag $$image $$image:${DOCKER_TAG} ; \
-		docker push $$image --all-tags ; \
+		docker push $$image:3 ; \
+		docker push $$image:${DOCKER_TAG} ; \
 	done
 
 
