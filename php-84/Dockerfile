@@ -377,8 +377,8 @@ RUN make && make install
 ###############################################################################
 # SQLite
 # Since PHP 7.4, libsqlite must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
-# PHP 8.4 requires SQLite 3.13.0 or higher because the build uses the
-# `SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION` constant.
+# Since PHP 8.4, version 3.13.0 or higher of SQLite is required because the
+# build uses the `SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION` constant.
 # See https://github.com/brefphp/aws-lambda-layers/pull/185
 # Laravel 11 requires SQLite 3.35.0 or higher and Drupal 10 also requires a
 # newer version than the system version of 3.7.17.
@@ -537,6 +537,7 @@ COPY --link layers/bootstrap.php /opt/bref/bootstrap.php
 FROM isolation as function
 
 COPY --link layers/function/bref.ini /opt/bref/etc/php/conf.d/
+COPY --link layers/opcache.ini /opt/bref/etc/php/conf.d/
 
 COPY --link layers/function/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
@@ -560,6 +561,7 @@ FROM isolation as fpm
 COPY --link --from=fpm-extension /bref-layer /opt
 
 COPY --link layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
+COPY --link layers/opcache.ini /opt/bref/etc/php/conf.d/
 
 COPY --link layers/fpm/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image

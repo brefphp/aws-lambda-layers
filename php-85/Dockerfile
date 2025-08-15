@@ -4,7 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.1.32
+ARG VERSION_PHP=8.5.0beta1
 
 
 # Lambda uses a custom AMI named Amazon Linux 2
@@ -134,14 +134,46 @@ RUN mkdir -p ${INSTALL_DIR}/bref/ssl && curl -Lk -o ${CA_BUNDLE} ${CA_BUNDLE_SOU
 
 
 ###############################################################################
+# ICU
+# We need to compile ICU from source because Amazon Linux 2 only has ICU 50.2
+# but PHP 8.5 requires ICU 57.1 or higher
+# https://github.com/unicode-org/icu/releases
+# Uses:
+#   - None
+# Needed by:
+#   - libxml2
+#   - php intl extension
+ENV VERSION_ICU=77.1
+ENV ICU_BUILD_DIR=${BUILD_DIR}/icu
+RUN set -xe; \
+    mkdir -p ${ICU_BUILD_DIR}; \
+    curl -Ls https://github.com/unicode-org/icu/releases/download/release-${VERSION_ICU//./-}/icu4c-${VERSION_ICU//./_}-src.tgz \
+    | tar xzC ${ICU_BUILD_DIR} --strip-components=1
+WORKDIR ${ICU_BUILD_DIR}/source
+RUN CFLAGS="" \
+    CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
+    LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-rpath,${INSTALL_DIR}/lib" \
+    ./configure \
+    --prefix=${INSTALL_DIR} \
+    --enable-shared \
+    --disable-static \
+    --disable-samples \
+    --disable-tests \
+    --disable-extras \
+    --disable-layoutex
+RUN make && make install
+
+
+###############################################################################
 # LIBXML2
 # https://gitlab.gnome.org/GNOME/libxml2/-/releases
 # Uses:
+#   - icu
 #   - zlib
 # Needed by:
 #   - php
 #   - libnghttp2
-ENV VERSION_XML2=2.12.10
+ENV VERSION_XML2=2.13.8
 ENV XML2_BUILD_DIR=${BUILD_DIR}/xml2
 RUN set -xe; \
     mkdir -p ${XML2_BUILD_DIR}; \
@@ -151,6 +183,9 @@ WORKDIR  ${XML2_BUILD_DIR}/
 RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
+    PATH="${INSTALL_DIR}/bin:${PATH}" \
+    ICU_CFLAGS="-I${INSTALL_DIR}/include" \
+    ICU_LIBS="-L${INSTALL_DIR}/lib -licui18n -licuuc -licudata" \
     ./configure \
     --prefix=${INSTALL_DIR} \
     --with-sysroot=${INSTALL_DIR} \
@@ -377,6 +412,9 @@ RUN make && make install
 ###############################################################################
 # SQLite
 # Since PHP 7.4, libsqlite must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
+# Since PHP 8.4, version 3.13.0 or higher of SQLite is required because the
+# build uses the `SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION` constant.
+# See https://github.com/brefphp/aws-lambda-layers/pull/185
 # Laravel 11 requires SQLite 3.35.0 or higher and Drupal 10 also requires a
 # newer version than the system version of 3.7.17.
 # https://laravel.com/docs/11.x/upgrade#sqlite-minimum-version
@@ -399,10 +437,9 @@ RUN make && make install
 # Install some dev files for using old libraries already on the system
 # readline-devel : needed for the readline extension
 # gettext-devel : needed for the --with-gettext flag
-# libicu-devel : needed for intl
 # libxslt-devel : needed for the XSL extension
 # libffi-devel : needed for the FFI extension
-RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libicu-devel libxslt-devel libffi-devel
+RUN LD_LIBRARY_PATH= yum install -y readline-devel gettext-devel libxslt-devel libffi-devel
 
 
 # Note: this variable is used when building extra/custom extensions, do not remove
@@ -424,7 +461,7 @@ WORKDIR ${PHP_BUILD_DIR}
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
 ARG VERSION_PHP
-RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
+RUN curl --location --silent --show-error --fail https://downloads.php.net/~edorian/php-${VERSION_PHP}.tar.gz \
   | tar xzC . --strip-components=1
 
 # Configure the build
@@ -436,12 +473,12 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --enable-option-checking=fatal: make sure invalid --configure-flags are fatal errors instead of just warnings
 # --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
 # --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
-# --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
 ARG PHP_COMPILATION_FLAGS
 RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         CPPFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
         LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib -Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
+        PKG_CONFIG_PATH="${INSTALL_DIR}/lib/pkgconfig:${INSTALL_DIR}/lib64/pkgconfig" \
     ./configure \
         --prefix=${INSTALL_DIR} \
         --enable-option-checking=fatal \
@@ -456,7 +493,6 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O3 -I${INSTALL_DIR}/include -I
         --with-readline \
         --with-openssl \
         --with-zlib \
-        --with-zlib-dir \
         --with-curl \
         --enable-exif \
         --enable-ftp \
@@ -512,7 +548,6 @@ COPY --link utils/lib-copy /bref/lib-copy
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/apcu.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/intl.so /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mysql.so /bref-layer/lib
 RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
 
@@ -536,7 +571,6 @@ COPY --link layers/bootstrap.php /opt/bref/bootstrap.php
 FROM isolation as function
 
 COPY --link layers/function/bref.ini /opt/bref/etc/php/conf.d/
-COPY --link layers/opcache.ini /opt/bref/etc/php/conf.d/
 
 COPY --link layers/function/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
@@ -560,7 +594,6 @@ FROM isolation as fpm
 COPY --link --from=fpm-extension /bref-layer /opt
 
 COPY --link layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
-COPY --link layers/opcache.ini /opt/bref/etc/php/conf.d/
 
 COPY --link layers/fpm/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image

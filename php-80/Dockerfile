@@ -514,6 +514,7 @@ COPY --link layers/bootstrap.php /opt/bref/bootstrap.php
 FROM isolation as function
 
 COPY --link layers/function/bref.ini /opt/bref/etc/php/conf.d/
+COPY --link layers/opcache.ini /opt/bref/etc/php/conf.d/
 
 COPY --link layers/function/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
@@ -537,6 +538,7 @@ FROM isolation as fpm
 COPY --link --from=fpm-extension /bref-layer /opt
 
 COPY --link layers/fpm/bref.ini /opt/bref/etc/php/conf.d/
+COPY --link layers/opcache.ini /opt/bref/etc/php/conf.d/
 
 COPY --link layers/fpm/bootstrap.sh /opt/bootstrap
 # Copy files to /var/runtime to support deploying as a Docker image
