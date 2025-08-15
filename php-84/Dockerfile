@@ -125,7 +125,7 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --enable-option-checking=fatal: make sure invalid --configure-flags are fatal errors instead of just warnings
 # --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
 # --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
-# --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
+# --with-zlib: See https://stackoverflow.com/a/42978649/245552
 ARG PHP_COMPILATION_FLAGS
 RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
@@ -145,7 +145,6 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I
         --with-readline \
         --with-openssl \
         --with-zlib \
-        --with-zlib-dir \
         --with-curl \
         --enable-exif \
         --enable-ftp \
