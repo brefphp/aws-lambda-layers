@@ -25,7 +25,7 @@ jobs:
                     script: |
                         const matrix = {
                             cpu: ['x86', 'arm'],
-                            php_version: ['80', '81', '82', '83', '84', '85'],
+                            php_version: ['80', '81', '82', '83', '84'],
                         }
                         
                         // If this is a third-party pull request, skip ARM builds
