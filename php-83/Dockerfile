@@ -61,6 +61,27 @@ RUN mkdir -p ${BUILD_DIR}  \
 
 
 ###############################################################################
+# SQLite
+# Since PHP 7.4, libsqlite must be installed (https://github.com/php/php-src/blob/99b8e67615159fc600a615e1e97f2d1cf18f14cb/UPGRADING#L616-L619)
+# Laravel 11 requires SQLite 3.35+ https://laravel.com/docs/11.x/upgrade#sqlite-minimum-version
+# Drupal 11 requires SQLite 3.45+ https://www.drupal.org/docs/getting-started/system-requirements/database-server-requirements
+# The AL2023 built-in version is 3.40.0, so we compile a newer version.
+# https://www.sqlite.org/changes.html
+# Needed by:
+#   - php
+RUN LD_LIBRARY_PATH= dnf install -y tcl
+ENV VERSION_SQLITE=3.50.4
+ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
+RUN set -xe; \
+    mkdir -p ${SQLITE_BUILD_DIR}; \
+    curl -Ls https://github.com/sqlite/sqlite/archive/refs/tags/version-${VERSION_SQLITE}.tar.gz \
+    | tar xzC ${SQLITE_BUILD_DIR} --strip-components=1
+WORKDIR ${SQLITE_BUILD_DIR}
+RUN CFLAGS="-Os" CPPFLAGS="-Os" ./configure --prefix=${INSTALL_DIR}
+RUN make && make install
+
+
+###############################################################################
 # Install some dev files for using old libraries already on the system
 # libcurl-devel : needed for the curl extension
 # zlib-devel : needed for zlib/gz in PHP
