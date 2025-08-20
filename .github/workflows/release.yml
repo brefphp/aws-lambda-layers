@@ -18,6 +18,7 @@ jobs:
     release:
         name: Publish ${{ matrix.cpu }} layers
         runs-on: ubuntu-22.04
+        timeout-minutes: 60
         strategy:
             matrix:
                 cpu:
