@@ -176,10 +176,6 @@ RUN set -xe; \
     cp php.ini-production ${INSTALL_DIR}/etc/php/php.ini
 
 
-# From PHP 8.5 opcache is enabled by default, we need to remove the `zend_extension=opcache.so` line
-RUN sed -i '/^zend_extension=opcache.so/d' ${INSTALL_DIR}/etc/php/php.ini
-
-
 # Install extensions
 # We can install extensions manually or using `pecl`
 RUN pecl install APCu
@@ -229,7 +225,7 @@ FROM public.ecr.aws/lambda/provided:al2023-${IMAGE_VERSION_SUFFIX} as function
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt
 
-COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
+COPY --link src/php-85.ini /opt/bref/etc/php/conf.d/bref.ini
 COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
 COPY --link src/bootstrap.sh /opt/bootstrap
