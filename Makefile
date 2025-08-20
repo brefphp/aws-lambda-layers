@@ -35,13 +35,13 @@ default: docker-images layers
 
 
 # Build Docker images *locally*
-docker-images: docker-images-php-82 docker-images-php-83 docker-images-php-84
+docker-images: docker-images-php-82 docker-images-php-83 docker-images-php-84 docker-images-php-85
 docker-images-php-%:
 	PHP_VERSION=$* ${BAKE_COMMAND} --load
 
 
 # Build Lambda layers (zip files) *locally*
-layers: layer-php-82 layer-php-83 layer-php-84
+layers: layer-php-82 layer-php-83 layer-php-84 layer-php-85
 # This rule matches with a wildcard, for example `layer-php-84`.
 # The `$*` variable will contained the matched part, in this case `php-84`.
 layer-%:
@@ -51,13 +51,13 @@ layer-%:
 # Upload the layers to AWS Lambda
 # Uses the current AWS_PROFILE. Most users will not want to use this option
 # as this will publish all layers to all regions + publish all Docker images.
-upload-layers: upload-layers-php-82 upload-layers-php-83 upload-layers-php-84
+upload-layers: upload-layers-php-82 upload-layers-php-83 upload-layers-php-84 upload-layers-php-85
 upload-layers-php-%:
 	LAYER_NAME=${CPU_PREFIX}php-$* $(MAKE) -C ./utils/lambda-publish publish-parallel
 
 
 # Publish Docker images to Docker Hub.
-upload-to-docker-hub: upload-to-docker-hub-php-82 upload-to-docker-hub-php-83 upload-to-docker-hub-php-84
+upload-to-docker-hub: upload-to-docker-hub-php-82 upload-to-docker-hub-php-83 upload-to-docker-hub-php-84 upload-to-docker-hub-php-85
 upload-to-docker-hub-php-%:
     # Make sure we have defined the docker tag
 	(test $(DOCKER_TAG)) && echo "Tagging images with \"${DOCKER_TAG}\"" || echo "You have to define environment variable DOCKER_TAG"
@@ -74,12 +74,12 @@ upload-to-docker-hub-php-%:
 	done
 
 
-test: test-82 test-83 test-84
+test: test-82 test-83 test-84 test-85
 test-%:
 	cd tests && $(MAKE) test-$*
 
 
-clean: clean-82 clean-83 clean-84
+clean: clean-82 clean-83 clean-84 clean-85
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
 	# Remove zip files
