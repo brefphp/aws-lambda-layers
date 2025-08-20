@@ -42,6 +42,7 @@ jobs:
         name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.cpu }}
         runs-on: ubuntu-22.04
         needs: matrix-prep
+        timeout-minutes: 45
         strategy:
             fail-fast: false
             matrix: ${{ fromJson(needs.matrix-prep.outputs.matrix) }}
