@@ -149,19 +149,18 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I
         --enable-exif \
         --enable-ftp \
         --with-gettext \
-        --enable-mbstring \
+        --enable-mbstring=shared \
         --with-pdo-mysql=mysqlnd \
         --with-mysqli \
         --enable-pcntl \
         --with-zip \
         --enable-bcmath \
-        --with-pdo-pgsql=shared \
+        --with-pdo-pgsql \
         # Separate .so extension so that it is not loaded by default
         --enable-intl=shared \
         # Separate .so extension so that it is not loaded by default
         --enable-soap=shared \
-        # Separate .so extension so that it is not loaded by default
-        --with-xsl=${INSTALL_DIR} \
+        --with-xsl \
         --with-ffi \
         # necessary for `pecl` to work (to install PHP extensions)
         --with-pear \
