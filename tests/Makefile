@@ -1,6 +1,6 @@
 export CPU_PREFIX ?=
 
-test: test-82 test-83 test-84
+test: test-82 test-83 test-84 test-85
 
 # This rule matches with a wildcard, for example `test-84`.
 # The `$*` variable will contained the matched part, in this case `84`.
