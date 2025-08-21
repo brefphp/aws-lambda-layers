@@ -113,6 +113,7 @@ $extensions = [
     'opcache' => ini_get('opcache.enable') == 1,
     'pdo' => class_exists(\PDO::class),
     'pdo_mysql' => extension_loaded('pdo_mysql'),
+    'pdo_pgsql' => extension_loaded('pdo_pgsql'),
     'pdo_sqlite' => extension_loaded('pdo_sqlite'),
     'phar' => extension_loaded('phar'),
     'posix' => function_exists('posix_getpgid'),
@@ -144,7 +145,7 @@ if ($errors) {
 $extensionsDisabledByDefault = [
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
-    'pdo_pgsql' => extension_loaded('pdo_pgsql'),
+    'soap' => class_exists(\SoapClient::class),
 ];
 foreach ($extensionsDisabledByDefault as $extension => $test) {
     if ($test) {
