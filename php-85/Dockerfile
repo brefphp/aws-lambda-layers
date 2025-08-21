@@ -201,13 +201,8 @@ RUN cp $(php -r 'echo ini_get("extension_dir");')/* /bref-layer/bref/extensions/
 # - /opt/bin | /opt/lib | /opt/lib64 (libraries compiled from source)
 # into `/bref-layer` (the temp directory for the future Lambda layer)
 COPY --link utils/lib-copy /bref/lib-copy
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin/php-fpm /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/apcu.so /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/intl.so /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/opcache.so /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_mysql.so /bref-layer/lib
-RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions/pdo_pgsql.so /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bin /bref-layer/lib
+RUN php /bref/lib-copy/copy-dependencies.php /bref-layer/bref/extensions /bref-layer/lib
 
 # Create a symbolic link to the OpenSSL certificates file for BC purposes
 RUN ln -s /etc/ssl/cert.pem /bref-layer/bref/ssl/cert.pem
