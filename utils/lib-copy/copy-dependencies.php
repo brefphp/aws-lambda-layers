@@ -44,6 +44,7 @@ $librariesThatExistOnLambda = array_filter($librariesThatExistOnLambda, function
         && ! str_contains($library, 'libgpg-error.so')
         && ! str_contains($library, 'libgpgme-pthread.so')
         && ! str_contains($library, 'libgpgme.so')
+        && ! str_contains($library, 'libreadline.so.8')
     ;
 });
 
