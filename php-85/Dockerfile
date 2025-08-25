@@ -178,6 +178,8 @@ RUN set -xe; \
 # Install extensions
 # We can install extensions manually or using `pecl`
 RUN pecl install APCu
+# TODO not available for PHP 8.5 yet
+#RUN pecl install redis-6.2.0
 
 
 # ---------------------------------------------------------------
