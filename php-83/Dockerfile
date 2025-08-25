@@ -179,6 +179,7 @@ RUN set -xe; \
 # Install extensions
 # We can install extensions manually or using `pecl`
 RUN pecl install APCu
+RUN pecl install redis-6.2.0
 
 
 # ---------------------------------------------------------------
