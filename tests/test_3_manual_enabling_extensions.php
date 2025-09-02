@@ -6,6 +6,8 @@ $extensions = [
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
     'soap' => class_exists(\SoapClient::class),
+    // TODO redis is not available on PHP 8.5 yet
+    'redis' => PHP_VERSION_ID >= 80500 ? true : class_exists(\Redis::class),
 ];
 
 $extensionDir = ini_get('extension_dir');
