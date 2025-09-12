@@ -146,6 +146,7 @@ $extensionsDisabledByDefault = [
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
     'soap' => class_exists(\SoapClient::class),
+    'redis' => class_exists(\Redis::class),
 ];
 foreach ($extensionsDisabledByDefault as $extension => $test) {
     if ($test) {
