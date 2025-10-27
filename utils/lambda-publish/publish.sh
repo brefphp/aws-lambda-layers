@@ -34,7 +34,7 @@ VERSION=$(aws lambda publish-layer-version \
    --description "Bref PHP Runtime" \
    --license-info MIT \
    --zip-file fileb://../../output/$LAYER_NAME.zip \
-   --compatible-runtimes provided.al2 \
+   --compatible-runtimes provided.al2023 \
    --output text \
    --query Version)
 
