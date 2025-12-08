@@ -70,7 +70,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Needed by:
 #   - php
 RUN LD_LIBRARY_PATH= dnf install -y tcl
-ENV VERSION_SQLITE=3.50.4
+ENV VERSION_SQLITE=3.51.1
 ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
 RUN set -xe; \
     mkdir -p ${SQLITE_BUILD_DIR}; \
@@ -179,7 +179,7 @@ RUN set -xe; \
 # Install extensions
 # We can install extensions manually or using `pecl`
 RUN pecl install APCu
-RUN pecl install redis-6.2.0
+RUN pecl install redis-6.3.0
 
 
 # ---------------------------------------------------------------
@@ -238,7 +238,7 @@ FROM build-environment as build_dev
 RUN mkdir -p /opt/bref/extensions
 
 # Install xdebug
-RUN pecl install xdebug-3.4.2
+RUN pecl install xdebug-3.4.7
 RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 

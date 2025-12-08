@@ -4,7 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.5.0RC1
+ARG VERSION_PHP=8.5.0
 
 
 # Lambda uses a custom AMI named Amazon Linux 2023
@@ -70,7 +70,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Needed by:
 #   - php
 RUN LD_LIBRARY_PATH= dnf install -y tcl
-ENV VERSION_SQLITE=3.50.4
+ENV VERSION_SQLITE=3.51.1
 ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
 RUN set -xe; \
     mkdir -p ${SQLITE_BUILD_DIR}; \
@@ -113,7 +113,7 @@ WORKDIR ${PHP_BUILD_DIR}
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
 ARG VERSION_PHP
-RUN curl --location --silent --show-error --fail https://downloads.php.net/~daniels/php-${VERSION_PHP}.tar.gz \
+RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
   | tar xzC . --strip-components=1
 
 # Configure the build
@@ -178,8 +178,7 @@ RUN set -xe; \
 # Install extensions
 # We can install extensions manually or using `pecl`
 RUN pecl install APCu
-# TODO not available for PHP 8.5 yet
-#RUN pecl install redis-6.2.0
+RUN pecl install redis-6.3.0
 
 
 # ---------------------------------------------------------------
