@@ -10,7 +10,7 @@ ARG PHP_VERSION
 RUN mkdir -p /opt/bref/extensions
 
 # Install xdebug
-RUN if [ $PHP_VERSION != "85" ]; then pecl install xdebug-3.4.5; fi
+RUN if [ $PHP_VERSION != "85" ]; then pecl install xdebug-3.5.0; fi
 RUN if [ $PHP_VERSION != "85" ]; then cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions; fi
 
 # Install Blackfire
