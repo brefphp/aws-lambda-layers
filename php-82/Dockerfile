@@ -4,7 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.2.29
+ARG VERSION_PHP=8.2.30
 
 
 # Lambda uses a custom AMI named Amazon Linux 2023
@@ -238,7 +238,7 @@ FROM build-environment as build_dev
 RUN mkdir -p /opt/bref/extensions
 
 # Install xdebug
-RUN pecl install xdebug-3.4.7
+RUN pecl install xdebug-3.5.0
 RUN cp $(php -r "echo ini_get('extension_dir');")/xdebug.so /opt/bref/extensions
 
 
