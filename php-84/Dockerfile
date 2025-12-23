@@ -213,6 +213,17 @@ RUN find /bref-layer/bref/extensions -type f -exec strip --strip-all {} +
 RUN find /bref-layer/lib -type f -exec strip --strip-all {} +
 
 
+# Compress the PHP binary and the PHP-FPM binary with UPX to reduce their size
+# --best: use the best compression method
+RUN set -xe; \
+    export UPX_ARCH=$(test "${IMAGE_VERSION_SUFFIX}" = "x86_64" && echo amd64 || echo arm64); \
+    curl -L -o upx.tgz https://github.com/upx/upx/releases/download/v5.0.2/upx-5.0.2-${UPX_ARCH}_linux.tar.xz; \
+    tar xf upx.tgz; \
+    mv upx-*/upx /usr/local/bin/
+RUN upx --best /bref-layer/bin/php && \
+    upx --best /bref-layer/bin/php-fpm
+
+
 # ----------------------------------------------------------------------------
 # Start from a clean image to copy only the files we need for the Lambda layer
 FROM public.ecr.aws/lambda/provided:al2023-${IMAGE_VERSION_SUFFIX} as function
