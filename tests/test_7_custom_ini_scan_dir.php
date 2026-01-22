@@ -27,6 +27,8 @@ function post(string $url, string $params)
 
 $body = 'list_extensions';
 
+waitForPort('127.0.0.1', 8080);
+
 try {
     $response = post('http://127.0.0.1:8080/2015-03-31/functions/function/invocations', $body);
     $response = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
