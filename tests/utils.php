@@ -25,3 +25,22 @@ function success(string $message): void
     }
     exit(1);
 }
+
+/**
+ * Wait for a port to be available (useful for QEMU-emulated containers that start slowly).
+ */
+function waitForPort(string $host, int $port, int $timeoutSeconds = 5): void
+{
+    $start = time();
+    while (true) {
+        $socket = @fsockopen($host, $port, $errno, $errstr, 1);
+        if ($socket !== false) {
+            fclose($socket);
+            return;
+        }
+        if (time() - $start >= $timeoutSeconds) {
+            error("Timeout waiting for $host:$port to be available");
+        }
+        usleep(100000); // 100ms
+    }
+}
