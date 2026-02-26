@@ -1,0 +1,9 @@
+services:
+
+    # List all packages that AL2023 provides with their version
+    update:
+        image: public.ecr.aws/lambda/provided:al2023-arm64
+        entrypoint: /bin/sh
+        command: [ "-c", "microdnf repoquery | sort > /tmp/al2023-packages.txt" ]
+        volumes:
+            - .:/tmp

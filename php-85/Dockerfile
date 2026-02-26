@@ -4,7 +4,7 @@
 ARG IMAGE_VERSION_SUFFIX
 
 # https://www.php.net/downloads
-ARG VERSION_PHP=8.2.30
+ARG VERSION_PHP=8.5.3
 
 
 # Lambda uses a custom AMI named Amazon Linux 2023
@@ -125,7 +125,7 @@ RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${V
 # --enable-option-checking=fatal: make sure invalid --configure-flags are fatal errors instead of just warnings
 # --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
 # --enable-mbstring: because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
-# --with-zlib and --with-zlib-dir: See https://stackoverflow.com/a/42978649/245552
+# --with-zlib: See https://stackoverflow.com/a/42978649/245552
 ARG PHP_COMPILATION_FLAGS
 RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I/usr/include -ffunction-sections -fdata-sections" \
@@ -145,7 +145,6 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -Os -I${INSTALL_DIR}/include -I
         --with-readline \
         --with-openssl \
         --with-zlib \
-        --with-zlib-dir \
         --with-curl \
         --enable-exif \
         --enable-ftp \
@@ -221,7 +220,7 @@ FROM public.ecr.aws/lambda/provided:al2023-${IMAGE_VERSION_SUFFIX} as function
 # We selected the files in /bref-layer, now we copy them to /opt (the real directory for the Lambda layer)
 COPY --link --from=build-environment /bref-layer /opt
 
-COPY --link src/php.ini /opt/bref/etc/php/conf.d/bref.ini
+COPY --link src/php-85.ini /opt/bref/etc/php/conf.d/bref.ini
 COPY --link src/php-fpm.conf /opt/bref/etc/php-fpm.conf
 
 COPY --link src/bootstrap.sh /opt/bootstrap

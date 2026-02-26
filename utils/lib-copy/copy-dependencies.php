@@ -6,6 +6,8 @@
  *
  * Usage:
  *    php copy-dependencies.php <file-to-analyze> <target-directory>
+ * It also works with directories:
+ *     php copy-dependencies.php <directory-to-analyze> <target-directory>
  *
  * For example:
  *    php copy-dependencies.php /opt/bin/php /opt/lib
@@ -45,7 +47,18 @@ $librariesThatExistOnLambda = array_filter($librariesThatExistOnLambda, function
     ;
 });
 
-$requiredLibraries = listDependencies($pathToCheck);
+if (is_file($pathToCheck)) {
+    $requiredLibraries = listDependencies($pathToCheck);
+} elseif (is_dir($pathToCheck)) {
+    $requiredLibraries = [];
+    foreach (glob($pathToCheck . '/*') as $file) {
+        if (is_file($file)) {
+            $requiredLibraries = array_merge($requiredLibraries, listDependencies($file));
+        }
+    }
+} else {
+    throw new RuntimeException("The path to check is neither a file nor a directory: $pathToCheck");
+}
 // Exclude existing system libraries
 $requiredLibraries = array_filter($requiredLibraries, function (string $lib) use ($librariesThatExistOnLambda) {
     // Libraries that we compiled are in /opt/lib or /opt/lib64, we compiled them because they are more
