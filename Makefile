@@ -71,6 +71,7 @@ upload-to-docker-hub-php-%:
 		docker tag $$image $$image:${DOCKER_TAG} ; \
 		docker push $$image:3 ; \
 		docker push $$image:${DOCKER_TAG} ; \
+		docker push $$image:latest ; \
 	done
 
 

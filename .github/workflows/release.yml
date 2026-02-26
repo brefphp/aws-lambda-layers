@@ -95,7 +95,7 @@ jobs:
                             owner: 'brefphp',
                             repo: 'bref',
                             workflow_id: 'update-layer-versions.yml',
-                            ref: 'v3',
+                            ref: 'master',
                             inputs: {
                                 release_url: '${{ github.event.release.url }}',
                                 release_html_url: '${{ github.event.release.html_url }}',
@@ -117,5 +117,5 @@ jobs:
                           owner: 'brefphp',
                           repo: 'layers.js',
                           workflow_id: 'release.yml',
-                          ref: 'v3'
+                          ref: 'main'
                         })
