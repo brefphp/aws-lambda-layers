@@ -19,6 +19,6 @@ docker cp bref-export-zip:/opt/. "output/$LAYER_NAME"
 
 cd "output/$LAYER_NAME"
 
-zip --quiet --recurse-paths "../$LAYER_NAME.zip" .
+zip --quiet --recurse-paths --symlinks "../$LAYER_NAME.zip" .
 
 docker rm -f bref-export-zip
