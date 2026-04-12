@@ -47,5 +47,5 @@ asia-2:
 
 miscellaneous:
 	REGION=af-south-1 ./publish.sh #Africa (Cape Town)
-	REGION=me-south-1 ./publish.sh #Middle East (Bahrain)
+	#REGION=me-south-1 ./publish.sh #Middle East (Bahrain)
 	REGION=ap-southeast-2 ./publish.sh #Asia Pacific (Sydney)
