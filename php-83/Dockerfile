@@ -70,7 +70,7 @@ RUN mkdir -p ${BUILD_DIR}  \
 # Needed by:
 #   - php
 RUN LD_LIBRARY_PATH= dnf install -y tcl
-ENV VERSION_SQLITE=3.51.1
+ENV VERSION_SQLITE=3.53.0
 ENV SQLITE_BUILD_DIR=${BUILD_DIR}/sqlite
 RUN set -xe; \
     mkdir -p ${SQLITE_BUILD_DIR}; \
