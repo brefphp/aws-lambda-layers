@@ -15,11 +15,11 @@ permissions:
 jobs:
     matrix-prep:
         name: Prepare matrix
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-24.04
         outputs:
             matrix: ${{ steps.set-matrix.outputs.result }}
         steps:
-            -   uses: actions/github-script@v6
+            -   uses: actions/github-script@v9
                 id: set-matrix
                 with:
                     script: |
@@ -40,21 +40,21 @@ jobs:
 
     tests:
         name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.cpu }}
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-24.04
         needs: matrix-prep
         timeout-minutes: 45
         strategy:
             fail-fast: false
             matrix: ${{ fromJson(needs.matrix-prep.outputs.matrix) }}
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v6
 
             # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
             -   name: Set up QEMU to run ARM images (that were built with Depot)
-                uses: docker/setup-qemu-action@v3
+                uses: docker/setup-qemu-action@v4
 
             -   uses: depot/setup-action@v1
-            -   uses: docker/setup-buildx-action@v3
+            -   uses: docker/setup-buildx-action@v4
 
             # We use this action instead of running `make docker-images-php-XX` directly because it lets us
             # use OIDC authentication instead of a secret. Secrets can't be used in pull request builds.
