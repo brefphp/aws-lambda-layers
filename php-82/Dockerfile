@@ -258,11 +258,10 @@ ENV VERSION_CURL=8.15.0
 ENV CURL_BUILD_DIR=${BUILD_DIR}/curl
 RUN set -xe; \
     mkdir -p ${CURL_BUILD_DIR}/bin; \
-    curl -Ls https://github.com/curl/curl/archive/curl-${VERSION_CURL//./_}.tar.gz \
+    curl -Ls https://github.com/curl/curl/releases/download/curl-${VERSION_CURL//./_}/curl-${VERSION_CURL}.tar.gz \
     | tar xzC ${CURL_BUILD_DIR} --strip-components=1
 WORKDIR  ${CURL_BUILD_DIR}/
-RUN ./buildconf \
- && CFLAGS="" \
+RUN CFLAGS="" \
     CPPFLAGS="-I${INSTALL_DIR}/include -I/usr/include" \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure \
