@@ -113,7 +113,7 @@ WORKDIR ${PHP_BUILD_DIR}
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
 ARG VERSION_PHP
-RUN curl --location --silent --show-error --fail https://www.php.net/get/php-${VERSION_PHP}.tar.gz/from/this/mirror \
+RUN curl --location --silent --show-error --fail https://www.php.net/distributions/php-${VERSION_PHP}.tar.gz \
   | tar xzC . --strip-components=1
 
 # Configure the build
