@@ -63,6 +63,8 @@ $coreExtensions = [
     'readline' => READLINE_LIB === 'readline',
     'reflection' => class_exists(\ReflectionClass::class),
     'session' => session_status() === PHP_SESSION_NONE,
+    // Disabled in bref.ini (CVE-2026-115560)
+    'session-upload-progress' => ini_get('session.upload_progress.enabled') === '0',
     'ffi' => class_exists(\FFI::class),
     'zip' => class_exists(\ZipArchive::class),
     'zlib' => md5(gzcompress('abcde')) === 'db245560922b42f1935e73e20b30980e',
