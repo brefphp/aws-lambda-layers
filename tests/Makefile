@@ -7,6 +7,9 @@ test-%: vendor
 	# Image layout: Lambda needs /etc/hosts and /var/task, layers would hide /opt
 	docker run --platform=${DOCKER_PLATFORM} --rm --entrypoint=sh bref/php-$* -c \
 		'test -f /etc/hosts && test -d /var/task && test -x /var/runtime/bootstrap && test -z "$$(ls -A /opt)" && test "$$(stat -c %a /tmp)" = 1777'
+	# Since PHP 8.5, php-fpm is the php binary itself (--enable-cli-fpm)
+	docker run --platform=${DOCKER_PLATFORM} --rm --entrypoint=sh bref/php-$* -c \
+		'/usr/local/sbin/php-fpm -v | grep -q fpm-fcgi && { [ $* -lt 85 ] || [ "$$(readlink -f /usr/local/sbin/php-fpm)" = /usr/local/bin/php ]; }'
 	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$* test_1_binary.php $*
 	docker run --platform=${DOCKER_PLATFORM} --rm -v=$(PWD):/var/task:ro --entrypoint=php bref/php-$*-dev test_1_binary.php $*
 

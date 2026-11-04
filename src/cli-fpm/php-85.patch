@@ -1,0 +1,255 @@
+--enable-cli-fpm: link the FPM SAPI into the CLI binary (`php --fpm`, or `php` invoked as `php-fpm`).
+Backport to PHP 8.5 of https://github.com/php/php-src/pull/23558 (not merged yet): the FPM part of
+the PR as is, the CLI part adapted because 8.5 has no sapi/cli/php_cli_main.c (see
+brefphp/sandbox results/2026-10-06-cli-fpm.md). Applies to PHP 8.5.11 and 8.5.12.
+
+diff --git a/sapi/cli/config.m4 b/sapi/cli/config.m4
+index 76c2d64e..631b2565 100644
+--- a/sapi/cli/config.m4
++++ b/sapi/cli/config.m4
+@@ -5,6 +5,22 @@ PHP_ARG_ENABLE([cli],
+   [yes],
+   [no])
+ 
++PHP_ARG_ENABLE([cli-fpm],
++  [whether to link FPM into the CLI binary],
++  [AS_HELP_STRING([--enable-cli-fpm],
++    [Link the FPM SAPI into the CLI binary, so that "php --fpm" runs php-fpm
++    (requires --enable-fpm)])],
++  [no],
++  [no])
++
++if test "$PHP_CLI_FPM" != "no"; then
++  if test "$PHP_CLI" = "no" || test "$PHP_FPM" = "no"; then
++    AC_MSG_ERROR([--enable-cli-fpm requires both the CLI and the FPM SAPI])
++  fi
++  AC_DEFINE([PHP_CLI_WITH_FPM], [1],
++    [Define to 1 if the FPM SAPI is linked into the CLI binary.])
++fi
++
+ if test "$PHP_CLI" != "no"; then
+   AC_CHECK_FUNCS([setproctitle])
+ 
+@@ -34,6 +50,8 @@ if test "$PHP_CLI" != "no"; then
+     [program],
+     [php_cli.c php_http_parser.c php_cli_server.c ps_title.c php_cli_process_title.c],
+     [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1])
++  AS_VAR_IF([PHP_CLI_FPM], [no],,
++    [PHP_CLI_OBJS="$PHP_CLI_OBJS \$(PHP_FASTCGI_OBJS) \$(PHP_FPM_SHARED_OBJS)"])
+ 
+   AS_CASE([$host_alias],
+     [*aix*], [
+diff --git a/sapi/cli/php_cli.c b/sapi/cli/php_cli.c
+index 92368696..c8d74d20 100644
+--- a/sapi/cli/php_cli.c
++++ b/sapi/cli/php_cli.c
+@@ -500,6 +500,9 @@ static void php_cli_usage(char *argv0)
+ 				"\n"
+ 				"  --ini            Show configuration file names\n"
+ 				"  --ini=diff       Show INI entries that differ from the built-in default\n"
++#ifdef PHP_CLI_WITH_FPM
++				"  --fpm            Run as php-fpm, passing the remaining arguments to it\n"
++#endif
+ 				"\n"
+ 				"  --rf <name>      Show information about function <name>.\n"
+ 				"  --rc <name>      Show information about class <name>.\n"
+@@ -1193,9 +1196,37 @@ static int do_cli(int argc, char **argv) /* {{{ */
+ }
+ /* }}} */
+ 
++#ifdef PHP_CLI_WITH_FPM
++/* Backport to PHP 8.5 of php/php-src#23558, whose php_cli_main.c does not exist
++ * here: the former main() becomes do_php_cli() */
++#include "sapi/fpm/fpm/fpm.h"
++
++static int do_php_cli(int argc, char *argv[]);
++
++int main(int argc, char *argv[])
++{
++	/* Running as "php-fpm*" (e.g. a php-fpm symlink to php) or as
++	 * "php --fpm [args]" runs the FPM SAPI. argv is passed as is because FPM
++	 * re-executes it on reload; FPM options start after "--fpm". */
++	if (argc > 0 && argv[0]) {
++		const char *name = strrchr(argv[0], '/');
++		name = name ? name + 1 : argv[0];
++		if (strncmp(name, "php-fpm", strlen("php-fpm")) == 0) {
++			return fpm_main(argc, argv, 1);
++		}
++	}
++	if (argc > 1 && strcmp(argv[1], "--fpm") == 0) {
++		return fpm_main(argc, argv, 2);
++	}
++	return do_php_cli(argc, argv);
++}
++#endif
++
+ /* {{{ main */
+ #ifdef PHP_CLI_WIN32_NO_CONSOLE
+ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
++#elif defined(PHP_CLI_WITH_FPM)
++static int do_php_cli(int argc, char *argv[])
+ #else
+ int main(int argc, char *argv[])
+ #endif
+diff --git a/sapi/fpm/config.m4 b/sapi/fpm/config.m4
+index 4d4952ee..d4a8ccbb 100644
+--- a/sapi/fpm/config.m4
++++ b/sapi/fpm/config.m4
+@@ -1,10 +1,3 @@
+-PHP_ARG_ENABLE([fpm],
+-  [for FPM build],
+-  [AS_HELP_STRING([--enable-fpm],
+-    [Enable building of the fpm SAPI executable])],
+-  [no],
+-  [no])
+-
+ dnl Configure checks.
+ AC_DEFUN([PHP_FPM_CLOCK], [
+ AC_CHECK_FUNCS([clock_gettime],, [
+@@ -557,9 +550,18 @@ if test "$PHP_FPM" != "no"; then
+ 
+   PHP_SELECT_SAPI([fpm],
+     [program],
+-    [$PHP_FPM_FILES $PHP_FPM_TRACE_FILES $PHP_FPM_SD_FILES],
++    [php_fpm_main.c],
+     [-I$abs_srcdir/sapi/fpm -DZEND_ENABLE_STATIC_TSRMLS_CACHE=1])
+ 
++  dnl Everything except the main() entry point, so that the CLI binary can link
++  dnl the same objects for fpm_main() (--enable-cli-fpm).
++  PHP_ADD_SOURCES_X([sapi/fpm],
++    [$PHP_FPM_FILES $PHP_FPM_TRACE_FILES $PHP_FPM_SD_FILES],
++    [-I$abs_srcdir/sapi/fpm -DZEND_ENABLE_STATIC_TSRMLS_CACHE=1],
++    [PHP_FPM_SHARED_OBJS])
++  PHP_FPM_OBJS="$PHP_FPM_OBJS $PHP_FPM_SHARED_OBJS"
++  PHP_SUBST([PHP_FPM_SHARED_OBJS])
++
+   AS_CASE([$host_alias],
+     [*aix*], [
+       BUILD_FPM="echo '\#! .' > php.sym && echo >>php.sym && nm -BCpg \`echo \$(PHP_GLOBAL_OBJS) \$(PHP_BINARY_OBJS) \$(PHP_FPM_OBJS) | sed 's/\([A-Za-z0-9_]*\)\.lo/\1.o/g'\` | \$(AWK) '{ if (((\$\$2 == \"T\") || (\$\$2 == \"D\") || (\$\$2 == \"B\")) && (substr(\$\$3,1,1) != \".\")) { print \$\$3 } }' | sort -u >> php.sym && \$(LIBTOOL) --tag=CC --mode=link \$(CC) -export-dynamic \$(CFLAGS_CLEAN) \$(EXTRA_CFLAGS) \$(EXTRA_LDFLAGS_PROGRAM) \$(LDFLAGS) -Wl,-brtl -Wl,-bE:php.sym \$(PHP_RPATHS) \$(PHP_GLOBAL_OBJS) \$(PHP_BINARY_OBJS) \$(PHP_FASTCGI_OBJS) \$(PHP_FPM_OBJS) \$(EXTRA_LIBS) \$(FPM_EXTRA_LIBS) \$(ZEND_EXTRA_LIBS) -o \$(SAPI_FPM_PATH)"
+@@ -573,4 +575,5 @@ if test "$PHP_FPM" != "no"; then
+   PHP_SUBST([SAPI_FPM_PATH])
+   PHP_SUBST([BUILD_FPM])
+   PHP_SUBST([FPM_EXTRA_LIBS])
++  AS_VAR_IF([PHP_CLI_FPM], [no],, [EXTRA_LIBS="$EXTRA_LIBS $FPM_EXTRA_LIBS"])
+ fi
+diff --git a/sapi/fpm/config0.m4 b/sapi/fpm/config0.m4
+new file mode 100644
+index 00000000..d00da52b
+--- /dev/null
++++ b/sapi/fpm/config0.m4
+@@ -0,0 +1,6 @@
++PHP_ARG_ENABLE([fpm],
++  [for FPM build],
++  [AS_HELP_STRING([--enable-fpm],
++    [Enable building of the fpm SAPI executable])],
++  [no],
++  [no])
+diff --git a/sapi/fpm/fpm/fpm.h b/sapi/fpm/fpm/fpm.h
+index ec036a2d..a018948c 100644
+--- a/sapi/fpm/fpm/fpm.h
++++ b/sapi/fpm/fpm/fpm.h
+@@ -41,6 +41,10 @@ enum fpm_init_return_status {
+ };
+ 
+ int fpm_run(int *max_requests);
++/* this performs full fpm-SAPI boot: the former main() of php-fpm.
++ * argv must be the process' original argv (it is re-executed on reload),
++ * FPM options are parsed starting at argv[first_arg]. */
++int fpm_main(int argc, char *argv[], int first_arg);
+ enum fpm_init_return_status fpm_init(int argc, char **argv, char *config, char *prefix, char *pid, int test_conf, int run_as_root, int force_daemon, int force_stderr);
+ 
+ struct fpm_globals_s {
+diff --git a/sapi/fpm/fpm/fpm_main.c b/sapi/fpm/fpm/fpm_main.c
+index cc89b8c0..75b159c0 100644
+--- a/sapi/fpm/fpm/fpm_main.c
++++ b/sapi/fpm/fpm/fpm_main.c
+@@ -1513,7 +1513,7 @@ PHP_FUNCTION(fastcgi_finish_request) /* {{{ */
+ }
+ /* }}} */
+ 
+-PHP_FUNCTION(apache_request_headers) /* {{{ */
++PHP_FUNCTION(fpm_request_headers) /* {{{ */
+ {
+ 	fcgi_request *request;
+ 
+@@ -1553,8 +1553,8 @@ static zend_module_entry cgi_module_entry = {
+ 	STANDARD_MODULE_PROPERTIES
+ };
+ 
+-/* {{{ main */
+-int main(int argc, char *argv[])
++/* {{{ fpm_main */
++int fpm_main(int argc, char *argv[], int first_arg)
+ {
+ 	int exit_status = FPM_EXIT_OK;
+ 	int c, use_extended_info = 0;
+@@ -1615,6 +1615,7 @@ int main(int argc, char *argv[])
+ 
+ 	php_ini_builder_init(&ini_builder);
+ 
++	php_optind = first_arg;
+ 	while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 0, 2)) != -1) {
+ 		switch (c) {
+ 			case 'c':
+diff --git a/sapi/fpm/fpm/fpm_main.stub.php b/sapi/fpm/fpm/fpm_main.stub.php
+index 70cd2752..8cd91dc9 100644
+--- a/sapi/fpm/fpm/fpm_main.stub.php
++++ b/sapi/fpm/fpm/fpm_main.stub.php
+@@ -4,9 +4,10 @@
+ 
+ function fastcgi_finish_request(): bool {}
+ 
++/** @implementation-alias fpm_request_headers */
+ function apache_request_headers(): array {}
+ 
+-/** @alias apache_request_headers */
++/** @implementation-alias fpm_request_headers */
+ function getallheaders(): array {}
+ 
+ function fpm_get_status(): array|false {}
+diff --git a/sapi/fpm/fpm/fpm_main_arginfo.h b/sapi/fpm/fpm/fpm_main_arginfo.h
+index 2d6ae3cc..fe3ba73d 100644
+--- a/sapi/fpm/fpm/fpm_main_arginfo.h
++++ b/sapi/fpm/fpm/fpm_main_arginfo.h
+@@ -13,13 +13,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_fpm_get_status, 0, 0, MAY_BE_ARR
+ ZEND_END_ARG_INFO()
+ 
+ ZEND_FUNCTION(fastcgi_finish_request);
+-ZEND_FUNCTION(apache_request_headers);
++ZEND_FUNCTION(fpm_request_headers);
+ ZEND_FUNCTION(fpm_get_status);
+ 
+ static const zend_function_entry ext_functions[] = {
+ 	ZEND_FE(fastcgi_finish_request, arginfo_fastcgi_finish_request)
+-	ZEND_FE(apache_request_headers, arginfo_apache_request_headers)
+-	ZEND_RAW_FENTRY("getallheaders", zif_apache_request_headers, arginfo_getallheaders, 0, NULL, NULL)
++	ZEND_RAW_FENTRY("apache_request_headers", zif_fpm_request_headers, arginfo_apache_request_headers, 0, NULL, NULL)
++	ZEND_RAW_FENTRY("getallheaders", zif_fpm_request_headers, arginfo_getallheaders, 0, NULL, NULL)
+ 	ZEND_FE(fpm_get_status, arginfo_fpm_get_status)
+ 	ZEND_FE_END
+ };
+diff --git a/sapi/fpm/php_fpm_main.c b/sapi/fpm/php_fpm_main.c
+new file mode 100644
+index 00000000..ab06cb43
+--- /dev/null
++++ b/sapi/fpm/php_fpm_main.c
+@@ -0,0 +1,19 @@
++/*
++   +----------------------------------------------------------------------+
++   | Copyright © The PHP Group and Contributors.                          |
++   +----------------------------------------------------------------------+
++   | This source file is subject to the Modified BSD License that is      |
++   | bundled with this package in the file LICENSE, and is available      |
++   | through the World Wide Web at <https://www.php.net/license/>.        |
++   |                                                                      |
++   | SPDX-License-Identifier: BSD-3-Clause                                |
++   +----------------------------------------------------------------------+
++*/
++
++#include "php.h"
++#include "fpm/fpm.h"
++
++int main(int argc, char *argv[])
++{
++	return fpm_main(argc, argv, 1);
++}
