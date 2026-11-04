@@ -1,0 +1,2286 @@
+Amazon Linux's "SnapSafe" patch for OpenSSL, as applied to its openssl-snapsafe-libs package
+(source RPM openssl-3.5.8-1.amzn2023.0.3, file 0500-snapsafe-provider.patch, Apache-2.0).
+It reseeds OpenSSL's random generator when the generation counter of /dev/sysgenid changes,
+i.e. when Lambda SnapStart restores an execution environment from a snapshot.
+Applies cleanly to upstream OpenSSL 3.5.8.
+
+diff --git a/crypto/evp/evp_local.h b/crypto/evp/evp_local.h
+index 3ccfaeb..81804c5 100644
+--- a/crypto/evp/evp_local.h
++++ b/crypto/evp/evp_local.h
+@@ -8,10 +8,11 @@
+  */
+ 
+ #include <openssl/core_dispatch.h>
++#include "internal/aws_snapsafe_internal.h"
+ #include "internal/refcount.h"
+ 
+ #define EVP_CTRL_RET_UNSUPPORTED -1
+ 
+ struct evp_md_ctx_st {
+     const EVP_MD *reqdigest; /* The original requested digest */
+     const EVP_MD *digest;
+@@ -86,9 +86,12 @@ struct evp_rand_ctx_st {
+      * OSSL_FUNC_rand_newctx()
+      */
+     void *algctx;
+-    EVP_RAND_CTX *parent; /* Parent EVP_RAND or NULL if none */
+-    CRYPTO_REF_COUNT refcnt; /* Context reference count */
++    EVP_RAND_CTX *parent;                   /* Parent EVP_RAND or NULL if none */
++    CRYPTO_REF_COUNT refcnt;                /* Context reference count */
+     CRYPTO_RWLOCK *refcnt_lock;
++    uint32_t cached_sgn;                    /* Snapsafe generation number */
++    uint32_t parent_reseed_counter;         /* Parent reseed generation number */
++    RAND_PROVIDER_TYPE rand_provider_type ; /* Used to detect the default provider state objects */
+ } /* EVP_RAND_CTX */;
+ 
+ struct evp_keymgmt_st {
+diff --git a/crypto/evp/evp_rand.c b/crypto/evp/evp_rand.c
+index c36dbdc..e1798f6 100644
+--- a/crypto/evp/evp_rand.c
++++ b/crypto/evp/evp_rand.c
+@@ -14,6 +14,7 @@
+ #include <openssl/core.h>
+ #include <openssl/core_names.h>
+ #include <openssl/crypto.h>
++#include "internal/aws_snapsafe_internal.h"
+ #include "internal/cryptlib.h"
+ #include "internal/numbers.h"
+ #include "internal/provider.h"
+@@ -21,6 +22,18 @@
+ #include "crypto/evp.h"
+ #include "evp_local.h"
+ 
++static int aws_snapsafe_parent_must_reseed(EVP_RAND_CTX *ctx, uint32_t new_sgn);
++static int aws_snapsafe_handle_non_default_provider(EVP_RAND_CTX *ctx,
++    uint32_t new_sgn);
++static int aws_snapsafe_handle_default_provider(EVP_RAND_CTX *ctx,
++    uint32_t new_sgn);
++static int aws_snapsafe_is_default_provider(EVP_RAND_CTX *ctx);
++static int aws_snapsafe_handle_provider(EVP_RAND_CTX *ctx, int *detected);
++static int aws_snapsafe_evp_rand_iterate(EVP_RAND_CTX *ctx,
++    struct snapsafe_evp_rand_stack *stack);
++static int aws_snapsafe_evp_rand_execute_cb(EVP_RAND_CTX *ctx,
++    struct snapsafe_evp_rand_stack *stack);
++
+ struct evp_rand_st {
+     OSSL_PROVIDER *prov;
+     int name_id;
+@@ -338,6 +351,16 @@ EVP_RAND_CTX *EVP_RAND_CTX_new(EVP_RAND *rand, EVP_RAND_CTX *parent)
+         return NULL;
+     }
+ 
++    /* Grab the current sgn here. This leaves a small room for a snapshot but
++     * it avoids having to deal with modifying the cleanup below, if polling the
++     * sgn fails. We will catch a snapshot when generating randomness
++     * regardless. */
++    uint32_t sgn = 0;
++    if (aws_snapsafe_get_sgn(&sgn) != 1) {
++        ERR_raise(ERR_LIB_EVP, ERR_R_INTERNAL_ERROR);
++        return NULL;
++    }
++
+     ctx = OPENSSL_zalloc(sizeof(*ctx));
+     if (ctx == NULL)
+         return NULL;
+@@ -367,6 +390,15 @@ EVP_RAND_CTX *EVP_RAND_CTX_new(EVP_RAND *rand, EVP_RAND_CTX *parent)
+     }
+     ctx->meth = rand;
+     ctx->parent = parent;
++
++    /* Initialise snapsafe state information. For safety assume no state in the
++     * EVP_RAND chain is reseeded. We can then correctly handle the first reseed
++     * based on a resume event. Also assume this EVP_RAND_CTX is not part of the
++     * default provider. Default tagging is done later. */
++    ctx->cached_sgn = sgn;
++    ctx->parent_reseed_counter = 0;
++    ctx->rand_provider_type = RAND_PROVIDER_NOT_DEFAULT;
++
+     return ctx;
+ }
+ 
+@@ -386,6 +418,9 @@ void EVP_RAND_CTX_free(EVP_RAND_CTX *ctx)
+     ctx->algctx = NULL;
+     EVP_RAND_free(ctx->meth);
+     CRYPTO_FREE_REF(&ctx->refcnt);
++    ctx->cached_sgn = 0;
++    ctx->parent_reseed_counter = 0;
++    ctx->rand_provider_type = RAND_PROVIDER_NOT_DEFAULT;
+     OPENSSL_free(ctx);
+     EVP_RAND_CTX_free(parent);
+ }
+@@ -573,14 +608,16 @@ int EVP_RAND_generate(EVP_RAND_CTX *ctx, unsigned char *out, size_t outlen,
+     unsigned int strength, int prediction_resistance,
+     const unsigned char *addin, size_t addin_len)
+ {
+-    int res;
+-
+-    if (!evp_rand_lock(ctx))
+-        return 0;
+-    res = evp_rand_generate_locked(ctx, out, outlen, strength,
+-        prediction_resistance, addin, addin_len);
+-    evp_rand_unlock(ctx);
+-    return res;
++    struct snapsafe_evp_rand_stack stack = {0};
++    stack.cb_type = SNAPSAFE_EVP_RAND_CB_GENERATE;
++    stack.out = out;
++    stack.outlen = outlen;
++    stack.strength = strength;
++    stack.prediction_resistance = prediction_resistance;
++    stack.addin = addin;
++    stack.addin_len = addin_len;
++
++    return aws_snapsafe_evp_rand_iterate(ctx, &stack);
+ }
+ 
+ static int evp_rand_reseed_locked(EVP_RAND_CTX *ctx, int prediction_resistance,
+@@ -643,18 +680,17 @@ static int evp_rand_nonce_locked(EVP_RAND_CTX *ctx, unsigned char *out,
+ 
+ int EVP_RAND_nonce(EVP_RAND_CTX *ctx, unsigned char *out, size_t outlen)
+ {
+-    int res;
++    struct snapsafe_evp_rand_stack stack = {0};
++    stack.cb_type = SNAPSAFE_EVP_RAND_CB_NONCE;
++    stack.out = out;
++    stack.outlen = outlen;
+ 
+     if (ctx == NULL || out == NULL || outlen == 0) {
+         ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
+         return 0;
+     }
+ 
+-    if (!evp_rand_lock(ctx))
+-        return 0;
+-    res = evp_rand_nonce_locked(ctx, out, outlen);
+-    evp_rand_unlock(ctx);
+-    return res;
++    return aws_snapsafe_evp_rand_iterate(ctx, &stack);
+ }
+ 
+ int EVP_RAND_get_state(EVP_RAND_CTX *ctx)
+@@ -680,6 +716,324 @@ int EVP_RAND_verify_zeroization(EVP_RAND_CTX *ctx)
+     evp_rand_unlock(ctx);
+     return res;
+ }
++
++
++/* AWS_SNAPSAFE_EVP_RAND_set_provider_type sets the provider type of ctx to
++ * type. Does nothing if ctx is null. */
++void AWS_SNAPSAFE_EVP_RAND_set_provider_type(EVP_RAND_CTX *ctx,
++    RAND_PROVIDER_TYPE type)
++{
++    if (ctx != NULL) {
++        ctx->rand_provider_type = type;
++    }
++}
++
++/* AWS_SNAPSAFE_EVP_RAND_is_default_seed returns one if ctx is tagged as the
++ * default seed and 0 otherwise. */
++int AWS_SNAPSAFE_EVP_RAND_is_default_seed(EVP_RAND_CTX *ctx) {
++    if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_SEED) {
++        return 1;
++    }
++    return 0;
++}
++
++/* AWS_SNAPSAFE_EVP_RAND_is_default_primary returns 1 if ctx is tagged as the
++ * default primary and 0 otherwise. */
++int AWS_SNAPSAFE_EVP_RAND_is_default_primary(EVP_RAND_CTX *ctx) {
++    if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_PRIMARY) {
++        return 1;
++    }
++    return 0;
++}
++
++/* AWS_SNAPSAFE_EVP_RAND_get_snapsafe_generation_number returns the snapsafe
++ * generation number cached in ctx. */
++uint32_t AWS_SNAPSAFE_EVP_RAND_get_snapsafe_generation_number(EVP_RAND_CTX *ctx)
++{
++    return ctx->cached_sgn;
++}
++
++/* aws_snapsafe_parent_must_reseed returns 1 if ctx's parent needs to be
++ * reseeded, and 0 otherwise. new_sgn must be the sgn used to detect an resume
++ * event. */
++static int aws_snapsafe_parent_must_reseed(EVP_RAND_CTX *ctx, uint32_t new_sgn)
++{
++    if (ctx->parent != NULL
++        && ctx->parent->cached_sgn != new_sgn) {
++        return 1;
++    }
++    return 0;
++}
++
++/* From the initial object (ctx) we consider its sequence of parent's as a
++ * linked list up to a root, i.e. the list L:
++ *
++ * ctx -> ctx.parent -> ctx.parent.parent -> ... -> ctx.parent.parent...parent.
++ *
++ * Denote each entry in the list by L[i]. That is, initial object (ctx) is L[0],
++ * ctx.parent is L[1], etc.
++ *
++ * For this linked list we maintain the following invariant:
++ *   If L[i] does not need to be reseeded, then L[j] for j > i does not need to
++ *   be reseeded either.
++ *
++ * This invariant is guaranteed if we use the snapsafe generation number (sgn)
++ * to indicate the need for a reseed, since the sgn it's monotonically
++ * increasing.
++ *
++ * Using the invariant, we can limit the recursion up until the first object in
++ * the list that does not need to reseed. This is important because a parent is
++ * a 1-to-many relationship with children, that could cause many redundant
++ * reseeds otherwise. */
++static int aws_snapsafe_handle_non_default_provider(EVP_RAND_CTX *ctx,
++    uint32_t new_sgn)
++{
++    int ret = 0;
++    unsigned char *buf = NULL;
++
++    if (ctx == NULL) {
++        /* Not an error. It just stops recursion. */
++        return 1;
++    }
++
++    if (!evp_rand_lock(ctx)) {
++        goto err;
++    }
++
++    if (aws_snapsafe_parent_must_reseed(ctx, new_sgn) == 1) {
++        if (aws_snapsafe_handle_non_default_provider(ctx->parent, new_sgn) != 1) {
++            goto err;
++        }
++    }
++
++    unsigned int strength = evp_rand_strength_locked(ctx);
++    if (strength == 0) {
++        goto err;
++    }
++
++    /* Strength is the number of entropy bits. Assuming perfect entropy rate of
++     * 8 bits per byte, we can get the length of the buffer by dividing by 8.
++     * This is a typical assumption when drawing entropy from system sources. */
++    size_t buf_size = (strength + 7) / 8;
++    buf = malloc(buf_size);
++
++    if (buf == NULL) {
++        goto err;
++    }
++    if (aws_snapsafe_get_entropy(buf, buf_size) != 1) {
++        goto err;
++    }
++    if (evp_rand_reseed_locked(ctx, 0, buf, buf_size, NULL, 0) != 1) {
++        goto err;
++    }
++
++    ctx->cached_sgn = new_sgn;
++    ret = 1;
++
++err:
++    if (buf != NULL) {
++        memset(buf, 0, buf_size);
++    }
++    free(buf);
++    evp_rand_unlock(ctx);
++    return ret;
++}
++
++/* For the default drbg implementation, we can offload part of the work to the
++ * implementation. When reseeding the primary, it will automatically force a
++ * reseed of its children ("public" and "private"). The default seed source for
++ * the primary is the EVP_RAND SEED-SRC implementation. But the SEED-SRC
++ * implementation doesn't cache any material.
++ *
++ * This is a good optimisation using implementation details. The reseed entropy
++ * used in the default implementation is gathered regardless of the arguments
++ * passed to EVP_RAND_reseed. Hence, we can avoid doing 2x reseeds and 2x entropy
++ * gathering by not supplying any entropy or additional data in the high-level
++ * reseed function invocation. In the general case, we cannot make this
++ * assumption so it makes sense to factor out the default case, which will be
++ * the most common by far. */
++static int aws_snapsafe_handle_default_provider(EVP_RAND_CTX *ctx,
++    uint32_t new_sgn)
++{
++    int ret = 0;
++
++    if (ctx == NULL) {
++        return 0;
++    }
++
++    if (!evp_rand_lock(ctx)) {
++        return 0;
++    }
++
++    if (ctx->cached_sgn == new_sgn) {
++        /* Only spend resources if this drbg has not been reseeded before. This
++         * situation can occur, for example, if the primary is reseeded because
++         * of a resume event in the private drbg. But later the same resume
++         * event is detected for the public drbg. */
++        ret = 1;
++        goto end;
++    }
++
++    if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_SECONDARY) {
++        /* Will automatically reseed when parent (primary) has reseeded */
++        ret = aws_snapsafe_handle_default_provider(ctx->parent, new_sgn);
++    } else if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_PRIMARY) {
++        if (evp_rand_reseed_locked(ctx, 0, NULL, 0, NULL, 0) != 1) {
++            goto end;
++        }
++        ret = aws_snapsafe_handle_default_provider(ctx->parent, new_sgn);
++    } else if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_SEED) {
++        /* Default Seed EVP_RAND. Nothing to do. Just make sure to update sgn.
++         * Will only hit this case if some consumer wants to generate
++         * randomness directly from the default seed via the EVP_RAND API.
++         * This would be strange, but handle it correctly anyway.
++         * Yes, we need to handle this case, because the EVP_RAND interface
++         * might take the SEED-SRC as an input! */
++        ret = 1;
++    }
++
++    if (ret == 1) {
++        ctx->cached_sgn = new_sgn;
++    }
++
++end:
++    evp_rand_unlock(ctx);
++    return ret;
++}
++
++/* Detects if ctx belongs to the default implementation and sanity checks that
++ * no custom drbg has been injected into the (known) linked list of drbg's. */
++static int aws_snapsafe_is_default_provider(EVP_RAND_CTX *ctx)
++{
++    if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_SEED) {
++        return 1;
++    }
++
++    if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_PRIMARY
++        && ctx->parent != NULL
++        && aws_snapsafe_is_default_provider(ctx->parent) == 1) {
++        return 1;
++    }
++
++    if (ctx->rand_provider_type == RAND_PROVIDER_DEFAULT_SECONDARY
++        && ctx->parent != NULL
++        && aws_snapsafe_is_default_provider(ctx->parent)) {
++        return 1;
++    }
++
++    return 0;
++}
++
++/* aws_snapsafe_handle_provider decides which reseed strategy to use based on
++ * the implementation associated to ctx. */
++static int aws_snapsafe_handle_provider(EVP_RAND_CTX *ctx, int *detected)
++{
++    uint32_t current_sgn = 0;
++
++    *detected = 0;
++
++    if (aws_snapsafe_get_sgn(&current_sgn) != 1) {
++        return 0;
++    }
++
++    if (ctx->cached_sgn != current_sgn) {
++        /* Resume detected! */
++        *detected = 1;
++        if (aws_snapsafe_is_default_provider(ctx) == 1) {
++            return aws_snapsafe_handle_default_provider(ctx, current_sgn);
++        } else {
++            return aws_snapsafe_handle_non_default_provider(ctx, current_sgn);
++        }
++    }
++
++    return 1;
++}
++
++static int aws_snapsafe_evp_rand_execute_cb(EVP_RAND_CTX *ctx,
++    struct snapsafe_evp_rand_stack *stack)
++{
++    int ret = 0;
++
++    if (!evp_rand_lock(ctx)) {
++        return 0;
++    }
++
++    /* Can't return from inside the switch block, otherwise we leave ctx
++     * locked. */
++    switch (stack->cb_type) {
++        case SNAPSAFE_EVP_RAND_CB_GENERATE:
++            if (evp_rand_generate_locked(ctx, stack->out, stack->outlen,
++                    stack->strength, stack->prediction_resistance,
++                    stack->addin, stack->addin_len) != 1) {
++                goto err;
++            }
++            break;
++        case SNAPSAFE_EVP_RAND_CB_NONCE:
++            if (evp_rand_nonce_locked(ctx, stack->out, stack->outlen) != 1) {
++                goto err;
++            }
++            break;
++        default:
++            /* Not supposed to happen. So, fail. */
++            goto err;
++    }
++
++    ret = 1;
++
++err:
++    evp_rand_unlock(ctx);
++    return ret;
++}
++
++/* To avoid having to implement the iteration logic in multiple functions, the
++ * logic is implemented once in aws_snapsafe_evp_rand_iterate. The issue is
++ * calling the correct function inside the iterator. C doesn't support calling
++ * functions via function pointers that are cast to whatever function type
++ * we want. Hence, we can't really add a function pointer argument that
++ * abstracts the set of functions (they have different function types...).
++ *
++ * I chose to fake support for the above feature using an inline stack where I
++ * push function arguments for the function I want to call. In addition, a tag
++ * that indicates which function I want to call. Another approach could be
++ * defining a variadic function. But I find the former solution cleaner, safer,
++ * and more explicit.
++ *
++ * Could likely optimise packing of snapsafe_evp_stack if the small memory
++ * overhead becomes an issue. */
++static int aws_snapsafe_evp_rand_iterate(EVP_RAND_CTX *ctx,
++    struct snapsafe_evp_rand_stack *stack) {
++
++    int ret = 0;
++    int detected = 0;
++    size_t detect_count = 0;
++
++    do {
++        detected = 0;
++        if (aws_snapsafe_handle_provider(ctx, &detected) != 1) {
++            goto end;
++        }
++
++        /* On first iteration, this check is ignored because we need to generate
++         * some randomness we can output.
++         * From second iteration onward, we only generate randomness again if
++         * we had detected a resume. */
++        if (detect_count > 0 && detected != 1) {
++            /* We already generated randomness successfully and no new resume
++             * was detected. We can return now. */
++            ret = 1;
++            goto end;
++        }
++
++        if (aws_snapsafe_evp_rand_execute_cb(ctx, stack) != 1) {
++            goto end;
++        }
++
++        detect_count = detect_count + 1;
++    } while (detect_count < AWS_SNAPSAFE_DETECT_LIMIT);
++
++end:
++    return ret;
++}
+ 
+ int evp_rand_can_seed(EVP_RAND_CTX *ctx)
+ {
+diff --git a/crypto/rand/aws_snapsafe_util.c b/crypto/rand/aws_snapsafe_util.c
+new file mode 100644
+index 0000000..5dcada7
+--- /dev/null
++++ b/crypto/rand/aws_snapsafe_util.c
+@@ -0,0 +1,337 @@
++/*
++ * -----------------------------------------------------------------------------
++ * Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
++ * SPDX-License-Identifier: Apache-2.0
++ * -----------------------------------------------------------------------------
++*/
++
++#include <openssl/crypto.h>
++
++#include "internal/aws_snapsafe_internal.h"
++#include "internal/thread_once.h"
++#include "crypto/rand.h"
++#include "crypto/rand_pool.h"
++
++#include <errno.h>
++#include <fcntl.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/ioctl.h>
++#include <sys/random.h>
++#include <sys/mman.h>
++#include <unistd.h>
++
++/* Snapsafety state */
++#define SNAPSAFETY_STATE_FAILED_INITIALISE 0x00
++#define SNAPSAFETY_STATE_SUCCESS_INITIALISE 0x01
++#define SNAPSAFETY_STATE_NOT_SUPPORTED 0x02
++
++static CRYPTO_RWLOCK *sgn_mutex;
++#if defined(FIPS_MODULE)
++static int aws_snapsafe_init_once = 0;
++#else
++static CRYPTO_ONCE aws_snapsafe_init = CRYPTO_ONCE_STATIC_INIT;
++#endif
++
++/* Test mode state */
++#define SNAPSAFE_TEST_MODE_DISABLED 0x00
++#define SNAPSAFE_TEST_MODE_ENABLED 0x01
++static int test_mode = 0;
++static uint32_t test_mode_sgn = 0;
++
++/* Sysgenid state */
++/* These values can be found here: https://lkml.org/lkml/2021/3/8/677 */
++#define SYSGENID_IOCTL                  0xE4
++#define SYSGENID_TRIGGER_GEN_UPDATE     _IO(SYSGENID_IOCTL, 3)
++static const char *sgc_file_path = "/dev/sysgenid";
++static volatile uint32_t *sgc_addr = NULL;
++
++static int snapsafety_state = SNAPSAFETY_STATE_FAILED_INITIALISE;
++
++/* aws_snapsafe_check_kernel_support returns 1 if the special sysgenid device
++ * file exists and 0 otherwise. */
++static int aws_snapsafe_check_kernel_support(void)
++{
++    /* This file-exist method is generally brittle. But for our purpose, this
++     * should be more than fine. */
++    if (access(sgc_file_path, F_OK) != 0) {
++        return 0;
++    }
++    return 1;
++}
++
++static int do_aws_snapsafe_init(void)
++{
++
++    /* Storage duration is the entire life-time of the program. */
++    sgn_mutex = CRYPTO_THREAD_lock_new();
++    if (sgn_mutex == NULL) {
++        return 0;
++    }
++
++    if (aws_snapsafe_check_kernel_support() != 1) {
++        snapsafety_state = SNAPSAFETY_STATE_NOT_SUPPORTED;
++        return 1;
++    }
++
++    /* While not totally obvious from man pages, mmap actually only allocates
++     * memory on page size boundaries. So just give it that hint. */
++    long page_size = sysconf(_SC_PAGESIZE);
++    if (page_size <= 0) {
++        snapsafety_state = SNAPSAFETY_STATE_FAILED_INITIALISE;
++        return 0;
++    }
++
++    if (sgc_addr == NULL) {
++
++        int fd_sgc = open(sgc_file_path, O_RDONLY);
++        if (fd_sgc == -1) {
++            snapsafety_state = SNAPSAFETY_STATE_FAILED_INITIALISE;
++            return 0;
++        }
++
++        void *addr = mmap(NULL, (size_t) page_size, PROT_READ, MAP_SHARED,
++            fd_sgc, 0);
++
++        /* Can close file descriptor now per https://man7.org/linux/man-pages/man2/mmap.2.html:
++         * "After the mmap() call has returned, the file descriptor, fd, can be
++         * closed immediately without invalidating the mapping.".
++         * We have initialised snapsafety without errors and this function is
++         * only executed once. Therefore, try to close file descriptor but don't
++         * error if it fails. */
++        close(fd_sgc);
++
++        if (addr == MAP_FAILED) {
++            snapsafety_state = SNAPSAFETY_STATE_FAILED_INITIALISE;
++            return 0;
++        }
++
++        /* sgc_addr will now point at the mapped memory and any 4-byte read from
++         * this pointer will correspond to the sgn manager by the VMM. */
++        sgc_addr = addr;
++
++        snapsafety_state = SNAPSAFETY_STATE_SUCCESS_INITIALISE;
++    }
++
++    return 1;
++}
++
++#if defined(FIPS_MODULE)
++
++/* The following is true for the FIPS module build:
++ * "Initialisation of global data should never happen via "RUN_ONCE" inside the
++ * FIPS module. Global data should instead always be associated with a specific
++ * OSSL_LIB_CTX object. In this way data will get cleaned up correctly when the
++ * module gets unloaded.
++ *
++ * Snapsafe is not designed for the FIPS module. But make it work anyway, to
++ * pass the build and tests.
++ */
++static int do_aws_snapsafe_init_once(void)
++{
++    if (aws_snapsafe_init_once == 1) {
++        return 1;
++    }
++    aws_snapsafe_init_once = 1;
++    return do_aws_snapsafe_init();
++}
++
++/* FIPS module also doesn't link the same way with the rest of the compilation
++ * units. One case is the entropy sources. Also make this work in FIPS mode to
++ * avoid modifying the build scripts too much. The snapsafe patch doesn't
++ * support the FIPS module, so this is a cheap way to circumvent the entropy
++ * sourcing issue.
++ */
++static int aws_snapsafe_get_entropy_from_source(void *buf, size_t buf_size)
++{
++    /* check output size here... */
++    if (getrandom(buf, buf_size, 0) != buf_size) {
++        return 0;
++    }
++    return 1;
++}
++
++#else /* defined(FIPS_MODULE) */
++
++DEFINE_RUN_ONCE_STATIC(do_aws_snapsafe_init_no_fips)
++{
++    return do_aws_snapsafe_init();
++}
++
++static int do_aws_snapsafe_init_once(void)
++{
++    if (!RUN_ONCE(&aws_snapsafe_init, do_aws_snapsafe_init_no_fips)) {
++        return 0;
++    }
++    return 1;
++}
++
++static int aws_snapsafe_get_entropy_from_source(void *buf, size_t buf_size)
++{
++    int ret = 0;
++
++    RAND_POOL *pool = ossl_rand_pool_new(buf_size * 8, 1, buf_size,
++        RAND_POOL_MAX_LENGTH);
++    if (pool == NULL) {
++        return 0;
++    }
++
++    if (ossl_pool_acquire_entropy(pool) == 0) {
++        goto err;
++    }
++
++    if (buf_size != ossl_rand_pool_length(pool)) {
++        goto err;
++    }
++
++    memcpy(buf, ossl_rand_pool_buffer(pool), buf_size);
++
++    ret = 1;
++
++err:
++    ossl_rand_pool_free(pool);
++    return ret;
++}
++
++#endif /* defined(FIPS_MODULE) */
++
++static uint32_t aws_snapsafe_read_sgn(void)
++{
++    if (snapsafety_state == SNAPSAFETY_STATE_SUCCESS_INITIALISE) {
++        return *sgc_addr;
++    }
++
++    return 0;
++}
++
++/* This function will lazily initialise snapsafety.
++ * It will "fail" open if snapsafety is not supported by the kernel. This is
++ * a useful failure mode for testing purposes.
++ * If it detects support, it will attempt to initialise. If the initialisation
++ * fails, this function will fail closed.
++ *
++ * Return 1 if successful or "failing open". Returns 0 otherwise.
++ */
++int aws_snapsafe_get_sgn(uint32_t *sgn)
++{
++    int ret = 0;
++
++    if (do_aws_snapsafe_init_once() != 1) {
++        *sgn = 0;
++        return 0;
++    }
++
++    /* We don't mutate the sgn here, so read lock is sufficient. */
++    if (!CRYPTO_THREAD_read_lock(sgn_mutex)) {
++        goto err;
++    }
++
++    if (snapsafety_state == SNAPSAFETY_STATE_FAILED_INITIALISE) {
++        *sgn = 0;
++        goto err;
++    }
++
++    if (test_mode == SNAPSAFE_TEST_MODE_ENABLED) {
++        *sgn = test_mode_sgn;
++        ret = 1;
++        goto err;
++    }
++
++    if (snapsafety_state == SNAPSAFETY_STATE_NOT_SUPPORTED) {
++        *sgn = 0;
++        ret = 1;
++        goto err;
++    }
++
++    *sgn = aws_snapsafe_read_sgn();
++    ret = 1;
++
++err:
++    CRYPTO_THREAD_unlock(sgn_mutex);
++    return ret;
++}
++
++/* aws_snapsafe_is_supported returns 1 if snapsafety is expected to be supported,
++ * 0 otherwise. */
++int aws_snapsafe_is_supported(void)
++{
++    return aws_snapsafe_check_kernel_support();
++}
++
++/* aws_snapsafe_is_initialised returns 1 if snapsafety is initialised and 0
++ * otherwise. */
++int aws_snapsafe_is_initialised(void)
++{
++    if (snapsafety_state != SNAPSAFETY_STATE_SUCCESS_INITIALISE) {
++        return 0;
++    }
++    return 1;
++}
++
++/* aws_snapsafe_get_entropy returns buf_size bytes of entropy in buf. Good for
++ * seed entropy. Returns 1 if successful and 0 otherwise.
++ * buf_size should be equal to the strength times 8.*/
++int aws_snapsafe_get_entropy(unsigned char *buf, size_t buf_size)
++{
++    return aws_snapsafe_get_entropy_from_source(buf, buf_size);
++}
++
++/* aws_snapsafe_enable_test_mode_FOR_TESTING enables manual control of the sgn. */
++void aws_snapsafe_enable_test_mode_FOR_TESTING(void)
++{
++    if (test_mode == SNAPSAFE_TEST_MODE_DISABLED) {
++        /* First time enabling (or re-enabling) test mode, set the current sgn
++         * to the test mode sgn. */
++        test_mode_sgn = aws_snapsafe_read_sgn();
++    }
++    test_mode = SNAPSAFE_TEST_MODE_ENABLED;
++}
++
++/* aws_snapsafe_disable_test_mode_FOR_TESTING disables manual control of the sgn. */
++void aws_snapsafe_disable_test_mode_FOR_TESTING(void)
++{
++    test_mode = SNAPSAFE_TEST_MODE_DISABLED;
++}
++
++/* aws_snapsafe_increment_sgn_FOR_TESTING increments the sgn. Returns 1 if
++ * successful and 0 otherwise. */
++int aws_snapsafe_increment_sgn_FOR_TESTING(void)
++{
++    int ret = 0;
++
++    /* Mutating the sgn, so grab a write lock. */
++    if (!CRYPTO_THREAD_write_lock(sgn_mutex)) {
++        goto err;
++    }
++
++    if (test_mode != SNAPSAFE_TEST_MODE_ENABLED) {
++        int fd_sgn = open(sgc_file_path, O_RDONLY);
++        if (fd_sgn == -1) {
++            goto err;
++        }
++
++        uint32_t incremented_sgn = aws_snapsafe_read_sgn() + 1;
++        if (ioctl(fd_sgn, SYSGENID_TRIGGER_GEN_UPDATE, incremented_sgn) == -1) {
++            fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
++            close(fd_sgn);
++            goto err;
++        }
++
++        if (close(fd_sgn) == -1) {
++            goto err;
++        }
++
++        if (incremented_sgn != aws_snapsafe_read_sgn()) {
++            /* This would be weird, but something must be wrong with the IOCTL. */
++            goto err;
++        }
++    } else {
++       test_mode_sgn = test_mode_sgn + 1;
++    }
++
++    ret = 1;
++
++err:
++    CRYPTO_THREAD_unlock(sgn_mutex);
++    return ret;
++}
+diff --git a/crypto/rand/build.info b/crypto/rand/build.info
+index a742825..45af980 100644
+--- a/crypto/rand/build.info
++++ b/crypto/rand/build.info
+@@ -1,6 +1,6 @@
+ LIBS=../../libcrypto
+ 
+-$COMMON=rand_lib.c
++$COMMON=rand_lib.c aws_snapsafe_util.c
+ $CRYPTO=randfile.c rand_err.c rand_deprecated.c prov_seed.c rand_uniform.c
+ 
+ IF[{- !$disabled{'egd'} -}]
+diff --git a/crypto/rand/rand_lib.c b/crypto/rand/rand_lib.c
+index f341d91..42ccc05 100644
+--- a/crypto/rand/rand_lib.c
++++ b/crypto/rand/rand_lib.c
+@@ -13,6 +13,7 @@
+ #include <openssl/err.h>
+ #include <openssl/opensslconf.h>
+ #include <openssl/core_names.h>
++#include "internal/aws_snapsafe_internal.h"
+ #include <openssl/provider.h>
+ #include "internal/cryptlib.h"
+ #include "internal/provider.h"
+@@ -41,6 +42,130 @@ static const RAND_METHOD *default_RAND_meth;
+ #endif /* !OPENSSL_NO_DEPRECATED_3_0 */
+ static CRYPTO_ONCE rand_init = CRYPTO_ONCE_STATIC_INIT;
+ 
++/* Snapsafety for engines is only relevant for non-FIPS build. The FIPS build
++ * completely invalidates the use of engines. */
++#define SNAPSAFE_ENGINE_CB_BYTES 0x00
++#define SNAPSAFE_ENGINE_CB_PSEUDO_BYTES 0x01
++#define AWS_SNAPSAFE_ENGINE_ENTROPY_SIZE_BYTES 32
++__thread uint32_t per_thread_cached_engine_sgn = 0;
++
++static int aws_snapsafe_handle_engine(const RAND_METHOD *rand_engine, int *detected)
++{
++    int ret = 0;
++    uint32_t current_sgn = 0;
++    unsigned char buf[AWS_SNAPSAFE_ENGINE_ENTROPY_SIZE_BYTES];
++
++    *detected = 0;
++    if (aws_snapsafe_get_sgn(&current_sgn) != 1) {
++        return 0;
++    }
++
++    if (per_thread_cached_engine_sgn != current_sgn) {
++        /* Resume detected!
++         * Best effort randomisation of the engine by adding entropy through the
++         * add callback.
++         *
++         * The add callback is the only method we can use to induce a reseed in
++         * the engine. Without this callback, we can't actually do anything...
++         * We do not want to start failing existing software, but current state
++         * is potentially unsafe for the application. Be on the safe side and
++         * fail with an error message output. */
++        if (rand_engine->add == NULL) {
++            fprintf(stderr, "\n\n ERROR: |add| callback in the registered engine is not implemented."
++                "But a snapshot resume has been detected and it is unsafe to proceed with generating data."
++                "Please implement the |add| callback in the registered engine."
++                "Please contact AWS support if unsure how to handle this error message.\n\n");
++            goto end;
++        }
++
++        *detected = 1;
++        if (aws_snapsafe_get_entropy(buf,
++                AWS_SNAPSAFE_ENGINE_ENTROPY_SIZE_BYTES) != 1) {
++            goto end;
++        }
++        if (rand_engine->add(buf, AWS_SNAPSAFE_ENGINE_ENTROPY_SIZE_BYTES,
++                AWS_SNAPSAFE_ENGINE_ENTROPY_SIZE_BYTES) != 1) {
++            goto end;
++        }
++
++        per_thread_cached_engine_sgn = current_sgn;
++    }
++
++    ret = 1;
++
++end:
++    memset(buf, 0, AWS_SNAPSAFE_ENGINE_ENTROPY_SIZE_BYTES);
++    return ret;
++}
++
++static int aws_snapsafe_engine_execute_callback(const RAND_METHOD *rand_engine,
++    unsigned char *buf, size_t num, int callback_type)
++{
++    int ret = 0;
++
++    switch (callback_type) {
++        case SNAPSAFE_ENGINE_CB_BYTES:
++            if (rand_engine->bytes(buf, num) != 1) {
++                goto end;
++            }
++            break;
++        case SNAPSAFE_ENGINE_CB_PSEUDO_BYTES:
++            if (rand_engine->pseudorand(buf, num) != 1) {
++                goto end;
++            }
++            break;
++        default:
++            /* Not supposed to happen. So, Fail. */
++            goto end;
++    }
++
++    ret = 1;
++
++end:
++    return ret;
++}
++
++static int aws_snapsafe_engine_iterate(const RAND_METHOD *rand_engine,
++    unsigned char *buf, size_t num, int callback_type)
++{
++    int ret = 0;
++    int detected = 0;
++    size_t detect_count = 0;
++
++    if (!CRYPTO_THREAD_write_lock(rand_engine_lock)) {
++        goto end;
++    }
++
++    do {
++        detected = 0;
++        if (aws_snapsafe_handle_engine(rand_engine, &detected) != 1) {
++            goto end;
++        }
++
++        /* On first iteration, this check is ignored because we need to generate
++         * some randomness we can output.
++         * From second iteration onward, we only generate randomness again if we
++         * had detected a resume. */
++        if (detect_count > 0 && detected != 1) {
++            /* We already generated randomness successfully and no new resume
++             * was detected. We can return now. */
++            ret = 1;
++            goto end;
++        }
++
++        if (aws_snapsafe_engine_execute_callback(rand_engine, buf, num,
++                callback_type) != 1) {
++            goto end;
++        }
++
++        detect_count = detect_count + 1;
++    } while (detect_count < AWS_SNAPSAFE_DETECT_LIMIT);
++
++end:
++    CRYPTO_THREAD_unlock(rand_engine_lock);
++    return ret;
++}
++
+ static int rand_inited = 0;
+ 
+ DEFINE_RUN_ONCE_STATIC(do_rand_init)
+@@ -100,6 +225,19 @@ void ossl_rand_cleanup_int(void)
+     rand_inited = 0;
+ }
+ 
++/* Returns RAND_SNAPSAFE_SUPPORTED if snapsafe detection is supported, and
++ * initialised.
++ * Returns RAND_SNAPSAFE_NOT_SUPPORTED if snapsafe detection is not supported
++ * i.e initialisation failed. */
++int RAND_snapsafe_is_supported(void) {
++    uint32_t sgn;
++    if (aws_snapsafe_get_sgn(&sgn) != 1
++        || aws_snapsafe_is_initialised() != 1) {
++        return RAND_SNAPSAFE_NOT_SUPPORTED;
++    }
++    return RAND_SNAPSAFE_SUPPORTED;
++}
++
+ /*
+  * RAND_close_seed_files() ensures that any seed file descriptors are
+  * closed after use.  This only applies to libcrypto/default provider,
+@@ -280,8 +418,10 @@ int RAND_pseudo_bytes(unsigned char *buf, int num)
+ {
+     const RAND_METHOD *meth = RAND_get_rand_method();
+ 
+-    if (meth != NULL && meth->pseudorand != NULL)
+-        return meth->pseudorand(buf, num);
++    if (meth != NULL && meth->pseudorand != NULL) {
++        return aws_snapsafe_engine_iterate(meth, buf, num,
++            SNAPSAFE_ENGINE_CB_PSEUDO_BYTES);
++    }
+     ERR_raise(ERR_LIB_RAND, RAND_R_FUNC_NOT_IMPLEMENTED);
+     return -1;
+ }
+@@ -324,8 +464,10 @@ int RAND_priv_bytes_ex(OSSL_LIB_CTX *ctx, unsigned char *buf, size_t num,
+     const RAND_METHOD *meth = RAND_get_rand_method();
+ 
+     if (meth != NULL && meth != RAND_OpenSSL()) {
+-        if (meth->bytes != NULL)
+-            return meth->bytes(buf, num);
++        if (meth->bytes != NULL) {
++            return aws_snapsafe_engine_iterate(meth, buf, num,
++                SNAPSAFE_ENGINE_CB_BYTES);
++        }
+         ERR_raise(ERR_LIB_RAND, RAND_R_FUNC_NOT_IMPLEMENTED);
+         return -1;
+     }
+@@ -353,8 +495,10 @@ int RAND_bytes_ex(OSSL_LIB_CTX *ctx, unsigned char *buf, size_t num,
+     const RAND_METHOD *meth = RAND_get_rand_method();
+ 
+     if (meth != NULL && meth != RAND_OpenSSL()) {
+-        if (meth->bytes != NULL)
+-            return meth->bytes(buf, num);
++        if (meth->bytes != NULL) {
++            return aws_snapsafe_engine_iterate(meth, buf, num,
++                SNAPSAFE_ENGINE_CB_BYTES);
++        }
+         ERR_raise(ERR_LIB_RAND, RAND_R_FUNC_NOT_IMPLEMENTED);
+         return -1;
+     }
+@@ -549,6 +694,14 @@ static EVP_RAND_CTX *rand_new_seed(OSSL_LIB_CTX *libctx)
+         ERR_raise(ERR_LIB_RAND, RAND_R_ERROR_INSTANTIATING_DRBG);
+         goto err;
+     }
++
++    /* If the seed name is not "SEED-SRC", we can't assume that the seed
++       source of the primary is stateless. */
++    if (ossl_lib_ctx_is_global_default(libctx) == 1
++        && dgbl->seed_name == NULL) {
++        AWS_SNAPSAFE_EVP_RAND_set_provider_type(ctx, RAND_PROVIDER_DEFAULT_SEED);
++    }
++
+     return ctx;
+ err:
+     EVP_RAND_CTX_free(ctx);
+@@ -602,6 +755,22 @@ static EVP_RAND_CTX *rand_new_drbg(OSSL_LIB_CTX *libctx, EVP_RAND_CTX *parent,
+         EVP_RAND_CTX_free(ctx);
+         return NULL;
+     }
++
++    /* The build-in DRBGs support a number of types. But for simplicity, we do
++       not attempt to handle any custom choice of DRBG type. */
++    if (ossl_lib_ctx_is_global_default(libctx) == 1
++        && dgbl->rng_cipher == NULL
++        && parent != NULL) {
++
++        if (AWS_SNAPSAFE_EVP_RAND_is_default_seed(parent) == 1) {
++            AWS_SNAPSAFE_EVP_RAND_set_provider_type(ctx, RAND_PROVIDER_DEFAULT_PRIMARY);
++        } else if (AWS_SNAPSAFE_EVP_RAND_is_default_primary(parent) == 1) {
++            AWS_SNAPSAFE_EVP_RAND_set_provider_type(ctx, RAND_PROVIDER_DEFAULT_SECONDARY);
++        }
++        /* If parent is not recognised, do not tag. Default primary seed source
++           is tagged separately. */
++    }
++
+     return ctx;
+ }
+ 
+diff --git a/include/internal/aws_snapsafe_internal.h b/include/internal/aws_snapsafe_internal.h
+new file mode 100644
+index 0000000..3fb2488
+--- /dev/null
++++ b/include/internal/aws_snapsafe_internal.h
+@@ -0,0 +1,55 @@
++/*
++ * -----------------------------------------------------------------------------
++ * Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
++ * SPDX-License-Identifier: Apache-2.0
++ * -----------------------------------------------------------------------------
++*/
++
++#ifndef OSSL_INTERNAL_AWS_SNAPSAFE_INTERNAL_h
++# define OSSL_INTERNAL_AWS_SNAPSAFE_INTERNAL_h
++
++#include <stddef.h>
++
++#include <openssl/types.h>
++
++/* We allow snapsafe detection functions to run at most
++ * AWS_SNAPSAFE_DETECT_LIMIT times. Calling the detection function in an
++ * infinite loop is almost certainly a bug somewhere in the the application
++ * running under snapstart. Set limit low to bail fast, avoiding many active
++ * Lambda's that are just spinning out of control. */
++#define AWS_SNAPSAFE_DETECT_LIMIT 10
++
++typedef enum {
++    RAND_PROVIDER_NOT_DEFAULT,
++    RAND_PROVIDER_DEFAULT_SEED,
++    RAND_PROVIDER_DEFAULT_PRIMARY,
++    RAND_PROVIDER_DEFAULT_SECONDARY
++} RAND_PROVIDER_TYPE;
++
++#define SNAPSAFE_EVP_RAND_CB_GENERATE 0x00
++#define SNAPSAFE_EVP_RAND_CB_NONCE 0x01
++
++struct snapsafe_evp_rand_stack {
++    uint8_t cb_type;
++    unsigned char *out;
++    size_t outlen;
++    unsigned int strength;
++    int prediction_resistance;
++    const unsigned char *addin;
++    size_t addin_len;
++};
++
++int aws_snapsafe_get_sgn(uint32_t *sgn);
++void AWS_SNAPSAFE_EVP_RAND_set_provider_type(EVP_RAND_CTX *ctx,
++    RAND_PROVIDER_TYPE type);
++uint32_t AWS_SNAPSAFE_EVP_RAND_get_snapsafe_generation_number(EVP_RAND_CTX *ctx);
++int AWS_SNAPSAFE_EVP_RAND_is_default_seed(EVP_RAND_CTX *ctx);
++int AWS_SNAPSAFE_EVP_RAND_is_default_primary(EVP_RAND_CTX *ctx);
++int aws_snapsafe_is_supported(void);
++int aws_snapsafe_is_initialised(void);
++int aws_snapsafe_get_entropy(unsigned char *buf, size_t buf_size);
++void aws_snapsafe_enable_test_mode_FOR_TESTING(void);
++void aws_snapsafe_disable_test_mode_FOR_TESTING(void);
++int aws_snapsafe_increment_sgn_FOR_TESTING(void);
++
++#endif /* OSSL_INTERNAL_AWS_SNAPSAFE_INTERNAL_h */
+diff --git a/include/openssl/rand.h b/include/openssl/rand.h
+index ad3054f..be4f43f 100644
+--- a/include/openssl/rand.h
++++ b/include/openssl/rand.h
+@@ -108,6 +108,11 @@ int RAND_egd_bytes(const char *path, int bytes);
+ 
+ int RAND_poll(void);
+ 
++/* Snapsafe */
++#define RAND_SNAPSAFE_SUPPORTED 1
++#define RAND_SNAPSAFE_NOT_SUPPORTED 0
++int RAND_snapsafe_is_supported(void);
++
+ #if defined(_WIN32) && (defined(BASETYPES) || defined(_WINDEF_H))
+ /* application has to include <windows.h> in order to use these */
+ #ifndef OPENSSL_NO_DEPRECATED_1_1_0
+diff --git a/test/aws_snapsafe_test.c b/test/aws_snapsafe_test.c
+new file mode 100644
+index 0000000..99dcc97
+--- /dev/null
++++ b/test/aws_snapsafe_test.c
+@@ -0,0 +1,855 @@
++/*
++ * -----------------------------------------------------------------------------
++ * Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
++ * SPDX-License-Identifier: Apache-2.0
++ * -----------------------------------------------------------------------------
++*/
++
++#include <openssl/provider.h>
++#include <openssl/rand.h>
++
++#include "internal/aws_snapsafe_internal.h"
++#include "../include/crypto/evp.h"
++#include "../crypto/evp/evp_local.h"
++#include "testutil.h"
++
++#ifndef FIPS_MODULE
++#include <openssl/engine.h>
++#endif
++
++#define INVARIANT_ITERATOR_COUNT 10
++#define RANDOM_SIZE 16
++OSSL_PROVIDER *fake_provider = NULL;
++
++static int sgn_stays_invariant(void) {
++    uint32_t initial_sgn = 0;
++    uint32_t current_sgn = 0;
++
++    if (!TEST_true(aws_snapsafe_get_sgn(&initial_sgn))) {
++        return 0;
++    }
++
++    for (size_t i = 0; i < INVARIANT_ITERATOR_COUNT; i++) {
++        if (!TEST_true(aws_snapsafe_get_sgn(&current_sgn))
++            || !TEST_true(initial_sgn == current_sgn)) {
++            return 0;
++        }
++    }
++
++    return 1;
++}
++
++/* Check that basic operations works and basic assumptions hold. */
++static int basic_tests(void)
++{
++    int ret = 0;
++    uint32_t sgn = 0;
++    int kernel_support_snapsafe = aws_snapsafe_is_supported();
++
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_enable_test_mode_FOR_TESTING();
++    }
++
++    if (kernel_support_snapsafe == 1) {
++        if (!TEST_true(RAND_snapsafe_is_supported())) {
++            goto err;
++        }
++    }
++
++    /* Polling the sgn doesn't just fail... */
++    if (!TEST_true(aws_snapsafe_get_sgn(&sgn))) {
++        goto err;
++    }
++
++    /* Verify that when we believe that snapsafety is (or is not) supported, the
++     * state actually agrees with that after polling the sgn. */
++    if (kernel_support_snapsafe == 1) {
++        if (!TEST_true(aws_snapsafe_is_initialised())) {
++            goto err;
++        }
++    } else {
++        if (!TEST_false(aws_snapsafe_is_initialised())) {
++            goto err;
++        }
++    }
++
++    /* Incrementing the sgn should increment by 1. */
++    uint32_t cached_sgn = 0;
++    uint32_t incremented_sgn = 0;
++    if (!TEST_true(aws_snapsafe_get_sgn(&cached_sgn))
++        || !TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++        || !TEST_true(aws_snapsafe_get_sgn(&incremented_sgn))
++        || !TEST_true((cached_sgn + 1) == incremented_sgn)) {
++        goto err;
++    }
++
++    /* If not incremented, sgn must stay invariant. */
++    if (!TEST_true(sgn_stays_invariant())
++        || !TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++        || !TEST_true(sgn_stays_invariant())) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_disable_test_mode_FOR_TESTING();
++    }
++    return ret;
++}
++
++/* Test some initial property values. The initial values for the default case
++ * is tested in another unit test set. */
++static int initial_values_evp_rand_ctx(void)
++{
++    int ret = 0;
++    EVP_RAND *rand = NULL;
++    EVP_RAND_CTX *rand_ctx = NULL;
++    uint32_t sgn = 0;
++
++    /* We need an EVP_RAND instance. So, simply fetch the default CTR-DRBG
++     * EVP_RAND. This emulates a non-default EVP_RAND because the workflow that
++     * tags EVP_RAND_CTXs as default are only executed when passing through the
++     * RAND_* APIs. */
++    if (!TEST_ptr(rand = EVP_RAND_fetch(NULL, "CTR-DRBG", NULL))
++        || !TEST_ptr(rand_ctx = EVP_RAND_CTX_new(rand, NULL))) {
++        goto err;
++    }
++
++    if (!TEST_true(aws_snapsafe_get_sgn(&sgn))
++        || !TEST_uint_eq((uint) rand_ctx->cached_sgn, (uint) sgn)
++        || !TEST_int_eq(rand_ctx->parent_reseed_counter, 0)
++        || !TEST_int_eq(rand_ctx->rand_provider_type, RAND_PROVIDER_NOT_DEFAULT)) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    EVP_RAND_free(rand);
++    EVP_RAND_CTX_free(rand_ctx);
++    return ret;
++}
++
++/* Basic test on RAND[_priv]_bytes[_ex] default code-paths to check for e.g.
++ * locking issues during reseeds. */
++static int default_rand_code_path(void)
++{
++    int ret = 0;
++    unsigned char random[RANDOM_SIZE];
++    int kernel_support_snapsafe = aws_snapsafe_is_supported();
++
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_enable_test_mode_FOR_TESTING();
++    }
++
++    /* Make sure everything is initialised */
++    if (!TEST_true(RAND_bytes(random, RANDOM_SIZE))
++        || !TEST_true(RAND_priv_bytes(random, RANDOM_SIZE))) {
++        goto err;
++    }
++
++    /* Test every public interface after incrementing sgn */
++    if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++        || !TEST_true(RAND_bytes(random, RANDOM_SIZE))) {
++        goto err;
++    }
++    if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++        || !TEST_true(RAND_priv_bytes(random, RANDOM_SIZE))) {
++        goto err;
++    }
++    if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++        || !TEST_true(RAND_bytes_ex(NULL, random, RANDOM_SIZE, 0))) {
++        goto err;
++    }
++    if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++        || !TEST_true(RAND_priv_bytes_ex(NULL, random, RANDOM_SIZE, 0))) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_disable_test_mode_FOR_TESTING();
++    }
++    return ret;
++}
++
++static size_t primary_reseed_count = 0;
++static size_t private_reseed_count = 0;
++static size_t public_reseed_count = 0;
++static size_t seed_reseed_count = 0;
++
++static int primary_cb_reseed(void)
++{
++    primary_reseed_count = primary_reseed_count + 1;
++    return 1;
++}
++
++static int private_cb_reseed(void)
++{
++    private_reseed_count = private_reseed_count + 1;
++    return 1;
++}
++
++static int public_cb_reseed(void)
++{
++    public_reseed_count = public_reseed_count + 1;
++    return 1;
++}
++
++static int seed_cb_reseed(void)
++{
++    seed_reseed_count = seed_reseed_count + 1;
++    return 1;
++}
++
++/* Mocks the default provider and verifies that reseeds are executed for each
++ * default EVP_RAND instance, as well as the correct number of reseeds are
++ * executed. This test won't work under concurrency. */
++static int default_provider_reseed_check(void)
++{
++    int ret = 0;
++
++    OSSL_LIB_CTX *fake_default_libctx = NULL;
++    OSSL_PROVIDER *default_ctx_null = NULL;
++    EVP_RAND_CTX *fake_primary = NULL;
++    EVP_RAND_CTX *fake_private = NULL;
++    EVP_RAND_CTX *fake_public = NULL;
++    unsigned char random[RANDOM_SIZE];
++    int kernel_support_snapsafe = aws_snapsafe_is_supported();
++
++    fake_rand_enable_default_drbg_auto_reseed_behavior(1);
++
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_enable_test_mode_FOR_TESTING();
++    }
++
++    if (!TEST_ptr(fake_default_libctx = OSSL_LIB_CTX_new())
++        || !TEST_ptr(default_ctx_null = OSSL_PROVIDER_load(NULL, "null"))) {
++        goto err;
++    }
++
++    /* Initialise fake default random setup.  */
++    if (!TEST_ptr(fake_provider = fake_rand_start(fake_default_libctx))
++        || !TEST_ptr(fake_primary = RAND_get0_primary(fake_default_libctx))
++        || !TEST_ptr(fake_private = RAND_get0_private(fake_default_libctx))
++        || !TEST_ptr(fake_public = RAND_get0_public(fake_default_libctx))
++        || !TEST_ptr(fake_primary->parent)) {
++        goto err;
++    }
++
++    /* Setup correct values to correctly recognise default drbgs in the snapsafe
++     * detection logic. */
++    fake_primary->rand_provider_type = RAND_PROVIDER_DEFAULT_PRIMARY;
++    fake_primary->parent->rand_provider_type = RAND_PROVIDER_DEFAULT_SEED;
++    fake_private->rand_provider_type = RAND_PROVIDER_DEFAULT_SECONDARY;
++    fake_public->rand_provider_type = RAND_PROVIDER_DEFAULT_SECONDARY;
++
++    fake_rand_set_callback_reseed(fake_primary, primary_cb_reseed);
++    fake_rand_set_callback_reseed(fake_private, private_cb_reseed);
++    fake_rand_set_callback_reseed(fake_public, public_cb_reseed);
++    fake_rand_set_callback_reseed(fake_primary->parent, seed_cb_reseed);
++
++    primary_reseed_count = 0;
++    private_reseed_count = 0;
++    public_reseed_count = 0;
++    seed_reseed_count = 0;
++
++    /* First generate some random data */
++    if (!TEST_true(RAND_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_true(RAND_priv_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 0)
++        || !TEST_uint_eq((uint) private_reseed_count, 0)
++        || !TEST_uint_eq((uint) public_reseed_count, 0)
++        || !TEST_uint_eq((uint) seed_reseed_count, 0)) {
++        goto err;
++    }
++
++    if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())) {
++        goto err;
++    }
++
++    /* Generate data twice. For the latter, the reseed counter should stay
++     * invariant. */
++    if (!TEST_true(RAND_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) private_reseed_count, 0)
++        || !TEST_uint_eq((uint) public_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 0)
++        || !TEST_true(RAND_priv_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) private_reseed_count, 1)
++        || !TEST_uint_eq((uint) public_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 0)) {
++        goto err;
++    }
++    if (!TEST_true(RAND_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_true(RAND_priv_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) private_reseed_count, 1)
++        || !TEST_uint_eq((uint) public_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 0)) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    aws_snapsafe_disable_test_mode_FOR_TESTING();
++    fake_rand_finish(fake_provider);
++    OSSL_LIB_CTX_free(fake_default_libctx);
++    OSSL_PROVIDER_unload(default_ctx_null);
++    fake_rand_enable_default_drbg_auto_reseed_behavior(0);
++    return ret;
++}
++
++/* Mocks a non-default provider and verifies that reseeds are executed for each
++ * default EVP_RAND instance, as well as the correct number of reseeds are
++ * executed. This test won't work under concurrency. */
++static int non_default_provider_reseed_check(void)
++{
++    int ret = 0;
++
++    OSSL_LIB_CTX *fake_default_libctx = NULL;
++    OSSL_PROVIDER *default_ctx_null = NULL;
++    EVP_RAND_CTX *fake_primary = NULL;
++    EVP_RAND_CTX *fake_private = NULL;
++    EVP_RAND_CTX *fake_public = NULL;
++    unsigned char random[RANDOM_SIZE];
++    int kernel_support_snapsafe = aws_snapsafe_is_supported();
++
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_enable_test_mode_FOR_TESTING();
++    }
++
++    if (!TEST_ptr(fake_default_libctx = OSSL_LIB_CTX_new())
++        || !TEST_ptr(default_ctx_null = OSSL_PROVIDER_load(NULL, "null"))) {
++        goto err;
++    }
++
++    /* Initialise fake non-default random setup. This uses the typical functions
++     * one would use for the default case, but it's convenient because it sets
++     * up the tree: seed -> primary -> {private, public}. So, we don't have to
++     * set these relations manually.
++     * These objects are not tagged with the appropriate default tags, so they
++     * will follow the non-default path. */
++    if (!TEST_ptr(fake_provider = fake_rand_start(fake_default_libctx))
++        || !TEST_ptr(fake_primary = RAND_get0_primary(fake_default_libctx))
++        || !TEST_ptr(fake_private = RAND_get0_private(fake_default_libctx))
++        || !TEST_ptr(fake_public = RAND_get0_public(fake_default_libctx))
++        || !TEST_ptr(fake_primary->parent)) {
++        goto err;
++    }
++
++    fake_rand_set_callback_reseed(fake_primary, primary_cb_reseed);
++    fake_rand_set_callback_reseed(fake_private, private_cb_reseed);
++    fake_rand_set_callback_reseed(fake_public, public_cb_reseed);
++    fake_rand_set_callback_reseed(fake_primary->parent, seed_cb_reseed);
++
++    primary_reseed_count = 0;
++    private_reseed_count = 0;
++    public_reseed_count = 0;
++    seed_reseed_count = 0;
++
++    /* First generate some random data */
++    if (!TEST_true(RAND_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_true(RAND_priv_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 0)
++        || !TEST_uint_eq((uint) private_reseed_count, 0)
++        || !TEST_uint_eq((uint) public_reseed_count, 0)
++        || !TEST_uint_eq((uint) seed_reseed_count, 0)) {
++        goto err;
++    }
++
++    if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())) {
++        goto err;
++    }
++
++    /* Generate data twice. For the latter, the reseed counter should stay
++     * invariant. */
++    if (!TEST_true(RAND_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) private_reseed_count, 0)
++        || !TEST_uint_eq((uint) public_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 1)
++        || !TEST_true(RAND_priv_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) private_reseed_count, 1)
++        || !TEST_uint_eq((uint) public_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 1)) {
++        goto err;
++    }
++    if (!TEST_true(RAND_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_true(RAND_priv_bytes_ex(fake_default_libctx, random, RANDOM_SIZE, 0))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) private_reseed_count, 1)
++        || !TEST_uint_eq((uint) public_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 1)) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    aws_snapsafe_disable_test_mode_FOR_TESTING();
++    fake_rand_finish(fake_provider);
++    OSSL_LIB_CTX_free(fake_default_libctx);
++    OSSL_PROVIDER_unload(default_ctx_null);
++    return ret;
++}
++
++/* Similar to non_default_provider_reseed_check but instead checks that
++ * generating a nonce through EVP_RAND reseeds correctly. */
++static int nonce_reseed_check(void)
++{
++    int ret = 0;
++
++    OSSL_LIB_CTX *fake_default_libctx = NULL;
++    OSSL_PROVIDER *default_ctx_null = NULL;
++    EVP_RAND_CTX *fake_primary = NULL;
++    unsigned char random[RANDOM_SIZE];
++    int kernel_support_snapsafe = aws_snapsafe_is_supported();
++
++    fake_rand_enable_default_drbg_auto_reseed_behavior(1);
++
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_enable_test_mode_FOR_TESTING();
++    }
++
++    if (!TEST_ptr(fake_default_libctx = OSSL_LIB_CTX_new())
++        || !TEST_ptr(default_ctx_null = OSSL_PROVIDER_load(NULL, "null"))) {
++        goto err;
++    }
++
++    /* Initialise fake default random setup.  */
++    if (!TEST_ptr(fake_provider = fake_rand_start(fake_default_libctx))
++        || !TEST_ptr(fake_primary = RAND_get0_primary(fake_default_libctx))
++        || !TEST_ptr(fake_primary->parent)) {
++        goto err;
++    }
++
++    /* Setup correct values to correctly recognise default drbgs in the snapsafe
++     * detection logic. */
++    fake_primary->rand_provider_type = RAND_PROVIDER_DEFAULT_PRIMARY;
++    fake_primary->parent->rand_provider_type = RAND_PROVIDER_DEFAULT_SEED;
++
++    fake_rand_set_callback_reseed(fake_primary, primary_cb_reseed);
++    fake_rand_set_callback_reseed(fake_primary->parent, seed_cb_reseed);
++
++    primary_reseed_count = 0;
++    seed_reseed_count = 0;
++
++    /* First generate some random data */
++    if (!TEST_true(EVP_RAND_nonce(fake_primary, random, RANDOM_SIZE))) {
++        goto err;
++    }
++
++    if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())) {
++        goto err;
++    }
++
++    /* Generate data twice. For the latter, the reseed counter should stay
++     * invariant. */
++    if (!TEST_true(EVP_RAND_nonce(fake_primary, random, RANDOM_SIZE))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 0)
++        || !TEST_true(EVP_RAND_nonce(fake_primary, random, RANDOM_SIZE))
++        || !TEST_uint_eq((uint) primary_reseed_count, 1)
++        || !TEST_uint_eq((uint) seed_reseed_count, 0)) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    aws_snapsafe_disable_test_mode_FOR_TESTING();
++    fake_rand_finish(fake_provider);
++    OSSL_LIB_CTX_free(fake_default_libctx);
++    OSSL_PROVIDER_unload(default_ctx_null);
++    fake_rand_enable_default_drbg_auto_reseed_behavior(0);
++    return ret;
++}
++
++#ifndef FIPS_MODULE
++
++static size_t test_engine_reseed_count = 0;
++static size_t test_engine_bytes_count = 0;
++static size_t test_engine_pseudo_bytes_count = 0;
++
++static void reset_snapsafe_engine_test_flags(void)
++{
++    test_engine_reseed_count = 0;
++    test_engine_bytes_count = 0;
++    test_engine_pseudo_bytes_count = 0;
++}
++
++static int snapsafe_test_engine_init(ENGINE *engine)
++{
++    return 1;
++}
++
++static int snapsafe_test_engine_status(void)
++{
++    return 1;
++}
++
++static int snapsafe_test_engine_add(const void *buf, int num, double entropy)
++{
++    test_engine_reseed_count = test_engine_reseed_count + 1;
++    return 1;
++}
++
++static int snapsafe_test_engine_bytes(unsigned char *buf, int num)
++{
++    test_engine_bytes_count = test_engine_bytes_count + 1;
++    return 1;
++}
++
++static int snapsafe_test_engine_pseudo_bytes(unsigned char *buf, int num)
++{
++    test_engine_pseudo_bytes_count = test_engine_pseudo_bytes_count + 1;
++    return 1;
++}
++
++RAND_METHOD snapsafe_test_engine_reseed_rand_method = {
++    .seed = NULL,
++    .bytes = snapsafe_test_engine_bytes,
++    .cleanup = NULL,
++    .add = snapsafe_test_engine_add,
++    .pseudorand = snapsafe_test_engine_pseudo_bytes,
++    .status = snapsafe_test_engine_status
++};
++
++
++static int snapsafe_test_engine_bytes_retry(unsigned char *buf, int num)
++{
++    aws_snapsafe_increment_sgn_FOR_TESTING();
++    test_engine_bytes_count = test_engine_bytes_count + 1;
++    return 1;
++}
++
++static int snapsafe_test_engine_pseudo_bytes_retry(unsigned char *buf, int num)
++{
++    aws_snapsafe_increment_sgn_FOR_TESTING();
++    test_engine_pseudo_bytes_count = test_engine_pseudo_bytes_count + 1;
++    return 1;
++}
++
++RAND_METHOD snapsafe_test_engine_retry_rand_method = {
++    .seed = NULL,
++    .bytes = snapsafe_test_engine_bytes_retry,
++    .cleanup = NULL,
++    .add = snapsafe_test_engine_add,
++    .pseudorand = snapsafe_test_engine_pseudo_bytes_retry,
++    .status = snapsafe_test_engine_status
++};
++
++static int create_rand_engine(char *id, RAND_METHOD *method, char *name)
++{
++
++    int ret = 0;
++
++    ENGINE *engine = ENGINE_new();
++    if (engine == NULL) {
++        goto err;
++    }
++    if (!TEST_true(ENGINE_set_id(engine, id))) {
++        goto err;
++    }
++    if (!TEST_true(ENGINE_set_name(engine, name))) {
++        goto err;
++    }
++    if (!TEST_true(ENGINE_set_flags(engine, ENGINE_FLAGS_NO_REGISTER_ALL))) {
++        goto err;
++    }
++    if (!TEST_true(ENGINE_set_init_function(engine, snapsafe_test_engine_init))) {
++        goto err;
++    }
++    if (!TEST_true(ENGINE_set_RAND(engine, method))) {
++        goto err;
++    }
++    if (!TEST_true(ENGINE_add(engine))) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    if (engine != NULL) {
++        ENGINE_free(engine);
++    }
++    return ret;
++}
++
++static int register_rand_engine(char *id)
++{
++
++    int ret = 0;
++
++    ENGINE *engine = ENGINE_by_id(id);
++    if (!TEST_ptr(engine)) {
++        goto err;
++    }
++    if (!TEST_true(ENGINE_init(engine))) {
++        goto err;
++    }
++
++    if (!TEST_true(ENGINE_set_default(engine, ENGINE_METHOD_RAND))) {
++        goto err;
++    }
++
++    if (ENGINE_get_default_RAND() != engine) {
++        goto err;
++    }
++
++    /* Override the globally cached method that RAND[_priv]_bytes_ex pull. */
++    if (!TEST_true(RAND_set_rand_method(ENGINE_get_RAND(engine)))) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    if (engine != NULL) {
++        ENGINE_free(engine);
++    }
++    return ret;
++}
++
++static void cleanup_rand_engine(char *id)
++{
++    ENGINE *engine = ENGINE_by_id(id);
++    if (engine != NULL) {
++        ENGINE_finish(engine);
++        ENGINE_free(engine);
++        ENGINE_cleanup();
++    }
++}
++
++#define SNAPSAFE_TEST_ENGINE_RESEED_ENGINE_ID "snapsafe_test_engine_reseed"
++#define SNAPSAFE_TEST_ENGINE_RETRY_ENGINE_ID "snapsafe_test_engine_retry"
++
++/* This test aims at testing the reseed logic for engines. Reseeding should
++ * happen if the sgn is different from the cached sgn and if randomness is
++ * requested through one of the public rand function. */
++static int engine_reseed_check(void)
++{
++    int ret = 0;
++    size_t expect_func_value_count = 0;
++    unsigned char buf[RANDOM_SIZE];
++    int kernel_support_snapsafe = aws_snapsafe_is_supported();
++
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_enable_test_mode_FOR_TESTING();
++    }
++
++    /* Mock the registered engine to count how many times each callback has been
++     * invoked. */
++    if (!TEST_true(create_rand_engine(SNAPSAFE_TEST_ENGINE_RESEED_ENGINE_ID,
++                        &snapsafe_test_engine_reseed_rand_method,
++                        "snapsafe reseeding test engine"))) {
++        goto err;
++    }
++    if (!TEST_true(register_rand_engine(SNAPSAFE_TEST_ENGINE_RESEED_ENGINE_ID))) {
++        goto err;
++    }
++
++   /* For F = {RAND_bytes(), RAND_bytes_ex(), RAND_pseudo_bytes(),
++     * RAND_priv_bytes(), RAND_priv_bytes_ex()}, we do:
++     * 1) cache sgn by calling F
++     * 2) increment sgn
++     * 3) reset test flags
++     * 4) call F
++     * 5) expect test flags to be incremented (flag depends on F)
++     * 6) call F
++     * 7) expect test flags to be incremented except add callback flag */
++    int (*rand_func[3])(unsigned char *, int) = {
++        RAND_bytes, RAND_priv_bytes, RAND_pseudo_bytes
++    };
++    for (size_t i = 0; i < 3; i++) {
++        if (!TEST_true(rand_func[i](buf, RANDOM_SIZE))) {
++            goto err;
++        }
++
++        reset_snapsafe_engine_test_flags();
++        if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++            || !TEST_true(rand_func[i](buf, RANDOM_SIZE))) {
++            goto err;
++        }
++
++        /* RAND_pseudy_bytes use a different callback than RAND[_priv]_bytes. */
++        if (rand_func[i] == RAND_pseudo_bytes) {
++            expect_func_value_count = test_engine_pseudo_bytes_count;
++
++        } else {
++            expect_func_value_count = test_engine_bytes_count;
++        }
++        if (!TEST_uint_eq(test_engine_reseed_count, 1)
++            || !TEST_uint_eq(expect_func_value_count, 1)) {
++            goto err;
++        }
++
++        /* Generating randomness without a resume event should not cause a
++         * reseed. */
++        if (!TEST_true(rand_func[i](buf, RANDOM_SIZE))) {
++            goto err;
++        }
++        if (rand_func[i] == RAND_pseudo_bytes) {
++            expect_func_value_count = test_engine_pseudo_bytes_count;
++        } else {
++            expect_func_value_count = test_engine_bytes_count;
++        }
++        if (!TEST_uint_eq(test_engine_reseed_count, 1)
++            || !TEST_uint_eq(expect_func_value_count, 2)) {
++            goto err;
++        }
++    }
++
++
++    int (*rand_func_ex[2])(OSSL_LIB_CTX *ctx, unsigned char *, size_t,
++            unsigned int) = {
++        RAND_bytes_ex, RAND_priv_bytes_ex
++    };
++    for (size_t i = 0; i < 2; i++) {
++        if (!TEST_true(rand_func_ex[i](NULL, buf, RANDOM_SIZE, 0))) {
++            goto err;
++        }
++
++        reset_snapsafe_engine_test_flags();
++        if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++            || !TEST_true(rand_func_ex[i](NULL, buf, RANDOM_SIZE, 0))) {
++            goto err;
++        }
++
++        if (!TEST_uint_eq(test_engine_reseed_count, 1)
++            || !TEST_uint_eq(test_engine_bytes_count, 1)) {
++            goto err;
++        }
++
++        /* Generating randomness without a resume event should not cause a
++         * reseed. */
++        if (!TEST_true(rand_func_ex[i](NULL, buf, RANDOM_SIZE, 0))
++            || !TEST_uint_eq(test_engine_reseed_count, 1)
++            || !TEST_uint_eq(test_engine_bytes_count, 2)) {
++            goto err;
++        }
++    }
++
++    ret = 1;
++err:
++    aws_snapsafe_disable_test_mode_FOR_TESTING();
++    cleanup_rand_engine(SNAPSAFE_TEST_ENGINE_RESEED_ENGINE_ID);
++    return ret;
++}
++
++/* This test aims at testing the reseed logic for engines. Reseeding should
++ * happen if the sgn is different from the cached sgn and if randomness is
++ * requested through one of the public rand function. */
++static int engine_retry_check(void)
++{
++    int ret = 0;
++    size_t expect_func_value_count = 0;
++    unsigned char buf[RANDOM_SIZE];
++    uint32_t *sgn = 0;
++    int kernel_support_snapsafe = aws_snapsafe_is_supported();
++
++    if (kernel_support_snapsafe != 1) {
++        aws_snapsafe_enable_test_mode_FOR_TESTING();
++    }
++
++    /* Mock the registered engine to count how many times each callback has been
++     * invoked. */
++    if (!TEST_true(create_rand_engine(SNAPSAFE_TEST_ENGINE_RETRY_ENGINE_ID,
++                        &snapsafe_test_engine_retry_rand_method,
++                        "snapsafe retry test engine"))) {
++        goto err;
++    }
++    if (!TEST_true(register_rand_engine(SNAPSAFE_TEST_ENGINE_RETRY_ENGINE_ID))) {
++        goto err;
++    }
++
++    /* For F = {RAND_bytes(), RAND_bytes_ex(), RAND_pseudo_bytes(),
++     * RAND_priv_bytes(), RAND_priv_bytes_ex()}, we do:
++     * 1) cache sgn by calling F
++     * 2) increment sgn
++     * 3) reset test flags
++     * 4) call F - each call will increment the sgn and thereby kickoff a retry
++     * 5) expect test flags to be incremented (flag depends on F) by
++     *    AWS_SNAPSAFE_DETECT_LIMIT and function to fail */
++    int (*rand_func[3])(unsigned char *, int) = {
++        RAND_bytes, RAND_priv_bytes, RAND_pseudo_bytes
++    };
++    for (size_t i = 0; i < 3; i++) {
++        /* The callback will retry until reaching the snapsafe retry limit. So,
++         * this should also fail. */
++        if (!TEST_false(rand_func[i](buf, RANDOM_SIZE))) {
++            goto err;
++        }
++
++        reset_snapsafe_engine_test_flags();
++        if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++            || !TEST_false(rand_func[i](buf, RANDOM_SIZE))) {
++            goto err;
++        }
++
++        /* RAND_pseudy_bytes use a different callback than RAND[_priv]_bytes. */
++        if (rand_func[i] == RAND_pseudo_bytes) {
++            expect_func_value_count = test_engine_pseudo_bytes_count;
++
++        } else {
++            expect_func_value_count = test_engine_bytes_count;
++        }
++        if (!TEST_uint_eq(test_engine_reseed_count, AWS_SNAPSAFE_DETECT_LIMIT)
++            || !TEST_uint_eq(expect_func_value_count, AWS_SNAPSAFE_DETECT_LIMIT)) {
++            goto err;
++        }
++    }
++
++    int (*rand_func_ex[2])(OSSL_LIB_CTX *ctx, unsigned char *, size_t,
++            unsigned int) = {
++        RAND_bytes_ex, RAND_priv_bytes_ex
++    };
++    for (size_t i = 0; i < 2; i++) {
++        if (!TEST_false(rand_func_ex[i](NULL, buf, RANDOM_SIZE, 0))) {
++            goto err;
++        }
++
++        reset_snapsafe_engine_test_flags();
++        if (!TEST_true(aws_snapsafe_increment_sgn_FOR_TESTING())
++            || !TEST_false(rand_func_ex[i](NULL, buf, RANDOM_SIZE, 0))) {
++            goto err;
++        }
++
++        if (!TEST_uint_eq(test_engine_reseed_count, AWS_SNAPSAFE_DETECT_LIMIT)
++            || !TEST_uint_eq(test_engine_bytes_count, AWS_SNAPSAFE_DETECT_LIMIT)) {
++            goto err;
++        }
++    }
++
++    ret = 1;
++err:
++    aws_snapsafe_disable_test_mode_FOR_TESTING();
++    cleanup_rand_engine(SNAPSAFE_TEST_ENGINE_RETRY_ENGINE_ID);
++    return ret;
++}
++
++#endif
++
++int setup_tests(void)
++{
++    ADD_TEST(basic_tests);
++    ADD_TEST(initial_values_evp_rand_ctx);
++    ADD_TEST(default_rand_code_path);
++    ADD_TEST(default_provider_reseed_check);
++    ADD_TEST(non_default_provider_reseed_check);
++    ADD_TEST(nonce_reseed_check);
++#ifndef FIPS_MODULE
++    ADD_TEST(engine_reseed_check);
++    ADD_TEST(engine_retry_check);
++#endif
++
++    return 1;
++}
+diff --git a/test/build.info b/test/build.info
+index 4e38577..e7b2857 100644
+--- a/test/build.info
++++ b/test/build.info
+@@ -33,7 +33,7 @@ IF[{- !$disabled{tests} -}]
+   PROGRAMS{noinst}= \
+           confdump \
+           versions \
+-          aborttest test_test pkcs12_format_test pkcs12_api_test \
++          aws_snapsafe_test aborttest test_test pkcs12_format_test pkcs12_api_test \
+           sanitytest time_test rsa_complex exdatatest bntest \
+           ecstresstest gmdifftest pbelutest \
+           destest mdc2test sha_test \
+@@ -68,6 +68,10 @@ IF[{- !$disabled{tests} -}]
+     PROGRAMS{noinst}=enginetest
+   ENDIF
+ 
++  SOURCE[aws_snapsafe_test]=aws_snapsafe_test.c
++  INCLUDE[aws_snapsafe_test]=../include ../apps/include
++  DEPEND[aws_snapsafe_test]=../libcrypto.a libtestutil.a
++
+   IF[{- !$disabled{quic} -}]
+     PROGRAMS{noinst}=priority_queue_test quicfaultstest quicapitest \
+                      quic_newcid_test quic_srt_gen_test \
+diff --git a/test/drbgtest.c b/test/drbgtest.c
+index b5122b6..2df8775 100644
+--- a/test/drbgtest.c
++++ b/test/drbgtest.c
+@@ -892,6 +892,40 @@ err:
+     return ret;
+ }
+ 
++static int test_rand_snapsafe_default_provider_type(void) {
++
++    int ret = 0;
++    EVP_RAND_CTX *primary, *public, *private;
++    unsigned char random[RANDOM_SIZE];
++
++    /* Make sure everything is initialised */
++    if (!TEST_true(RAND_bytes(random, RANDOM_SIZE))
++        || !TEST_true(RAND_priv_bytes(random, RANDOM_SIZE))) {
++        goto err;
++    }
++
++    /* Get default drbgs */
++    if (!TEST_ptr(primary = RAND_get0_primary(NULL))
++        || !TEST_ptr(public = RAND_get0_public(NULL))
++        || !TEST_ptr(private = RAND_get0_private(NULL))) {
++        goto err;
++    }
++
++    /* Verify that default implementations are tagged correctly */
++    if (!TEST_int_eq(primary->rand_provider_type, RAND_PROVIDER_DEFAULT_PRIMARY)
++        || !TEST_int_eq(public->rand_provider_type, RAND_PROVIDER_DEFAULT_SECONDARY)
++        || !TEST_int_eq(private->rand_provider_type, RAND_PROVIDER_DEFAULT_SECONDARY)
++        || !TEST_ptr(primary->parent)
++        || !TEST_int_eq(primary->parent->rand_provider_type, RAND_PROVIDER_DEFAULT_SEED)) {
++        goto err;
++    }
++
++    ret = 1;
++
++err:
++    return ret;
++}
++
+ int setup_tests(void)
+ {
+     ADD_TEST(test_rand_reseed);
+@@ -902,5 +936,6 @@ int setup_tests(void)
+ #if defined(OPENSSL_THREADS)
+     ADD_TEST(test_multi_thread);
+ #endif
++    ADD_TEST(test_rand_snapsafe_default_provider_type);
+     return 1;
+ }
+diff --git a/test/recipes/05-test_rand.t b/test/recipes/05-test_rand.t
+index 3f352db..ec83fe0 100644
+--- a/test/recipes/05-test_rand.t
++++ b/test/recipes/05-test_rand.t
+@@ -11,19 +11,20 @@ use strict;
+ use OpenSSL::Test::Utils;
+ use OpenSSL::Test qw/:DEFAULT srctop_file/;
+ 
+-plan tests => 6;
++plan tests => 7;
+ setup("test_rand");
+ 
+ ok(run(test(["rand_test", srctop_file("test", "default.cnf")])));
+ 
+ SKIP: {
+     skip "Skipping FIPS test in this build", 1 if disabled('fips');
+ 
+     ok(run(test(["rand_test", srctop_file("test", "fips.cnf")])));
+ }
+ 
+ ok(run(test(["drbgtest"])));
+ ok(run(test(["rand_status_test"])));
++ok(run(test(["aws_snapsafe_test"])));
+ 
+ SKIP: {
+     skip "engine is not supported by this OpenSSL build", 2
+diff --git a/test/testutil.h b/test/testutil.h
+index 443d01d..18569d9 100644
+--- a/test/testutil.h
++++ b/test/testutil.h
+@@ -614,6 +614,7 @@ void test_random_seed(uint32_t sd);
+ /* Fake non-secure random number generator */
+ typedef int fake_random_generate_cb(unsigned char *out, size_t outlen,
+     const char *name, EVP_RAND_CTX *ctx);
++typedef int fake_random_generate_cb_reseed(void);
+ 
+ OSSL_PROVIDER *fake_rand_start(OSSL_LIB_CTX *libctx);
+ void fake_rand_finish(OSSL_PROVIDER *p);
+@@ -623,6 +624,10 @@ void fake_rand_set_callback(EVP_RAND_CTX *ctx,
+ void fake_rand_set_public_private_callbacks(OSSL_LIB_CTX *libctx,
+     fake_random_generate_cb *cb);
+ 
++void fake_rand_enable_default_drbg_auto_reseed_behavior(int enable);
++void fake_rand_set_callback_reseed(EVP_RAND_CTX *rng,
++                            int (*cb)(void));
++
+ /* Create a file path from a directory and a filename */
+ char *test_mk_file_path(const char *dir, const char *file);
+ 
+diff --git a/test/testutil/fake_random.c b/test/testutil/fake_random.c
+index f2f0e27..2cbaf7b 100644
+--- a/test/testutil/fake_random.c
++++ b/test/testutil/fake_random.c
+@@ -18,6 +18,9 @@
+ 
+ typedef struct {
+     fake_random_generate_cb *cb;
++    fake_random_generate_cb_reseed *cb_reseed;
++    int parent_reseed_counter;
++    int reseed_counter;
+     int state;
+     const char *name;
+     EVP_RAND_CTX *ctx;
+@@ -28,10 +31,13 @@ static OSSL_FUNC_rand_freectx_fn fake_rand_freectx;
+ static OSSL_FUNC_rand_instantiate_fn fake_rand_instantiate;
+ static OSSL_FUNC_rand_uninstantiate_fn fake_rand_uninstantiate;
+ static OSSL_FUNC_rand_generate_fn fake_rand_generate;
++static OSSL_FUNC_rand_reseed_fn fake_rand_reseed;
+ static OSSL_FUNC_rand_gettable_ctx_params_fn fake_rand_gettable_ctx_params;
+ static OSSL_FUNC_rand_get_ctx_params_fn fake_rand_get_ctx_params;
+ static OSSL_FUNC_rand_enable_locking_fn fake_rand_enable_locking;
+ 
++__thread int enable_default_drbg_auto_reseed = 0;
++
+ static void *fake_rand_newctx(void *provctx, void *parent,
+     const OSSL_DISPATCH *parent_dispatch)
+ {
+@@ -56,6 +62,8 @@ static int fake_rand_instantiate(void *vrng, ossl_unused unsigned int strength,
+     FAKE_RAND *frng = (FAKE_RAND *)vrng;
+ 
+     frng->state = EVP_RAND_STATE_READY;
++    frng->parent_reseed_counter = 0;
++    frng->reseed_counter = 0;
+     return 1;
+ }
+ 
+@@ -75,6 +83,18 @@ static int fake_rand_generate(void *vrng, unsigned char *out, size_t outlen,
+     size_t l;
+     uint32_t r;
+ 
++    if (enable_default_drbg_auto_reseed == 1) {
++        /* The default DRBG implementation automatically reseed secondaries if
++         * the primary has been reseeded. */
++        FAKE_RAND *parent_rng = (FAKE_RAND *) frng->ctx->parent->algctx;
++        if (parent_rng->reseed_counter != frng->parent_reseed_counter) {
++            if (EVP_RAND_reseed(frng->ctx, 0, NULL, 0, NULL, 0) != 1) {
++                return 0;
++            }
++            frng->parent_reseed_counter = parent_rng->reseed_counter;
++        }
++    }
++
+     if (frng->cb != NULL)
+         return (*frng->cb)(out, outlen, frng->name, frng->ctx);
+     while (outlen > 0) {
+@@ -85,6 +105,42 @@ static int fake_rand_generate(void *vrng, unsigned char *out, size_t outlen,
+         out += l;
+         outlen -= l;
+     }
++
++    return 1;
++}
++
++static int fake_rand_reseed(ossl_unused void *vrng,
++                            ossl_unused int prediction_resistance,
++                            ossl_unused const unsigned char *entropy,
++                            ossl_unused size_t entropylen,
++                            ossl_unused const unsigned char *adin,
++                            ossl_unused size_t adinlen)
++{
++    FAKE_RAND *frng = (FAKE_RAND *)vrng;
++    frng->reseed_counter = frng->reseed_counter + 1;
++    if (frng->cb_reseed != NULL)
++        return (*frng->cb_reseed)();
++
++    return 1;
++}
++
++static int fake_rand_nonce(ossl_unused void *vrng, unsigned char *out,
++                            ossl_unused unsigned int strength,
++                            ossl_unused size_t min_noncelen,
++                            size_t max_noncelen)
++{
++    size_t l;
++    uint32_t r;
++
++    while (max_noncelen > 0) {
++        r = test_random();
++        l = max_noncelen < sizeof(r) ? max_noncelen : sizeof(r);
++
++        memcpy(out, &r, l);
++        out += l;
++        max_noncelen -= l;
++    }
++
+     return 1;
+ }
+ 
+@@ -130,6 +186,8 @@ static const OSSL_DISPATCH fake_rand_functions[] = {
+     { OSSL_FUNC_RAND_INSTANTIATE, (void (*)(void))fake_rand_instantiate },
+     { OSSL_FUNC_RAND_UNINSTANTIATE, (void (*)(void))fake_rand_uninstantiate },
+     { OSSL_FUNC_RAND_GENERATE, (void (*)(void))fake_rand_generate },
++    { OSSL_FUNC_RAND_RESEED, (void (*)(void))fake_rand_reseed },
++    { OSSL_FUNC_RAND_NONCE, (void (*)(void))fake_rand_nonce },
+     { OSSL_FUNC_RAND_ENABLE_LOCKING, (void (*)(void))fake_rand_enable_locking },
+     { OSSL_FUNC_RAND_GETTABLE_CTX_PARAMS,
+         (void (*)(void))fake_rand_gettable_ctx_params },
+@@ -192,6 +250,7 @@ OSSL_PROVIDER *fake_rand_start(OSSL_LIB_CTX *libctx)
+     if (!TEST_true(OSSL_PROVIDER_add_builtin(libctx, "fake-rand",
+             fake_rand_provider_init))
+         || !TEST_true(RAND_set_DRBG_type(libctx, "fake", NULL, NULL, NULL))
++        || !TEST_true(RAND_set_seed_source_type(libctx, "fake", NULL))
+         || !TEST_ptr(p = OSSL_PROVIDER_try_load(libctx, "fake-rand", 1)))
+         return NULL;
+ 
+@@ -219,6 +278,14 @@ void fake_rand_set_callback(EVP_RAND_CTX *rng,
+         ((FAKE_RAND *)rng->algctx)->cb = cb;
+ }
+ 
++void fake_rand_set_callback_reseed(EVP_RAND_CTX *rng,
++                            int (*cb)(void))
++{
++    if (rng != NULL) {
++        ((FAKE_RAND *)rng->algctx)->cb_reseed = cb;
++    }
++}
++
+ void fake_rand_set_public_private_callbacks(OSSL_LIB_CTX *libctx,
+     int (*cb)(unsigned char *out,
+         size_t outlen,
+@@ -229,3 +296,11 @@ void fake_rand_set_public_private_callbacks(OSSL_LIB_CTX *libctx,
+     fake_rand_set_callback(RAND_get0_private(libctx), cb);
+     fake_rand_set_callback(RAND_get0_public(libctx), cb);
+ }
++
++/* Enables the default drbg implementation behavior: the public and private
++ * instances will automatically reseed if the primary has reseeded. */
++void fake_rand_enable_default_drbg_auto_reseed_behavior(int enable)
++{
++    enable_default_drbg_auto_reseed = enable;
++}
++

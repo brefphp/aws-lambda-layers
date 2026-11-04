@@ -2,7 +2,7 @@ name: Tests
 
 on:
     push:
-        branches: [ 'main', '2.x', 'v3' ]
+        branches: [ 'main', 'v3', 'v4' ]
     pull_request:
         branches: [ '*' ]
 
@@ -24,22 +24,22 @@ jobs:
                 with:
                     script: |
                         const matrix = {
-                            cpu: ['x86', 'arm'],
-                            php_version: ['82', '83', '84', '85'],
+                            platform: ['linux/amd64', 'linux/arm64'],
+                            php_version: ['83', '84', '85'],
                         }
                         
                         // If this is a third-party pull request, skip ARM builds
                         if (context.eventName === 'pull_request') {
                             const pr = context.payload.pull_request
                             if (pr.head.repo.full_name !== pr.base.repo.full_name) {
-                                matrix.cpu = ['x86']
+                                matrix.platform = ['linux/amd64']
                             }
                         }
                         
                         return matrix
 
     tests:
-        name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.cpu }}
+        name: Build and tests PHP ${{ matrix.php_version }}, ${{ matrix.platform }}
         runs-on: ubuntu-24.04
         needs: matrix-prep
         timeout-minutes: 45
@@ -65,19 +65,10 @@ jobs:
                     # If this is a third-party pull request, fall back to the local buildx builder
                     buildx-fallback: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
                 env:
-                    CPU: ${{ matrix.cpu }}
-                    CPU_PREFIX: ${{ (matrix.cpu == 'arm') && 'arm-' || '' }}
                     PHP_VERSION: ${{ matrix.php_version }}
-                    IMAGE_VERSION_SUFFIX: ${{ (matrix.cpu == 'arm') && 'arm64' || 'x86_64' }}
-                    DOCKER_PLATFORM: ${{ (matrix.cpu == 'arm') && 'linux/arm64' || 'linux/amd64' }}
-
-            -   name: Test that layers can be exported
-                run: |
-                    make layer-php-${{ matrix.php_version }}
-                env:
-                    CPU: ${{ matrix.cpu }}
+                    DOCKER_PLATFORM: ${{ matrix.platform }}
 
             -   name: Run tests
                 run: make test-${{ matrix.php_version }}
                 env:
-                    CPU: ${{ matrix.cpu }}
+                    DOCKER_PLATFORM: ${{ matrix.platform }}

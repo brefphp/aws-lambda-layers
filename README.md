@@ -1,4 +1,4 @@
-# PHP layers for AWS Lambda
+# PHP runtimes for AWS Lambda
 
 ⚠️⚠️⚠️
 
@@ -9,7 +9,7 @@ If you are new to PHP on Lambda or Bref, **check out [bref.sh](https://bref.sh) 
 
 ⚠️⚠️⚠️
 
-This project is a low-level internal piece of the Bref project. It contains the scripts to build the AWS Lambda layers and Docker images.
+This project is a low-level internal piece of the Bref project. It contains the scripts to build the Bref runtime images: PHP, its extensions and configuration, and Bref's bootstrap, for each supported PHP version.
 
 ---
 
@@ -19,37 +19,32 @@ Thank you for diving into this very complex part of Bref.
 
 If you are submitting a pull request to this repository, you probably want to test your changes:
 
-1. Build the Docker images and the Lambda layers (zip files) locally (to make sure it works).
+1. Build the Docker images locally (to make sure it works).
 2. Run the test scripts.
-3. Publish the Lambda layers to your AWS account and test them in a real Lambda.
 
-**For minor changes** (e.g. upgrading a version) it is faster and easier to open a pull request. The layers will be built faster in CI and the test results will be available in a few minutes.
+**For minor changes** (e.g. upgrading a version) it is faster and easier to open a pull request. The images will be built faster in CI and the test results will be available in a few minutes.
 
 ### Requirements
 
 - `make`
-- `zip`
 - Docker
-- AWS CLI (if publishing layers)
-- AWS credentials set up locally (if publishing layers)
 
 ### Building
 
-> **Warning:**
->
-> On macOS, do not enable [the experimental Rosetta emulation](https://docs.docker.com/desktop/release-notes/#4160). This causes a Segmentation Fault when running `php-fpm` in the Docker images (as of January 2023, this may have been fixed since).
-
-You can build Docker images and Lambda layers locally:
+Build the images of every PHP version for your machine's architecture:
 
 ```sh
-# Make x86 layers (the default)
 make
-
-# Make ARM layers
-make CPU=arm
 ```
 
-It will create the Docker images on your machine, and generate the Lambda layer zip files in `./output`. It takes some time to build the Docker images (especially to build the images on the other platform, e.g. the ARM images if you are on an Intel processor).
+Or one PHP version, or another architecture (emulated, much slower):
+
+```sh
+make docker-images-php-85
+make docker-images-php-85 DOCKER_PLATFORM=linux/amd64
+```
+
+PHP versions and their exact release are listed in `docker-bake.hcl`.
 
 ### Testing
 
@@ -57,136 +52,88 @@ After building the images, run the automated tests:
 
 ```sh
 make test
-# and/or
-make test CPU=arm
+# or
+make test-85
 ```
 
 > **Note**
-> If automated tests fail, you can test layers manually using Docker. Check out [the README in `tests/`](tests/README.md).
-
-### Uploading layers
-
-You can build everything _and_ upload Lambda layers to your AWS account. You will need to set up local AWS credentials. The following environment variables are recognized:
-
-- `AWS_PROFILE` (optional): an AWS profile to use (instead of the default one).
-- `ONLY_REGION` (optional): if set, layers will only be published to this region, instead of _all_ regions (useful for testing).
-
-You can set those by creating a `.env` file:
-
-```sh
-cp .env.example .env 
-
-# Now edit the .env file
-
-# Then build layers:
-make
-make CPU=arm
-
-# Then publish layers:
-make upload-layers
-make upload-layers CPU=arm
-```
-
-The published Lambda layers will be public (they are readonly anyway). You can find them in your AWS console (AWS Lambda service). Feel free to delete them afterwards.
+> If automated tests fail, you can test the images manually using Docker. Check out [the README in `tests/`](tests/README.md).
 
 ### Debugging
 
-If you ever need to check out the content of a layer, you can start a `bash` terminal inside the Docker image:
+You can start a `bash` terminal inside an image:
 
 ```sh
-docker run --rm -it --entrypoint=bash bref/php-84
+docker run --rm -it --entrypoint=bash bref/php-85
 ```
-
-> **Note:**
-> 
-> `ldd` is a linux utility that will show libraries (`.so` files) used by a binary/library. For example: `ldd /opt/bin/php` or `ldd /opt/bref/extensions/curl.so`. That helps to make sure we include all the libraries needed by PHP extensions in the layers.
-> 
-> However, `ldd` fails when running on another CPU architecture. So instead of `ldd`, we can use `LD_TRACE_LOADED_OBJECTS=1 /opt/bin/php` (see https://stackoverflow.com/a/35905007/245552).
 
 ### Supporting a new PHP version
 
-The general idea is to copy `php-82` into `php-83`. Search/replace `php-82` with `php-83`, update the PHP version, update the `Makefile`, and adapt anything else if needed.
-
-### Supporting new regions
-
-Check out `utils/lambda-publish/Makefile` to add more regions.
+Add it to `VERSIONS` in `docker-bake.hcl`, to the lists in `Makefile`, `tests/Makefile` and the GitHub workflows.
 
 ## How this repository works
 
 ### Repository workflow
 
 1. A PR is opened on this repository.
-    - GitHub Actions will build the layers and test them (but not publish them).
+    - GitHub Actions will build the images and test them (but not publish them).
 2. The PR is merged by a Bref maintainer.
 3. A new release is tagged by a Bref maintainer.
-4. GitHub Actions will build the layers, test them, and publish the layers and Docker images.
-5. The "update layer versions" job in [brefphp/bref](https://github.com/brefphp/bref) will be triggered automatically.
-    - A pull request will be opened with an updated `layers.json` file.
-    - A Bref maintainer can then merge the PR and manually release a new Bref version.
-6. The "update layer versions and release" job in [brefphp/layers.js](https://github.com/brefphp/layers.js) will be triggered automatically.
-    - The `layers.json` file will be updated with new layer versions.
-    - A new GitHub tag and release will be created.
-    - A new release of the `@bref.sh/layers` NPM package will be published.
+4. GitHub Actions will build the images for both architectures, test them, and publish multi-architecture images to Docker Hub.
 
-### How Lambda layers work?
+### The images
 
-In a nutshell, a Lambda Layer is a `zip` file. Its content is extracted to `/opt` when a Lambda starts.
+One `Dockerfile` builds every PHP version (`PHP_VERSION` and `VERSION_PHP` come from `docker-bake.hcl`), for `linux/amd64` and `linux/arm64`:
 
-Anything we want to make available in AWS Lambda is possible by preparing the right files and packing them into a layer. To work properly, these files need to be compatible with the Lambda environment. AWS provides Docker images (e.g. `public.ecr.aws/lambda/provided:al2-x86_64`) that replicate it.
+- `bref/php-XX`: the runtime image.
+- `bref/php-XX-dev`: the same with xdebug, Composer and a local API Gateway, for local development.
+- `bref/build-php-XX`: the build environment, to compile extra PHP extensions against the same PHP.
 
-### Lambda layers structure
+The `Dockerfile` reads top-down:
+
+1. On Ubuntu, compile OpenSSL (with Amazon Linux's SnapSafe patch, see below), then PHP with `-O2`.
+   Extensions enabled by default are compiled statically, optional ones as shared extensions.
+2. Start again from a clean Ubuntu with only the libraries PHP needs at runtime, copy PHP, its
+   configuration and Bref's bootstrap.
+
+### Runtime image structure
 
 ```sh
-/opt/ # where layers are unzipped/can add files
+/usr/local/bin/php
+/usr/local/sbin/php-fpm
+/usr/local/lib/php/extensions/ # optional extensions (not enabled), `extension_dir`
 
-    bin/ # where layers can add binaries
-        php # the PHP binary
-        php-fpm # the PHP-FPM binary (only for FPM layers)
-
-    lib/ # system libraries needed by Bref
-
-    bref/ # custom Bref files
-        extensions/ # PHP extensions
-            ...
-        etc/php/conf.d/ # automatically loaded php.ini files
-            bref.ini
-
-    bootstrap # entrypoint of the runtime
+/etc/php/
+    conf.d/ # php.ini files loaded automatically (Bref's settings)
+    php-fpm.conf
 
 /var/runtime/
-    bootstrap # duplicated entrypoint, used when running in Docker
+    bootstrap # entrypoint of the runtime: starts Bref's runtime (bootstrap.php)
+    bootstrap.php
 
 /var/task # the code of the Lambda function
     php/conf.d/ # also automatically loaded php.ini files
+
+/opt # empty: Lambda layers are mounted here, and would hide anything else
+    bref/etc/php/conf.d/ # php.ini files of extension layers, loaded automatically
 ```
 
-In the "build" Docker images (used by example to build extra extensions), there is a `/bref/lib-copy/copy-dependencies.php` script that helps automatically copying the system dependencies of a binary or PHP extension. It can be used like so:
-
-```sh
-php /bref/lib-copy/copy-dependencies.php /opt/bref/extensions/apcu.so /opt/lib
-```
-
-In Bref v1, we used to manually identify (via `ldd`) and copy these system libraries, but this new script automates everything. It is recommended to use it.
-
-### The php-xx folders
-
-The Dockerfile attempts at a best-effort to follow a top-down execution process for easier reading.
-
-It starts from an AWS-provided Docker image and compiles the system libraries that we will need to use to compile PHP (the PHP build requires more recent version than what `yum install` provides, so we need to compile them, which is slow.
-
-Then, PHP is compiled. All the compilation happens in `/tmp`.
-
-We then copy the PHP binary in `/opt/bin` and all PHP extensions in `/opt/...`. Indeed, `/opt` is the target directory of AWS Lambda layers.
-
-Then, we need to copy to `/opt` all the system libraries (`*.so` files) used by PHP and the extensions. To do so, we have a script that parses all the system dependencies of `/opt/bin/php` and extensions, and automatically copies them to `/opt/lib` (a directory automatically scanned by AWS Lambda).
-
-Finally, for each layer, we re-start from scratch from the empty AWS Lambda Docker images (using `FROM`, i.e. multi-stage builds) and we copy `/opt`. That gives us an "empty" Docker images with only `/opt` populated, just like on AWS Lambda when the PHP layers are unzipped.
-
-That will also let us zip `/opt` to create the layers.
+The image must contain `/var/task` and `/etc/hosts`: Lambda mounts the code on the first and rewrites the second at startup. Without them, the execution environment never starts (no logs, only an "insufficient capacity" error).
 
 ## Design decisions log
 
-### Installing PHP from a distribution
+### Bref v4: PHP compiled on Ubuntu
+
+Bref v3 compiled PHP on Amazon Linux 2023 into `/opt` and shipped it as Lambda layers (zip files, limited to 250 MB). Bref v4 ships runtime images, measured against alternatives on real Lambda in 2026:
+
+- **The base OS does not change performance**: the same PHP build on Amazon Linux 2023, Ubuntu 24.04, Ubuntu 26.04 and Debian 13 shows no measurable difference on cold starts, warm requests or CPU. Ubuntu 26.04 LTS was chosen for its up-to-date libraries (ICU 78, libxml2 2.15, ImageMagick 7, OpenSSL 3.5, gcc 15), apt packages for almost any extension dependency, familiarity, and support until 2031. Amazon Linux 2023's libraries are older (ICU 67, libxml2 2.10, SQLite 3.40 that Bref v3 had to recompile).
+- **PHP is compiled, not installed from packages** (e.g. Ondřej Surý's PPA): packaged `php` and `php-fpm` are separate builds that cannot share opcache's file cache, which made every Laravel cold start ~420 ms slower; their shared extensions are loaded at every PHP start; we cannot choose the compilation flags; and security releases can take longer to be packaged.
+- **`-O2` instead of `-Os`**: layers had a size limit, images do not. PHP code runs 16-18% faster for 1 MB more.
+- **Optional extensions installed but not enabled**: Lambda loads images lazily, so installed-but-unused extensions cost nothing measurable at cold start.
+- **OpenSSL with Amazon Linux's SnapSafe patch**: with SnapStart, execution environments restored from the same snapshot would otherwise generate the same random bytes with OpenSSL (verified on Lambda). The patch (`src/openssl-snapsafe.patch`, Apache-2.0) reseeds OpenSSL when Lambda's `/dev/sysgenid` counter changes. It applies cleanly to upstream OpenSSL 3.5.
+
+
+### Bref v1-v3: installing PHP from a distribution
 
 #### First iteration
 
