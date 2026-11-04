@@ -17,6 +17,8 @@ variable "VERSIONS" {
         "83" = "8.3.36"
         "84" = "8.4.27"
         "85" = "8.5.12"
+        # Release candidate: final release planned for late November 2026
+        "86" = "8.6.0RC5"
     }
 }
 

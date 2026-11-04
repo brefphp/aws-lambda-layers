@@ -19,7 +19,7 @@ jobs:
         strategy:
             matrix:
                 platform: [ 'linux/amd64', 'linux/arm64' ]
-                php_version: [ '83', '84', '85' ]
+                php_version: [ '83', '84', '85', '86' ]
         steps:
             -   uses: actions/checkout@v6
 
@@ -46,7 +46,7 @@ jobs:
         timeout-minutes: 60
         strategy:
             matrix:
-                php_version: [ '83', '84', '85' ]
+                php_version: [ '83', '84', '85', '86' ]
         steps:
             -   uses: actions/checkout@v6
 
