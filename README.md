@@ -91,7 +91,7 @@ One `Dockerfile` builds every PHP version (`PHP_VERSION` and `VERSION_PHP` come 
 
 The `Dockerfile` reads top-down:
 
-1. On Ubuntu, compile OpenSSL (with Amazon Linux's SnapSafe patch, see below), then PHP with `-O2`.
+1. On Ubuntu, compile PHP with `-O2`.
    Extensions enabled by default are compiled statically, optional ones as shared extensions.
 2. Start again from a clean Ubuntu with only the libraries PHP needs at runtime, copy PHP, its
    configuration and Bref's bootstrap.
@@ -130,7 +130,6 @@ Bref v3 compiled PHP on Amazon Linux 2023 into `/opt` and shipped it as Lambda l
 - **PHP is compiled, not installed from packages** (e.g. Ondřej Surý's PPA): packaged `php` and `php-fpm` are separate builds that cannot share opcache's file cache, which made every Laravel cold start ~420 ms slower; their shared extensions are loaded at every PHP start; we cannot choose the compilation flags; and security releases can take longer to be packaged.
 - **`-O2` instead of `-Os`**: layers had a size limit, images do not. PHP code runs 16-18% faster for 1 MB more.
 - **Optional extensions installed but not enabled**: Lambda loads images lazily, so installed-but-unused extensions cost nothing measurable at cold start.
-- **OpenSSL with Amazon Linux's SnapSafe patch**: with SnapStart, execution environments restored from the same snapshot would otherwise generate the same random bytes with OpenSSL (verified on Lambda). The patch (`src/openssl-snapsafe.patch`, Apache-2.0) reseeds OpenSSL when Lambda's `/dev/sysgenid` counter changes. It applies cleanly to upstream OpenSSL 3.5.
 
 
 ### Bref v1-v3: installing PHP from a distribution
