@@ -12,8 +12,6 @@
 ARG PHP_VERSION
 # e.g. "8.5.12", https://www.php.net/downloads
 ARG VERSION_PHP
-# OpenSSL LTS, https://openssl-library.org/source/
-ARG VERSION_OPENSSL=3.5.8
 
 
 # Lambda's entrypoint and Runtime Interface Emulator (to run the image locally)
@@ -51,6 +49,7 @@ RUN set -xe; \
         libreadline-dev \
         libsodium-dev \
         libsqlite3-dev \
+        libssl-dev \
         libxml2-dev \
         libxslt1-dev \
         libzip-dev \
@@ -59,29 +58,6 @@ RUN set -xe; \
 # Enable parallelism by default for make and cmake (like make -j)
 ENV CMAKE_BUILD_PARALLEL_LEVEL=4
 ENV MAKEFLAGS='-j4'
-
-
-# OpenSSL
-# Built with the SnapSafe patch that Amazon Linux applies to its `openssl-snapsafe-libs` package:
-# with Lambda SnapStart, every execution environment restored from the same snapshot would
-# otherwise share the state of OpenSSL's random generator (and generate the same "random" bytes).
-# The patch reseeds it when the generation counter of Lambda's `/dev/sysgenid` device changes.
-# Without that device (no SnapStart), OpenSSL behaves as usual.
-# It replaces the system library (same soname and ABI) so that curl, libpq... use it too.
-ARG VERSION_OPENSSL
-COPY --link src/openssl-snapsafe.patch /tmp/openssl-snapsafe.patch
-RUN set -xe; \
-    mkdir -p /tmp/openssl; \
-    cd /tmp/openssl; \
-    curl --location --silent --show-error --fail --retry 3 "https://github.com/openssl/openssl/releases/download/openssl-${VERSION_OPENSSL}/openssl-${VERSION_OPENSSL}.tar.gz" \
-        | tar xzC . --strip-components=1; \
-    patch -p1 < /tmp/openssl-snapsafe.patch; \
-    ./Configure --prefix=/usr/local --libdir=lib --openssldir=/usr/lib/ssl shared no-tests -O2; \
-    make; \
-    make install_sw; \
-    ldconfig; \
-    cd /; \
-    rm -rf /tmp/openssl
 
 
 # PHP
@@ -117,7 +93,6 @@ RUN ./buildconf --force
 RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -ffunction-sections -fdata-sections" \
     CPPFLAGS="-fstack-protector-strong -fpic -fpie -O2 -ffunction-sections -fdata-sections" \
     LDFLAGS="-Wl,-O1 -Wl,--strip-all -Wl,--hash-style=both -pie" \
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig \
     ./configure \
         --prefix=/usr/local \
         --enable-option-checking=fatal \
@@ -200,14 +175,8 @@ RUN set -xe; \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /usr/share/doc/* /usr/share/man/*; \
     chmod 1777 /tmp
 
-# OpenSSL with the SnapSafe patch, over the system one
-COPY --link --from=build-environment /usr/local/lib/libssl.so.3 /usr/local/lib/libcrypto.so.3 /usr/local/lib/snapsafe-openssl/
 RUN set -xe; \
-    system_lib_dir="$(dirname "$(ldconfig -p | awk '/libcrypto.so.3 /{print $NF; exit}')")"; \
-    mv /usr/local/lib/snapsafe-openssl/libssl.so.3 /usr/local/lib/snapsafe-openssl/libcrypto.so.3 "$system_lib_dir/"; \
-    rmdir /usr/local/lib/snapsafe-openssl; \
-    ldconfig; \
-    # Certificates: Ubuntu's bundle where this OpenSSL looks for it (OPENSSLDIR), and where Bref v3 (Amazon Linux) had it
+    # Certificates: Ubuntu's bundle where OpenSSL looks for it (OPENSSLDIR), and where Bref v3 (Amazon Linux) had it
     mkdir -p /usr/lib/ssl /etc/pki/tls; \
     ln -sf /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem; \
     [ -e /usr/lib/ssl/certs ] || ln -s /etc/ssl/certs /usr/lib/ssl/certs; \
