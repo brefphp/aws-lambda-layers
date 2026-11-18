@@ -82,8 +82,7 @@ RUN if [ -f "/tmp/cli-fpm/php-${PHP_VERSION}.patch" ]; then patch -p1 < "/tmp/cl
 # -fstack-protector-strong : Be paranoid about stack overflows
 # -fpic : Make PHP's main executable position-independent (improves ASLR security mechanism, and has no performance impact on x86_64)
 # -fpie : Support Address Space Layout Randomization (see -fpic)
-# -O2 : Optimize for speed. Bref v3 used -Os because Lambda layers are limited in size,
-#       -O2 makes PHP code run 16-18% faster for 1 MB more.
+# -O2 : Optimal configuration for AWS Lambda.
 # --enable-option-checking=fatal: make sure invalid --configure-flags are fatal errors instead of just warnings
 # --enable-ftp: because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
 # --with-zlib: See https://stackoverflow.com/a/42978649/245552
