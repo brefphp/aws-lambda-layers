@@ -91,9 +91,6 @@ $extensions = [
     'curl-openssl-certificates-location' => openssl_get_cert_locations()['default_cert_file'] === '/usr/lib/ssl/cert.pem',
     // The location in Bref v3 (Amazon Linux) still works
     'curl-openssl-certificates-v3-location' => file_exists('/etc/pki/tls/cert.pem'),
-    // PHP and curl use the same OpenSSL: Bref's build with the SnapSafe patch, not Ubuntu's
-    'openssl-snapsafe' => str_starts_with(OPENSSL_VERSION_TEXT, 'OpenSSL 3.5.')
-        && curl_version()['ssl_version'] === 'OpenSSL/' . explode(' ', OPENSSL_VERSION_TEXT)[1],
     'openssl' => (function() {
         $private_key = openssl_pkey_new(['private_key_bits' => 2048]);
         if ($private_key === false) {
