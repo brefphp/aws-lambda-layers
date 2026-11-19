@@ -14,9 +14,9 @@ variable "DOCKER_PLATFORM" {
 # Supported PHP versions: https://www.php.net/downloads
 variable "VERSIONS" {
     default = {
-        "83" = "8.3.36"
-        "84" = "8.4.27"
-        "85" = "8.5.12"
+        "83" = "8.3.37"
+        "84" = "8.4.28"
+        "85" = "8.5.13"
     }
 }
 
