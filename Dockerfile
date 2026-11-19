@@ -67,8 +67,13 @@ ENV MAKEFLAGS='-j4'
 # --fail makes sure that curl returns an error instead of fetching the 404 page
 ARG VERSION_PHP
 WORKDIR /tmp/php
-RUN curl --location --silent --show-error --fail --retry 3 "https://www.php.net/distributions/php-${VERSION_PHP}.tar.gz" \
-    | tar xzC . --strip-components=1
+# Pre-releases (alpha, beta, RC) are not on php.net/distributions: take the tag's source from GitHub
+# (without the generated files, which `buildconf` below generates)
+RUN case "${VERSION_PHP}" in \
+        *alpha*|*beta*|*RC*) url="https://github.com/php/php-src/archive/refs/tags/php-${VERSION_PHP}.tar.gz" ;; \
+        *) url="https://www.php.net/distributions/php-${VERSION_PHP}.tar.gz" ;; \
+    esac; \
+    curl --location --silent --show-error --fail --retry 3 "$url" | tar xzC . --strip-components=1
 
 # One binary for php and php-fpm: `php` runs FPM when invoked as `php-fpm` (--enable-cli-fpm,
 # https://github.com/php/php-src/pull/23558, not in PHP yet). FPM then maps the file that the CLI
@@ -136,8 +141,24 @@ RUN set -xe; \
     if [ -f "/tmp/cli-fpm/php-${PHP_VERSION}.patch" ]; then ln -sf ../bin/php /usr/local/sbin/php-fpm; fi
 
 # Optional extensions installed with `pecl`, not enabled by default
-RUN pecl install APCu
-RUN pecl install redis-6.3.0
+# APCu's latest release (5.1.28) does not compile with PHP 8.6: use its main branch (pinned) until 5.1.29
+RUN if [ "${PHP_VERSION}" -ge 86 ]; then \
+        mkdir -p /tmp/apcu && cd /tmp/apcu \
+        && curl --location --silent --show-error --fail --retry 3 https://github.com/krakjoe/apcu/archive/fb2c942552a3f5dab7f4dea4afb5cf0831222c57.tar.gz \
+            | tar xzC . --strip-components=1 \
+        && phpize && ./configure && make && make install && cd / && rm -rf /tmp/apcu; \
+    else \
+        pecl install APCu; \
+    fi
+# phpredis' latest release (6.3.0) does not compile with PHP 8.6: use its develop branch (pinned) until the next release
+RUN if [ "${PHP_VERSION}" -ge 86 ]; then \
+        mkdir -p /tmp/redis && cd /tmp/redis \
+        && curl --location --silent --show-error --fail --retry 3 https://github.com/phpredis/phpredis/archive/959dee1ca9ed55500cf90365419f8232eca3a99c.tar.gz \
+            | tar xzC . --strip-components=1 \
+        && phpize && ./configure && make && make install && cd / && rm -rf /tmp/redis; \
+    else \
+        pecl install redis-6.3.0; \
+    fi
 
 # Gather all extensions in one directory, independent of PHP's internal API version
 RUN set -xe; \
@@ -220,7 +241,17 @@ FROM build-environment AS build-php
 # Build the dev image with xdebug
 FROM build-environment AS build-dev
 
-RUN pecl install xdebug-3.5.0 && cp "$(php -r 'echo ini_get("extension_dir");')"/xdebug.so /tmp/xdebug.so
+ARG PHP_VERSION
+# xdebug's latest release (3.5.3) supports PHP up to 8.5: use its main branch (pinned) for PHP 8.6
+RUN if [ "${PHP_VERSION}" -ge 86 ]; then \
+        mkdir -p /tmp/xdebug && cd /tmp/xdebug \
+        && curl --location --silent --show-error --fail --retry 3 https://github.com/xdebug/xdebug/archive/64007df3a0925808022fb87b6c6f06febf058ee2.tar.gz \
+            | tar xzC . --strip-components=1 \
+        && phpize && ./configure --enable-xdebug && make && make install && cd / && rm -rf /tmp/xdebug; \
+    else \
+        pecl install xdebug-3.5.0; \
+    fi; \
+    cp "$(php -r 'echo ini_get("extension_dir");')"/xdebug.so /tmp/xdebug.so
 
 
 FROM php AS dev
