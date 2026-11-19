@@ -1,6 +1,6 @@
-This directory lets you test Lambda layers using Docker, either automatically or manually.
+This directory lets you test the runtime images using Docker, either automatically or manually.
 
-**First, build the layers.**
+**First, build the images.**
 
 Then, run the automated tests:
 
@@ -8,7 +8,7 @@ Then, run the automated tests:
 make test
 ```
 
-To test the layers manually (for example to troubleshoot something), start the containers:
+To test the images manually (for example to troubleshoot something), start the containers:
 
 ```bash
 make run

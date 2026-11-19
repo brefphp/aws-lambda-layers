@@ -11,10 +11,10 @@ $extensions = [
 ];
 
 $extensionDir = ini_get('extension_dir');
-if ($extensionDir !== '/opt/bref/extensions') {
-    error("extension_dir points to $extensionDir instead of /opt/bref/extensions");
+if ($extensionDir !== '/usr/local/lib/php/extensions') {
+    error("extension_dir points to $extensionDir instead of /usr/local/lib/php/extensions");
 }
-success("[Extension] extension_dir points to /opt/bref/extensions");
+success("[Extension] extension_dir points to /usr/local/lib/php/extensions");
 
 foreach ($extensions as $extension => $test) {
     if (! $test) {

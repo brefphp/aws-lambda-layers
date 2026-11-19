@@ -2,22 +2,17 @@
 -include .env
 export # export all variables defined in .env
 
-# Define all the environment variables depending on the CPU
-# Set CPU= (empty) to build for x86
-# Set CPU=arm to build for ARM
-ifeq ($(CPU), arm) # if $CPU=="arm"
-  $(info "⚠️  Building for ARM") # Print a message
-  export CPU = arm
-  export CPU_PREFIX = arm-
-  export IMAGE_VERSION_SUFFIX = arm64
-  export DOCKER_PLATFORM = linux/arm64
+# Images are multi-architecture (linux/amd64 + linux/arm64).
+# `make docker-images` builds and loads them *locally* for one architecture, the current one by
+# default: set DOCKER_PLATFORM=linux/amd64 or linux/arm64 to choose.
+ifeq ($(shell uname -m), arm64)
+  DOCKER_PLATFORM ?= linux/arm64
+else ifeq ($(shell uname -m), aarch64)
+  DOCKER_PLATFORM ?= linux/arm64
 else
-  $(info "⚠️  Building for x86") # Print a message
-  export CPU = x86
-  export CPU_PREFIX =
-  export IMAGE_VERSION_SUFFIX = x86_64
-  export DOCKER_PLATFORM = linux/amd64
+  DOCKER_PLATFORM ?= linux/amd64
 endif
+export DOCKER_PLATFORM
 
 # By default, Docker images are built using `docker buildx bake`
 # But we use https://depot.dev in CI (super fast) by setting USE_DEPOT=1
@@ -29,65 +24,38 @@ else
 endif
 
 
-# Build all Docker images and layers *locally*
+# Build all Docker images *locally*
 # Use this to test your changes
-default: docker-images layers
+default: docker-images
 
 
 # Build Docker images *locally*
-docker-images: docker-images-php-82 docker-images-php-83 docker-images-php-84 docker-images-php-85
+docker-images: docker-images-php-83 docker-images-php-84 docker-images-php-85
 docker-images-php-%:
 	PHP_VERSION=$* ${BAKE_COMMAND} --load
 
 
-# Build Lambda layers (zip files) *locally*
-layers: layer-php-82 layer-php-83 layer-php-84 layer-php-85
-# This rule matches with a wildcard, for example `layer-php-84`.
-# The `$*` variable will contained the matched part, in this case `php-84`.
-layer-%:
-	./utils/docker-zip-dir.sh bref/${CPU_PREFIX}$* ${CPU_PREFIX}$*
-
-
-# Upload the layers to AWS Lambda
-# Uses the current AWS_PROFILE. Most users will not want to use this option
-# as this will publish all layers to all regions + publish all Docker images.
-upload-layers: upload-layers-php-82 upload-layers-php-83 upload-layers-php-84 upload-layers-php-85
-upload-layers-php-%:
-	LAYER_NAME=${CPU_PREFIX}php-$* $(MAKE) -C ./utils/lambda-publish publish-parallel
-
-
-# Publish Docker images to Docker Hub.
-upload-to-docker-hub: upload-to-docker-hub-php-82 upload-to-docker-hub-php-83 upload-to-docker-hub-php-84 upload-to-docker-hub-php-85
+# Build and publish multi-architecture images to Docker Hub.
+upload-to-docker-hub: upload-to-docker-hub-php-83 upload-to-docker-hub-php-84 upload-to-docker-hub-php-85
 upload-to-docker-hub-php-%:
     # Make sure we have defined the docker tag
 	(test $(DOCKER_TAG)) && echo "Tagging images with \"${DOCKER_TAG}\"" || echo "You have to define environment variable DOCKER_TAG"
 	test $(DOCKER_TAG)
 
-	set -e ; \
-	for image in \
-	  "bref/${CPU_PREFIX}php-$*" "bref/${CPU_PREFIX}build-php-$*" "bref/${CPU_PREFIX}php-$*-dev"; \
-	do \
-		docker tag $$image $$image:3 ; \
-		docker tag $$image $$image:${DOCKER_TAG} ; \
-		docker push $$image:3 ; \
-		docker push $$image:${DOCKER_TAG} ; \
-		docker push $$image:latest ; \
-	done
+	PHP_VERSION=$* DOCKER_PLATFORM=linux/amd64,linux/arm64 ${BAKE_COMMAND} --push \
+		--set "build-php.tags=bref/build-php-$*:4" --set "build-php.tags=bref/build-php-$*:${DOCKER_TAG}" --set "build-php.tags=bref/build-php-$*:latest" \
+		--set "php.tags=bref/php-$*:4" --set "php.tags=bref/php-$*:${DOCKER_TAG}" --set "php.tags=bref/php-$*:latest" \
+		--set "php-dev.tags=bref/php-$*-dev:4" --set "php-dev.tags=bref/php-$*-dev:${DOCKER_TAG}" --set "php-dev.tags=bref/php-$*-dev:latest"
 
 
-test: test-82 test-83 test-84 test-85
+test: test-83 test-84 test-85
 test-%:
 	cd tests && $(MAKE) test-$*
 
 
-clean: clean-82 clean-83 clean-84 clean-85
+clean: clean-83 clean-84 clean-85
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
-	# Remove zip files
-	rm -f output/${CPU_PREFIX}*.zip
 clean-%:
 	# Clean Docker images to force rebuilding them
-	docker image rm --force bref/${CPU_PREFIX}build-php-$* \
-		bref/${CPU_PREFIX}php-$* \
-		bref/${CPU_PREFIX}php-$*-zip \
-		bref/${CPU_PREFIX}php-$*-dev
+	docker image rm --force bref/build-php-$* bref/php-$* bref/php-$*-dev

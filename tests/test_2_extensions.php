@@ -88,9 +88,9 @@ $extensions = [
     // https://github.com/brefphp/aws-lambda-layers/issues/53
     'curl-openssl-certificates' => file_exists(openssl_get_cert_locations()['default_cert_file']),
     // Check its location has not changed (would be a breaking change)
-    'curl-openssl-certificates-location' => openssl_get_cert_locations()['default_cert_file'] === '/etc/pki/tls/cert.pem',
-    // Check the file in previous Bref versions is still here (would be a breaking change)
-    'curl-openssl-certificates-backwards-compatibility' => file_exists('/opt/bref/ssl/cert.pem'),
+    'curl-openssl-certificates-location' => openssl_get_cert_locations()['default_cert_file'] === '/usr/lib/ssl/cert.pem',
+    // The location in Bref v3 (Amazon Linux) still works
+    'curl-openssl-certificates-v3-location' => file_exists('/etc/pki/tls/cert.pem'),
     'openssl' => (function() {
         $private_key = openssl_pkey_new(['private_key_bits' => 2048]);
         if ($private_key === false) {
@@ -113,6 +113,7 @@ $extensions = [
     'mbstring' => function_exists('mb_strlen'),
     'mysqli' => function_exists('mysqli_connect'),
     'opcache' => ini_get('opcache.enable') == 1,
+    'zend.assertions' => ini_get('zend.assertions') === '-1',
     'pdo' => class_exists(\PDO::class),
     'pdo_mysql' => extension_loaded('pdo_mysql'),
     'pdo_pgsql' => extension_loaded('pdo_pgsql'),
