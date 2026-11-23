@@ -227,11 +227,10 @@ RUN set -xe; \
     chmod 1777 /tmp
 
 RUN set -xe; \
-    # Certificates: Ubuntu's bundle where OpenSSL looks for it (OPENSSLDIR), and where Bref v3 (Amazon Linux) had it
-    mkdir -p /usr/lib/ssl /etc/pki/tls; \
+    # Certificates: Ubuntu's bundle where OpenSSL looks for it (OPENSSLDIR)
+    mkdir -p /usr/lib/ssl; \
     ln -sf /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem; \
-    [ -e /usr/lib/ssl/certs ] || ln -s /etc/ssl/certs /usr/lib/ssl/certs; \
-    ln -sf /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/cert.pem
+    [ -e /usr/lib/ssl/certs ] || ln -s /etc/ssl/certs /usr/lib/ssl/certs
 
 COPY --link --from=build-environment /usr/local/bin/php /usr/local/bin/php
 # php-fpm is either a binary or a symlink to php (--enable-cli-fpm): copy the directory to keep symlinks
