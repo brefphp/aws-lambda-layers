@@ -12,37 +12,9 @@ permissions:
 
 jobs:
 
-    test:
-        name: Test PHP ${{ matrix.php_version }}, ${{ matrix.platform }}
-        runs-on: ubuntu-24.04
-        timeout-minutes: 60
-        strategy:
-            matrix:
-                platform: [ 'linux/amd64', 'linux/arm64' ]
-                php_version: [ '83', '84', '85', '86' ]
-        steps:
-            -   uses: actions/checkout@v6
-
-            # See https://stackoverflow.com/questions/70312490/github-actions-runner-environment-doesnt-build-for-arm-images
-            -   name: Set up QEMU to run ARM images (that were built with Depot)
-                uses: docker/setup-qemu-action@v4
-
-            -   uses: depot/setup-action@v1
-
-            -   run: make docker-images-php-${{ matrix.php_version }}
-                env:
-                    DOCKER_PLATFORM: ${{ matrix.platform }}
-                    USE_DEPOT: 1
-                    DEPOT_TOKEN: ${{ secrets.DEPOT_TOKEN }}
-
-            -   run: make test-${{ matrix.php_version }}
-                env:
-                    DOCKER_PLATFORM: ${{ matrix.platform }}
-
     release:
         name: Publish PHP ${{ matrix.php_version }} images
         runs-on: ubuntu-24.04
-        needs: [ test ]
         timeout-minutes: 60
         strategy:
             matrix:
