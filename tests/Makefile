@@ -1,5 +1,5 @@
 
-test: test-83 test-84 test-85
+test: test-83 test-84 test-85 test-86
 
 # This rule matches with a wildcard, for example `test-84`.
 # The `$*` variable will contained the matched part, in this case `84`.
