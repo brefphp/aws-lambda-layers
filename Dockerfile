@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.4
 
-# Bref v4 runtime images, for every PHP version (PHP_VERSION and VERSION_PHP are set by docker-bake.hcl).
+# Bref v4 runtime images, for every PHP version (PHP_VERSION and FULL_PHP_VERSION are set by docker-bake.hcl).
 #
 # The image is the whole runtime: PHP, its configuration and Bref's bootstrap. The same image runs as:
 # - a Lambda runtime (Lambda runs /var/runtime/bootstrap, the application code is in /var/task),
@@ -11,7 +11,7 @@
 # e.g. "85"
 ARG PHP_VERSION
 # e.g. "8.5.12", https://www.php.net/downloads
-ARG VERSION_PHP
+ARG FULL_PHP_VERSION
 
 
 # Lambda's entrypoint and Runtime Interface Emulator (to run the image locally)
@@ -25,34 +25,49 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN set -xe; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+        # Generate the build scripts of PHP (./buildconf) and of extensions (phpize, pecl)
         autoconf \
         automake \
-        bison \
-        ca-certificates \
-        curl \
-        g++ \
-        gcc \
         libtool \
-        make \
-        patch \
-        perl \
-        pkg-config \
+        # PHP's parser and lexer generators, checked by ./configure
+        bison \
         re2c \
-        xz-utils \
-        # PHP's dependencies
-        libbz2-dev \
+        # HTTPS certificates, to download PHP's source and PECL extensions
+        ca-certificates \
+        # Download PHP's source
+        curl \
+        # Compilers (C++ for intl)
+        gcc \
+        g++ \
+        make \
+        # Finds the libraries below for ./configure
+        pkg-config \
+        # Headers of the libraries PHP and its extensions use (runtime libraries in the `php` stage below)
+        # curl
         libcurl4-openssl-dev \
+        # ffi
         libffi-dev \
+        # intl
         libicu-dev \
+        # mbstring (regular expressions)
         libonig-dev \
+        # pdo_pgsql
         libpq-dev \
+        # readline (interactive shell `php -a`)
         libreadline-dev \
+        # sodium
         libsodium-dev \
+        # sqlite3, pdo_sqlite
         libsqlite3-dev \
+        # openssl
         libssl-dev \
+        # dom, simplexml, soap, xml, xmlreader, xmlwriter
         libxml2-dev \
+        # xsl
         libxslt1-dev \
+        # zip
         libzip-dev \
+        # zlib
         zlib1g-dev
 
 # Enable parallelism by default for make and cmake (like make -j)
@@ -65,9 +80,9 @@ ENV MAKEFLAGS='-j4'
 # --location will follow redirects
 # --silent will hide the progress, but also the errors: we restore error messages with --show-error
 # --fail makes sure that curl returns an error instead of fetching the 404 page
-ARG VERSION_PHP
+ARG FULL_PHP_VERSION
 WORKDIR /tmp/php
-RUN curl --location --silent --show-error --fail --retry 3 "https://www.php.net/distributions/php-${VERSION_PHP}.tar.gz" \
+RUN curl --location --silent --show-error --fail --retry 3 "https://www.php.net/distributions/php-${FULL_PHP_VERSION}.tar.gz" \
     | tar xzC . --strip-components=1
 
 # Configure the build
@@ -146,20 +161,34 @@ ARG PHP_VERSION
 RUN set -xe; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+        # HTTPS certificates (curl, openssl, HTTP clients)
         ca-certificates \
-        libbz2-1.0 \
+        # The libraries PHP and its extensions are linked to (see the headers in `build-environment`)
+        # curl
         libcurl4t64 \
+        # ffi
         libffi8 \
+        # intl
         libicu78 \
+        # mbstring (regular expressions)
         libonig5 \
+        # pdo_pgsql
         libpq5 \
+        # readline (interactive shell `php -a`)
         libreadline8t64 \
+        # sodium
         libsodium23 \
+        # sqlite3, pdo_sqlite
         libsqlite3-0 \
+        # openssl
         libssl3t64 \
+        # dom, simplexml, soap, xml, xmlreader, xmlwriter
         libxml2-16 \
+        # xsl
         libxslt1.1 \
+        # zip
         libzip5 \
+        # zlib
         zlib1g; \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /usr/share/doc/* /usr/share/man/*; \
     chmod 1777 /tmp
