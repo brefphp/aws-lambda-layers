@@ -224,6 +224,9 @@ RUN set -xe; \
         libssl3t64 \
         # gd (WebP)
         libwebp7 \
+        # gd (animated WebP, PHP 8.6+)
+        libwebpdemux2 \
+        libwebpmux3 \
         # dom, simplexml, soap, xml, xmlreader, xmlwriter
         libxml2-16 \
         # xsl
