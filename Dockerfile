@@ -207,9 +207,6 @@ COPY --link src/php.ini /etc/php/conf.d/50-bref.ini
 # Before PHP 8.5, opcache is a shared extension
 RUN if [ "${PHP_VERSION}" -lt 85 ]; then echo 'zend_extension=opcache' > /etc/php/conf.d/10-opcache.ini; fi
 COPY --link src/php-fpm.conf /etc/php/php-fpm.conf
-# TODO remove once bref/bref v4 reads /etc/php/php-fpm.conf: Bref v3 starts php-fpm with /opt/bref/etc/php-fpm.conf
-COPY --link src/php-fpm-v3-compat.sh /usr/local/bin/php-fpm
-RUN chmod +x /usr/local/bin/php-fpm
 
 COPY --link src/bootstrap.sh /var/runtime/bootstrap
 RUN chmod +x /var/runtime/bootstrap
