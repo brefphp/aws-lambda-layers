@@ -1,6 +1,6 @@
 {
     "require": {
-        "bref/bref": "dev-master"
+        "bref/bref": "dev-v4-fpm-config as 4.x-dev"
     },
     "config": {
         "platform": {
