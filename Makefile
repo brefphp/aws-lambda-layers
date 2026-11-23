@@ -30,13 +30,13 @@ default: docker-images
 
 
 # Build Docker images *locally*
-docker-images: docker-images-php-83 docker-images-php-84 docker-images-php-85
+docker-images: docker-images-php-83 docker-images-php-84 docker-images-php-85 docker-images-php-86
 docker-images-php-%:
 	PHP_VERSION=$* ${BAKE_COMMAND} --load
 
 
 # Build and publish multi-architecture images to Docker Hub.
-upload-to-docker-hub: upload-to-docker-hub-php-83 upload-to-docker-hub-php-84 upload-to-docker-hub-php-85
+upload-to-docker-hub: upload-to-docker-hub-php-83 upload-to-docker-hub-php-84 upload-to-docker-hub-php-85 upload-to-docker-hub-php-86
 upload-to-docker-hub-php-%:
     # Make sure we have defined the docker tag
 	(test $(DOCKER_TAG)) && echo "Tagging images with \"${DOCKER_TAG}\"" || echo "You have to define environment variable DOCKER_TAG"
@@ -48,12 +48,12 @@ upload-to-docker-hub-php-%:
 		--set "php-dev.tags=bref/php-$*-dev:4" --set "php-dev.tags=bref/php-$*-dev:${DOCKER_TAG}"
 
 
-test: test-83 test-84 test-85
+test: test-83 test-84 test-85 test-86
 test-%:
 	cd tests && $(MAKE) test-$*
 
 
-clean: clean-83 clean-84 clean-85
+clean: clean-83 clean-84 clean-85 clean-86
 	# Clear the build cache, else all images will be rebuilt using cached layers
 	docker builder prune
 clean-%:
