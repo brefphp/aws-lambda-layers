@@ -2,62 +2,50 @@ group "default" {
     targets = ["build-php", "php", "php-dev"]
 }
 
-variable "CPU" {
-    default = "x86"
-}
-variable "CPU_PREFIX" {
-    default = ""
-}
+# e.g. "85", see FULL_PHP_VERSIONS below
 variable "PHP_VERSION" {
-    default = "84"
+    default = "85"
 }
-variable "IMAGE_VERSION_SUFFIX" {
-    default = "x86_64"
-}
+# Comma-separated, e.g. "linux/arm64" for a local build, both for a release
 variable "DOCKER_PLATFORM" {
-    default = "linux/amd64"
+    default = "linux/amd64,linux/arm64"
 }
-variable "PHP_COMPILATION_FLAGS" {
-  default = ""
+
+# Supported PHP versions: https://www.php.net/downloads
+variable "FULL_PHP_VERSIONS" {
+    default = {
+        "83" = "8.3.37"
+        "84" = "8.4.28"
+        "85" = "8.5.13"
+    }
+}
+
+target "base" {
+    dockerfile = "Dockerfile"
+    args = {
+        "PHP_VERSION" = "${PHP_VERSION}"
+        "FULL_PHP_VERSION" = "${FULL_PHP_VERSIONS[PHP_VERSION]}"
+    }
+    platforms = split(",", "${DOCKER_PLATFORM}")
 }
 
 target "build-php" {
-    dockerfile = "php-${PHP_VERSION}/Dockerfile"
-    target = "build-environment"
-    tags = ["bref/${CPU_PREFIX}build-php-${PHP_VERSION}"]
-    args = {
-        "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-        "PHP_COMPILATION_FLAGS" = "${PHP_COMPILATION_FLAGS}"
-    }
-    platforms = ["${DOCKER_PLATFORM}"]
+    inherits = ["base"]
+    target = "build-php"
+    tags = ["bref/build-php-${PHP_VERSION}"]
 }
 
 target "php" {
-    dockerfile = "php-${PHP_VERSION}/Dockerfile"
-    target = "function"
-    tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}"]
-    args = {
-        "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-        "PHP_COMPILATION_FLAGS" = "${PHP_COMPILATION_FLAGS}"
-    }
-    contexts = {
-        "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
-    }
-    platforms = ["${DOCKER_PLATFORM}"]
+    inherits = ["base"]
+    target = "php"
+    tags = ["bref/php-${PHP_VERSION}"]
 }
 
 target "php-dev" {
-    dockerfile = "php-${PHP_VERSION}/Dockerfile"
+    inherits = ["base"]
     target = "dev"
-    tags = ["bref/${CPU_PREFIX}php-${PHP_VERSION}-dev"]
-    args = {
-        "IMAGE_VERSION_SUFFIX" = "${IMAGE_VERSION_SUFFIX}"
-        "PHP_COMPILATION_FLAGS" = "${PHP_COMPILATION_FLAGS}"
-    }
+    tags = ["bref/php-${PHP_VERSION}-dev"]
     contexts = {
-        "bref/${CPU_PREFIX}build-php-${PHP_VERSION}" = "target:build-php"
-        "bref/${CPU_PREFIX}php-${PHP_VERSION}" = "target:php"
         "bref/local-api-gateway" = "docker-image://bref/local-api-gateway:latest"
     }
-    platforms = ["${DOCKER_PLATFORM}"]
 }
