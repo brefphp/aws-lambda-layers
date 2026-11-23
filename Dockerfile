@@ -47,10 +47,16 @@ RUN set -xe; \
         libcurl4-openssl-dev \
         # ffi
         libffi-dev \
+        # gd (fonts)
+        libfreetype-dev \
         # intl
         libicu-dev \
+        # gd (JPEG)
+        libjpeg-dev \
         # mbstring (regular expressions)
         libonig-dev \
+        # gd (PNG)
+        libpng-dev \
         # pdo_pgsql
         libpq-dev \
         # readline (interactive shell `php -a`)
@@ -61,6 +67,8 @@ RUN set -xe; \
         libsqlite3-dev \
         # openssl
         libssl-dev \
+        # gd (WebP)
+        libwebp-dev \
         # dom, simplexml, soap, xml, xmlreader, xmlwriter
         libxml2-dev \
         # xsl
@@ -135,6 +143,10 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -ffunction-sections -fdata-
         --with-sqlite3 \
         --with-pdo-sqlite \
         # Separate .so extensions so that they are not loaded by default
+        --enable-gd=shared \
+        --with-freetype \
+        --with-jpeg \
+        --with-webp \
         --enable-intl=shared \
         --enable-soap=shared \
         # Needed by `pecl` to install extensions (in this image and in images built on it)
@@ -190,10 +202,16 @@ RUN set -xe; \
         libcurl4t64 \
         # ffi
         libffi8 \
+        # gd (fonts)
+        libfreetype6 \
         # intl
         libicu78 \
+        # gd (JPEG)
+        libjpeg-turbo8 \
         # mbstring (regular expressions)
         libonig5 \
+        # gd (PNG)
+        libpng16-16t64 \
         # pdo_pgsql
         libpq5 \
         # readline (interactive shell `php -a`)
@@ -204,6 +222,8 @@ RUN set -xe; \
         libsqlite3-0 \
         # openssl
         libssl3t64 \
+        # gd (WebP)
+        libwebp7 \
         # dom, simplexml, soap, xml, xmlreader, xmlwriter
         libxml2-16 \
         # xsl

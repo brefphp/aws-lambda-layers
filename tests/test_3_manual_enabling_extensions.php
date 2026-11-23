@@ -3,6 +3,7 @@
 require_once __DIR__ . '/utils.php';
 
 $extensions = [
+    'gd' => function_exists('gd_info'),
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
     'soap' => class_exists(\SoapClient::class),
@@ -21,4 +22,13 @@ foreach ($extensions as $extension => $test) {
         error($extension . ' extension was not loaded');
     }
     success("[Extension] $extension");
+}
+
+// gd must support the common image formats and fonts
+$gdInfo = gd_info();
+foreach (['JPEG Support', 'PNG Support', 'WebP Support', 'FreeType Support'] as $feature) {
+    if (empty($gdInfo[$feature])) {
+        error("gd was compiled without $feature");
+    }
+    success("[Extension] gd: $feature");
 }

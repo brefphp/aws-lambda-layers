@@ -144,6 +144,7 @@ if ($errors) {
 }
 
 $extensionsDisabledByDefault = [
+    'gd' => function_exists('gd_info'),
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
     'soap' => class_exists(\SoapClient::class),
