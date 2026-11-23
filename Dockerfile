@@ -146,6 +146,7 @@ RUN set -xe; \
     make clean
 
 # Optional extensions installed with `pecl`, not enabled by default
+ARG PHP_VERSION
 # APCu's latest release (5.1.28) does not compile with PHP 8.6: use its main branch (pinned) until 5.1.29
 RUN if [ "${PHP_VERSION}" -ge 86 ]; then \
         mkdir -p /tmp/apcu && cd /tmp/apcu \
