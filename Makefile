@@ -43,9 +43,9 @@ upload-to-docker-hub-php-%:
 	test $(DOCKER_TAG)
 
 	PHP_VERSION=$* DOCKER_PLATFORM=linux/amd64,linux/arm64 ${BAKE_COMMAND} --push \
-		--set "build-php.tags=bref/build-php-$*:4" --set "build-php.tags=bref/build-php-$*:${DOCKER_TAG}" --set "build-php.tags=bref/build-php-$*:latest" \
-		--set "php.tags=bref/php-$*:4" --set "php.tags=bref/php-$*:${DOCKER_TAG}" --set "php.tags=bref/php-$*:latest" \
-		--set "php-dev.tags=bref/php-$*-dev:4" --set "php-dev.tags=bref/php-$*-dev:${DOCKER_TAG}" --set "php-dev.tags=bref/php-$*-dev:latest"
+		--set "build-php.tags=bref/build-php-$*:4" --set "build-php.tags=bref/build-php-$*:${DOCKER_TAG}" \
+		--set "php.tags=bref/php-$*:4" --set "php.tags=bref/php-$*:${DOCKER_TAG}" \
+		--set "php-dev.tags=bref/php-$*-dev:4" --set "php-dev.tags=bref/php-$*-dev:${DOCKER_TAG}"
 
 
 test: test-83 test-84 test-85 test-86
