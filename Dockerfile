@@ -40,6 +40,8 @@ RUN set -xe; \
         gcc \
         g++ \
         make \
+        # Applies the cli-fpm patch to PHP's source (src/cli-fpm)
+        patch \
         # Finds the libraries below for ./configure
         pkg-config \
         # Headers of the libraries PHP and its extensions use (runtime libraries in the `php` stage below)
