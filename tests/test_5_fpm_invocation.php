@@ -38,4 +38,10 @@ if ($response['body'] !== 'Hello from Bref FPM!') {
     error('Unexpected response: ' . json_encode($response));
 }
 
+// PHP-FPM has no CPU time limit: Bref stops requests before the Lambda timeout
+$maxExecutionTime = array_change_key_case($response['headers'])['x-max-execution-time'] ?? null;
+if ($maxExecutionTime !== '0') {
+    error('Unexpected max_execution_time: ' . json_encode($response));
+}
+
 success('[Invoke] FPM');
