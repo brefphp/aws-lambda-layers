@@ -235,7 +235,8 @@ RUN set -xe; \
 COPY --link --from=build-environment /usr/local/bin/php /usr/local/bin/php
 # php-fpm is either a binary or a symlink to php (--enable-cli-fpm): copy the directory to keep symlinks
 COPY --link --from=build-environment /usr/local/sbin/ /usr/local/sbin/
-COPY --link --from=build-environment /usr/local/lib/php/extensions /usr/local/lib/php/extensions
+# Only the .so files: the build stage also keeps them in PHP's own extension directory (for pecl and phpize)
+COPY --link --from=build-environment /usr/local/lib/php/extensions/*.so /usr/local/lib/php/extensions/
 
 COPY --link src/php.ini /etc/php/conf.d/50-bref.ini
 # Before PHP 8.5, opcache is a shared extension
