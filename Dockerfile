@@ -47,6 +47,8 @@ RUN set -xe; \
         libcurl4-openssl-dev \
         # ffi
         libffi-dev \
+        # gmp
+        libgmp-dev \
         # intl
         libicu-dev \
         # mbstring (regular expressions)
@@ -135,6 +137,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -ffunction-sections -fdata-
         --with-sqlite3 \
         --with-pdo-sqlite \
         # Separate .so extensions so that they are not loaded by default
+        --with-gmp=shared \
         --enable-intl=shared \
         --enable-soap=shared \
         # Needed by `pecl` to install extensions (in this image and in images built on it)
@@ -190,6 +193,8 @@ RUN set -xe; \
         libcurl4t64 \
         # ffi
         libffi8 \
+        # gmp
+        libgmp10 \
         # intl
         libicu78 \
         # mbstring (regular expressions)
