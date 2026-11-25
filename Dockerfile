@@ -49,6 +49,8 @@ RUN set -xe; \
         libffi-dev \
         # gd (fonts)
         libfreetype-dev \
+        # gmp
+        libgmp-dev \
         # intl
         libicu-dev \
         # gd (JPEG)
@@ -147,6 +149,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -ffunction-sections -fdata-
         --with-freetype \
         --with-jpeg \
         --with-webp \
+        --with-gmp=shared \
         --enable-intl=shared \
         --enable-soap=shared \
         # Needed by `pecl` to install extensions (in this image and in images built on it)
@@ -204,6 +207,8 @@ RUN set -xe; \
         libffi8 \
         # gd (fonts)
         libfreetype6 \
+        # gmp
+        libgmp10 \
         # intl
         libicu78 \
         # gd (JPEG)

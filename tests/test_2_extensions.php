@@ -145,6 +145,7 @@ if ($errors) {
 
 $extensionsDisabledByDefault = [
     'gd' => function_exists('gd_info'),
+    'gmp' => function_exists('gmp_add'),
     'intl' => class_exists(\Collator::class),
     'apcu' => function_exists('apcu_add'),
     'soap' => class_exists(\SoapClient::class),
