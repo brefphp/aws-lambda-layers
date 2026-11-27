@@ -12,11 +12,10 @@ if (! file_exists($autoloadPath)) {
 
 require $autoloadPath;
 
-// `RUNTIME_CLASS` is for backwards compatibility with Bref v2's environment variable
-$runtime = $_SERVER['BREF_RUNTIME'] ?? $_SERVER['RUNTIME_CLASS'] ?? null;
+$runtime = $_SERVER['BREF_RUNTIME'] ?? null;
 
 if (empty($runtime)) {
-    throw new RuntimeException('The environment variable `BREF_RUNTIME` is not set, are you trying to use Bref v2 with Bref v3 layers? Make sure to follow the Bref documentation to use the right layers for your current Bref version.');
+    throw new RuntimeException('The environment variable `BREF_RUNTIME` is not set. Use the `php-XX`, `php-XX-fpm` or `php-XX-console` runtimes in serverless.yml, or set `BREF_RUNTIME` to `function`, `fpm` or `console`.');
 }
 
 $runtimeClass = match ($runtime) {
