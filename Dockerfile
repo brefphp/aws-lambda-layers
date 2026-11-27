@@ -40,6 +40,8 @@ RUN set -xe; \
         gcc \
         g++ \
         make \
+        # Applies the cli-fpm patch to PHP's source (src/cli-fpm)
+        patch \
         # Finds the libraries below for ./configure
         pkg-config \
         # Headers of the libraries PHP and its extensions use (runtime libraries in the `php` stage below)
@@ -100,6 +102,14 @@ RUN case "${FULL_PHP_VERSION}" in \
     esac; \
     curl --location --silent --show-error --fail --retry 3 "$url" | tar xzC . --strip-components=1
 
+# One binary for php and php-fpm: `php` runs FPM when invoked as `php-fpm` (--enable-cli-fpm,
+# https://github.com/php/php-src/pull/23558, not in PHP yet). FPM then maps the file that the CLI
+# (Bref's bootstrap) already loaded: -12 to -16 ms of FPM cold start and 8 MB less memory.
+# Applied when src/cli-fpm has a patch for this PHP version.
+ARG PHP_VERSION
+COPY --link src/cli-fpm /tmp/cli-fpm
+RUN if [ -f "/tmp/cli-fpm/php-${PHP_VERSION}.patch" ]; then patch -p1 < "/tmp/cli-fpm/php-${PHP_VERSION}.patch"; fi
+
 # Configure the build
 # -fstack-protector-strong : Be paranoid about stack overflows
 # -fpic : Make PHP's main executable position-independent (improves ASLR security mechanism, and has no performance impact on x86_64)
@@ -122,6 +132,7 @@ RUN CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -ffunction-sections -fdata-
         --with-config-file-scan-dir=/etc/php/conf.d:/opt/bref/etc/php/conf.d:/var/task/php/conf.d \
         --enable-cli \
         --enable-fpm \
+        $([ -f "/tmp/cli-fpm/php-${PHP_VERSION}.patch" ] && echo --enable-cli-fpm) \
         --disable-cgi \
         --disable-phpdbg \
         --with-openssl \
@@ -158,10 +169,10 @@ RUN make -j "$(nproc)"
 # Override PEAR's PHAR URL because pear.php.net is down
 RUN set -xe; \
     make install PEAR_INSTALLER_URL='https://github.com/pear/pearweb_phars/raw/master/install-pear-nozlib.phar'; \
-    make clean
+    make clean; \
+    if [ -f "/tmp/cli-fpm/php-${PHP_VERSION}.patch" ]; then ln -sf ../bin/php /usr/local/sbin/php-fpm; fi
 
 # Optional extensions installed with `pecl`, not enabled by default
-ARG PHP_VERSION
 # APCu's latest release (5.1.28) does not compile with PHP 8.6: use its main branch (pinned) until 5.1.29
 RUN if [ "${PHP_VERSION}" -ge 86 ]; then \
         mkdir -p /tmp/apcu && cd /tmp/apcu \
@@ -250,7 +261,8 @@ RUN set -xe; \
     [ -e /usr/lib/ssl/certs ] || ln -s /etc/ssl/certs /usr/lib/ssl/certs
 
 COPY --link --from=build-environment /usr/local/bin/php /usr/local/bin/php
-COPY --link --from=build-environment /usr/local/sbin/php-fpm /usr/local/sbin/php-fpm
+# php-fpm is either a binary or a symlink to php (--enable-cli-fpm): copy the directory to keep symlinks
+COPY --link --from=build-environment /usr/local/sbin/ /usr/local/sbin/
 # Only the .so files: the build stage also keeps them in PHP's own extension directory (for pecl and phpize)
 COPY --link --from=build-environment /usr/local/lib/php/extensions/*.so /usr/local/lib/php/extensions/
 
