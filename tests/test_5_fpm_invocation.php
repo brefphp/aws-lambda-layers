@@ -44,4 +44,10 @@ if ($maxExecutionTime !== '0') {
     error('Unexpected max_execution_time: ' . json_encode($response));
 }
 
+// Like php.ini-production: ob_flush() works in streamed responses
+$outputBuffering = array_change_key_case($response['headers'])['x-output-buffering'] ?? null;
+if ($outputBuffering !== '4096') {
+    error('Unexpected output_buffering: ' . json_encode($response));
+}
+
 success('[Invoke] FPM');
