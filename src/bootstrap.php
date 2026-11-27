@@ -12,11 +12,10 @@ if (! file_exists($autoloadPath)) {
 
 require $autoloadPath;
 
-// `RUNTIME_CLASS` is for backwards compatibility with Bref v2's environment variable
-$runtime = $_SERVER['BREF_RUNTIME'] ?? $_SERVER['RUNTIME_CLASS'] ?? null;
+$runtime = $_SERVER['BREF_RUNTIME'] ?? null;
 
 if (empty($runtime)) {
-    throw new RuntimeException('The environment variable `BREF_RUNTIME` is not set, are you trying to use Bref v2 with Bref v3 layers? Make sure to follow the Bref documentation to use the right layers for your current Bref version.');
+    throw new RuntimeException('The environment variable `BREF_RUNTIME` is not set. Use the `php-XX`, `php-XX-fpm` or `php-XX-console` runtimes in serverless.yml, or set `BREF_RUNTIME` to `function`, `fpm` or `console`.');
 }
 
 $runtimeClass = match ($runtime) {
@@ -28,6 +27,11 @@ $runtimeClass = match ($runtime) {
 
 if (! class_exists($runtimeClass)) {
     throw new RuntimeException("Bref is not installed in your application (could not find the class \"$runtimeClass\" in Composer dependencies). Did you run \"composer require bref/bref\"?");
+}
+
+// Older versions of bref/bref do not work with these runtimes (this class was added in Bref 4)
+if (class_exists('Bref\Bref') && ! class_exists('Bref\Event\Http\HttpResponseWriter')) {
+    throw new RuntimeException('This runtime requires Bref 4, but an older version of the bref/bref package is installed. Upgrade it with "composer require bref/bref:^4", and read https://bref.sh/docs/upgrading/v4');
 }
 
 $runtimeClass::run();
